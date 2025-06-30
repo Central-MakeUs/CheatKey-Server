@@ -1,0 +1,37 @@
+package com.cheatkey.common.config;
+
+import com.cheatkey.common.handler.KakaoAuthenticationSuccessHandler;
+import com.cheatkey.common.sercurity.KakaoOAuth2UserService;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
+
+@Configuration
+public class SecurityConfig {
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http,
+                                           KakaoOAuth2UserService oAuth2UserService,
+                                           KakaoAuthenticationSuccessHandler successHandler) throws Exception {
+        http
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/auth/login",
+                                "/auth/register/**",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**"
+                        ).permitAll()
+                        .anyRequest().authenticated()
+                )
+                .oauth2Login(oauth -> oauth
+                        .userInfoEndpoint(user -> user.userService(oAuth2UserService))
+                        .successHandler(successHandler)
+                        .failureHandler(new SimpleUrlAuthenticationFailureHandler("/login?error=true"))
+                );
+        return http.build();
+    }
+}
+
