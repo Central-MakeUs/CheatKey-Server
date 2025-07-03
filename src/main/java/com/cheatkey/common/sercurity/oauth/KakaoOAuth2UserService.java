@@ -1,4 +1,4 @@
-package com.cheatkey.common.sercurity;
+package com.cheatkey.common.sercurity.oauth;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;

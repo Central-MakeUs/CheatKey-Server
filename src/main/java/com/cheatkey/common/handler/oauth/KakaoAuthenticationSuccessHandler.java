@@ -1,4 +1,4 @@
-package com.cheatkey.common.handler;
+package com.cheatkey.common.handler.oauth;
 
 
 import com.cheatkey.module.auth.domain.entity.Auth;

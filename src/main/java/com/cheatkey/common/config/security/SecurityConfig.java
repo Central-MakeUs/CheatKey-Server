@@ -1,7 +1,7 @@
-package com.cheatkey.common.config;
+package com.cheatkey.common.config.security;
 
-import com.cheatkey.common.handler.KakaoAuthenticationSuccessHandler;
-import com.cheatkey.common.sercurity.KakaoOAuth2UserService;
+import com.cheatkey.common.handler.oauth.KakaoAuthenticationSuccessHandler;
+import com.cheatkey.common.sercurity.oauth.KakaoOAuth2UserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;

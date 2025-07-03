@@ -1,4 +1,4 @@
-package com.cheatkey.common.config;
+package com.cheatkey.common.config.mapper;
 
 import org.mapstruct.MapperConfig;
 import org.mapstruct.ReportingPolicy;

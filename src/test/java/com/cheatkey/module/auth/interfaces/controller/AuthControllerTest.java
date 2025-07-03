@@ -1,6 +1,6 @@
 package com.cheatkey.module.auth.interfaces.controller;
 
-import com.cheatkey.common.handler.KakaoAuthenticationSuccessHandler;
+import com.cheatkey.common.handler.oauth.KakaoAuthenticationSuccessHandler;
 import com.cheatkey.module.auth.domain.entity.Auth;
 import com.cheatkey.module.auth.domain.repository.AuthRepository;
 import com.cheatkey.module.auth.interfaces.dto.AuthRegisterRequest;

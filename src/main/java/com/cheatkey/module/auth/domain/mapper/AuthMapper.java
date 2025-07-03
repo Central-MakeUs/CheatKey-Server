@@ -1,6 +1,6 @@
 package com.cheatkey.module.auth.domain.mapper;
 
-import com.cheatkey.common.config.MapStructMapperConfig;
+import com.cheatkey.common.config.mapper.MapStructMapperConfig;
 import com.cheatkey.module.auth.domain.entity.Auth;
 import com.cheatkey.module.auth.interfaces.dto.AuthRegisterRequest;
 import org.mapstruct.Mapper;
