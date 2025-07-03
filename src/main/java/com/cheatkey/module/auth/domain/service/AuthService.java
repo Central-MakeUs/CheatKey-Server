@@ -11,6 +11,7 @@ import com.cheatkey.module.auth.domain.repository.AuthRepository;
 import com.cheatkey.module.auth.domain.validate.NicknameValidator;
 import com.cheatkey.module.auth.interfaces.dto.AuthRegisterInitResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
@@ -38,21 +39,7 @@ public class AuthService {
         }
     }
 
-    public AuthRegisterInitResponse getRegisterInitInfo(Long kakaoId) {
-        OAuth2User oauth2User = (OAuth2User) SecurityContextHolder
-                .getContext()
-                .getAuthentication()
-                .getPrincipal();
-
-        Map<String, Object> kakaoAccount = (Map<String, Object>) oauth2User.getAttribute("kakao_account");
-        String kakaoName = null;
-
-        // @TODO 이름(닉네임) 확인 필요
-        if (kakaoAccount != null && kakaoAccount.containsKey("profile")) {
-            Map<String, Object> profile = (Map<String, Object>) kakaoAccount.get("profile");
-            kakaoName = profile.get("nickname").toString();
-        }
-
+    public AuthRegisterInitResponse getRegisterInitInfo(Long kakaoId, String kakaoName) {
         return new AuthRegisterInitResponse(kakaoId, kakaoName);
     }
 
