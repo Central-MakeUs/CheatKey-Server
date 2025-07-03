@@ -11,8 +11,8 @@ import java.util.List;
 @Mapper(componentModel = "spring", config = MapStructMapperConfig.class)
 public interface AuthMapper {
 
-    @Mapping(target = "tradeMethodCode", expression = "java(joinCodes(request.getTradeMethodCodes()))")
-    @Mapping(target = "tradeItemCode", expression = "java(joinCodes(request.getTradeItemCodes()))")
+    @Mapping(target = "tradeMethodCode", expression = "java(joinCodes(request.getTradeMethodCode()))")
+    @Mapping(target = "tradeItemCode", expression = "java(joinCodes(request.getTradeItemCode()))")
     Auth toAuth(AuthRegisterRequest request);
 
     default String joinCodes(List<String> codes) {
