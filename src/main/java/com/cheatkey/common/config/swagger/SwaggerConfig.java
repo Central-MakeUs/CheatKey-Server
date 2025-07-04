@@ -16,6 +16,8 @@ public class SwaggerConfig {
                 .description("CheatKey 서비스의 API 문서입니다.");
         return new OpenAPI()
                 .info(info)
-                .addServersItem(new Server().url("http://localhost:8080").description("로컬"));
+                .addServersItem(new Server().url("http://localhost:8080").description("로컬"))
+//                .addServersItem(new Server().url("https://cheatkey.kr").description("운영 환경 (도메인)"))
+                .addServersItem(new Server().url("http://43.203.30.24").description("운영 환경 (IP 접근)"));
     }
 }

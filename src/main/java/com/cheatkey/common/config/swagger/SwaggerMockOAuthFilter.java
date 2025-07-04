@@ -39,7 +39,7 @@ public class SwaggerMockOAuthFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
 
         String requestURI = request.getRequestURI();
-        if (isWhitePath(requestURI)) {
+        if (!isWhitePath(requestURI)) {
             filterChain.doFilter(request, response);
             return;
         }
