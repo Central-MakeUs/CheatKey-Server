@@ -27,9 +27,10 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth -> oauth
+                        .loginPage("/auth/login")
                         .userInfoEndpoint(user -> user.userService(oAuth2UserService))
                         .successHandler(successHandler)
-                        .failureHandler(new SimpleUrlAuthenticationFailureHandler("/login?error=true"))
+                        .failureHandler(new SimpleUrlAuthenticationFailureHandler("/auth/login?error=true"))
                 );
         return http.build();
     }

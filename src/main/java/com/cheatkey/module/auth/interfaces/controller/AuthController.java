@@ -25,6 +25,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -39,12 +40,16 @@ public class AuthController {
     private final AuthRepository authRepository;
     private final AuthMapper authMapper;
 
-    @Operation(summary = "카카오 로그인", description = "로그인 후 메인 페이지로 리디렉션합니다.")
-    @ApiResponse(responseCode = "302", description = "리디렉션 성공")
+    @Operation(
+            summary = "카카오 로그인 트리거",
+            description = "카카오 로그인 인증 플로우를 시작합니다. 302 응답으로 리디렉션됩니다.",
+            responses = {@ApiResponse(responseCode = "302", description = "카카오 로그인 페이지로 리디렉션")}
+    )
     @GetMapping("/login")
-    public ResponseEntity<Void> loginPageRedirect() {
+    public ResponseEntity<Void> loginTrigger() {
+        URI kakaoLoginUri = URI.create("/oauth2/authorization/kakao");
         return ResponseEntity.status(HttpStatus.FOUND)
-                .header(HttpHeaders.LOCATION, "/")
+                .location(kakaoLoginUri)
                 .build();
     }
 
