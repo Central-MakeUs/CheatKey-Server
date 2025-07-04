@@ -35,7 +35,7 @@ public class KakaoAuthenticationSuccessHandler implements AuthenticationSuccessH
             authRepository.save(auth);
 
             // @TODO 신규 회원 표시하기
-            response.sendRedirect("/main");
+            response.sendRedirect("/home");
         } else {
             response.sendRedirect("/auth/register?kakaoId=" + kakaoId);
         }
