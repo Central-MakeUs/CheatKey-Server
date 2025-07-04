@@ -106,6 +106,6 @@ class AuthControllerTest {
 
         assertThat(updated.getLoginCount()).isEqualTo(4); // 기존 3 → 4
         assertThat(updated.getLastLoginAt()).isNotNull();
-        assertThat(response.getRedirectedUrl()).isEqualTo("/main");
+        assertThat(response.getRedirectedUrl()).isEqualTo("/home");
     }
 }
