@@ -26,8 +26,8 @@ public class AuthRegisterRequest {
     private String genderCode;
 
     @Schema(description = "거래 방식 코드 목록")
-    private List<String> tradeMethodCode;
+    private List<String> tradeMethodCodeList;
 
     @Schema(description = "거래 품목 코드 목록")
-    private List<String> tradeItemCode;
+    private List<String> tradeItemCodeList;
 }

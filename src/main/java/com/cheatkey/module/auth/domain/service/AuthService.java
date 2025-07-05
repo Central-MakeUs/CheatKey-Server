@@ -9,17 +9,12 @@ import com.cheatkey.module.auth.interfaces.dto.AuthInfoOptionsResponse.Option;
 import com.cheatkey.common.code.domain.repository.CodeRepository;
 import com.cheatkey.module.auth.domain.repository.AuthRepository;
 import com.cheatkey.module.auth.domain.validate.NicknameValidator;
-import com.cheatkey.module.auth.interfaces.dto.AuthRegisterInitResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 
 
 @Service
@@ -37,10 +32,6 @@ public class AuthService {
         if (authRepository.existsByNickname(nickname)) {
             throw new CustomException(ErrorCode.AUTH_DUPLICATE_NICKNAME);
         }
-    }
-
-    public AuthRegisterInitResponse getRegisterInitInfo(Long kakaoId, String kakaoName) {
-        return new AuthRegisterInitResponse(kakaoId, kakaoName);
     }
 
     public List<Option> getOptionsByType(CodeType type) {

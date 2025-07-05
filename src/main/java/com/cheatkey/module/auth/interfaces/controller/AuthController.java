@@ -18,17 +18,15 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 @RequiredArgsConstructor
 @RestController
@@ -60,19 +58,31 @@ public class AuthController {
     })
     @GetMapping("/register")
     public ResponseEntity<AuthRegisterInitResponse> initRegister() {
-        OAuth2User oauth2User = (OAuth2User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
+        if (!(authentication.getPrincipal() instanceof OAuth2User)) {
+            throw new CustomException(ErrorCode.AUTH_UNAUTHORIZED); // 또는 401 Unauthorized
+        }
+
+        OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
         Long kakaoId = oauth2User.getAttribute("kakaoId");
-        String nickname = Optional.ofNullable((Map<String, Object>) oauth2User.getAttribute("kakao_account"))
-                .map(account -> (Map<String, Object>) account.get("profile"))
-                .map(profile -> (String) profile.get("nickname"))
-                .orElse("unknown");
 
         if (authRepository.findByKakaoId(kakaoId).isPresent()) {
             throw new CustomException(ErrorCode.AUTH_ALREADY_REGISTERED);
         }
 
-        AuthRegisterInitResponse response = authService.getRegisterInitInfo(kakaoId, nickname);
+        List<Option> ageCodeList = authService.getOptionsByType(CodeType.AGE_GROUP);
+        List<Option> genderCodeList = authService.getOptionsByType(CodeType.GENDER);
+        List<Option> tradeMethodCodeList = authService.getOptionsByType(CodeType.TRADE_METHOD);
+        List<Option> tradeItemCodeList = authService.getOptionsByType(CodeType.TRADE_ITEM);
+
+        AuthRegisterInitResponse response = AuthRegisterInitResponse.builder()
+                .ageCodeList(ageCodeList)
+                .genderCodeList(genderCodeList)
+                .tradeMethodCodeList(tradeMethodCodeList)
+                .tradeItemCodeList(tradeItemCodeList)
+                .build();
+
         return ResponseEntity.ok(response);
     }
 
@@ -86,30 +96,6 @@ public class AuthController {
                                               @RequestParam @NotBlank String nickname) {
         authService.validateNickname(nickname);
         return ResponseEntity.ok().build();
-    }
-
-    @Operation(summary = "연령대 옵션 조회")
-    @GetMapping("/register/options/age")
-    public List<Option> getAgeOptions() {
-        return authService.getOptionsByType(CodeType.AGE_GROUP);
-    }
-
-    @Operation(summary = "성별 옵션 조회", tags = {"Auth"})
-    @GetMapping("/register/options/gender")
-    public List<Option> getGenderOptions() {
-        return authService.getOptionsByType(CodeType.GENDER);
-    }
-
-    @Operation(summary = "거래 방식 옵션 조회", tags = {"Auth"})
-    @GetMapping("/register/options/trade-method")
-    public List<Option> getTradeMethodOptions() {
-        return authService.getOptionsByType(CodeType.TRADE_METHOD);
-    }
-
-    @Operation(summary = "거래 품목 옵션 조회", tags = {"Auth"})
-    @GetMapping("/register/options/trade-item")
-    public List<Option> getTradeItemOptions() {
-        return authService.getOptionsByType(CodeType.TRADE_ITEM);
     }
 
     @Operation(summary = "회원가입", description = "사용자 정보를 등록하고 회원가입을 완료합니다.")
