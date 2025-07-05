@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
@@ -106,13 +107,16 @@ public class AuthController {
     })
     @PostMapping("/register")
     public ResponseEntity<Void> register(@io.swagger.v3.oas.annotations.parameters.RequestBody(description = "회원가입 요청 정보")
-                                         @RequestBody @Valid AuthRegisterRequest request) {
+                                         @RequestBody @Valid AuthRegisterRequest request,
+                                         HttpServletRequest servletRequest) {
 
         OAuth2User oauth2User = (OAuth2User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         Long kakaoId = oauth2User.getAttribute("kakaoId");
 
         Auth requestAuth = authMapper.toAuth(request);
         authService.register(requestAuth, kakaoId);
+
+        servletRequest.getSession().setAttribute("welcome", true);
 
         return ResponseEntity.ok().build();
     }

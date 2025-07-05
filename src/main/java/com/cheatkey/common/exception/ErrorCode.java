@@ -20,8 +20,9 @@ public enum ErrorCode {
     AUTH_NICKNAME_TOO_SHORT(HttpStatus.BAD_REQUEST, "최소 2글자 이상 입력해주세요"),
     AUTH_MISSING_REQUIRED_INFORMATION(HttpStatus.BAD_REQUEST, "필수 정보가 누락되었습니다."),
     AUTH_ALREADY_REGISTERED(HttpStatus.BAD_REQUEST, "이미 가입된 사용자입니다."),
-    AUTH_UNAUTHORIZED(HttpStatus.BAD_REQUEST, "잘못된 회원가입 접근입니다. 로그인을 다시 해주세요."),
+    AUTH_UNAUTHORIZED(HttpStatus.BAD_REQUEST, "잘못된 회원가입 접근입니다. 다시 로그인 해주세요."),
 
+    AUTH_NOT_FOUND(HttpStatus.NOT_FOUND, "회원 정보를 찾지 못했습니다. 다시 로그인 해주세요."),
     /**
      * 시스템 예외
      */

@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -28,14 +29,16 @@ public class KakaoAuthenticationSuccessHandler implements AuthenticationSuccessH
         DefaultOAuth2User user = (DefaultOAuth2User) authentication.getPrincipal();
         Long kakaoId = user.getAttribute("kakaoId");
 
-        if (authRepository.findByKakaoId(kakaoId).isPresent()) {
-            Auth auth = authRepository.findByKakaoId(kakaoId).get();
-            auth.increaseLoginCount();
-            auth.updateLastLoginTime(LocalDateTime.now());
-            authRepository.save(auth);
+        Optional<Auth> auth = authRepository.findByKakaoId(kakaoId);
 
-            // @TODO 신규 회원 표시하기
+        if (auth.isPresent()) {
+            Auth requestedAuth = auth.get();
+            requestedAuth.increaseLoginCount();
+            requestedAuth.updateLastLoginTime(LocalDateTime.now());
+            authRepository.save(requestedAuth);
+
             response.sendRedirect("/home");
+
         } else {
             response.sendRedirect("/auth/register");
         }
