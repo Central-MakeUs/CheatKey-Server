@@ -23,6 +23,13 @@ public enum ErrorCode {
     AUTH_UNAUTHORIZED(HttpStatus.BAD_REQUEST, "잘못된 회원가입 접근입니다. 다시 로그인 해주세요."),
 
     AUTH_NOT_FOUND(HttpStatus.NOT_FOUND, "회원 정보를 찾지 못했습니다. 다시 로그인 해주세요."),
+
+    // Detection (피싱 검색)
+    INVALID_INPUT_TYPE_URL(HttpStatus.BAD_REQUEST, "검사 입력 타입은 URL이어야 합니다."),
+    INVALID_INPUT_TYPE_CASE(HttpStatus.BAD_REQUEST, "검사 입력 타입은 CASE이어야 합니다."),
+    DETECTION_FAILED(HttpStatus.BAD_REQUEST, "피싱 분석 중 오류가 발생 했습니다. 다시 시도해 주세요."),
+
+
     /**
      * 시스템 예외
      */
