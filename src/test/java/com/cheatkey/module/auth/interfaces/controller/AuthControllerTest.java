@@ -18,6 +18,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -120,5 +121,12 @@ class AuthControllerTest {
         assertThat(updated.getLoginCount()).isEqualTo(4); // 기존 3 → 4
         assertThat(updated.getLastLoginAt()).isNotNull();
         assertThat(response.getRedirectedUrl()).isEqualTo("/home");
+    }
+
+    @Test
+    @WithMockUser
+    void 로그아웃_성공() throws Exception {
+        mockMvc.perform(post("/auth/logout"))
+                .andExpect(status().isOk());
     }
 }
