@@ -3,6 +3,7 @@ package com.cheatkey.module.auth.interfaces.controller;
 import com.cheatkey.common.code.domain.entity.CodeType;
 import com.cheatkey.common.exception.CustomException;
 import com.cheatkey.common.exception.ErrorCode;
+import com.cheatkey.common.util.SecurityUtil;
 import com.cheatkey.module.auth.domain.entity.Auth;
 import com.cheatkey.module.auth.domain.mapper.AuthMapper;
 import com.cheatkey.module.auth.domain.repository.AuthRepository;
@@ -10,12 +11,15 @@ import com.cheatkey.module.auth.interfaces.dto.AuthInfoOptionsResponse.Option;
 import com.cheatkey.module.auth.domain.service.AuthService;
 import com.cheatkey.module.auth.interfaces.dto.AuthRegisterInitResponse;
 import com.cheatkey.module.auth.interfaces.dto.AuthRegisterRequest;
+import com.cheatkey.module.auth.interfaces.dto.login.LoginUserDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
@@ -37,13 +41,31 @@ public class AuthController {
 
     private final AuthService authService;
     private final AuthRepository authRepository;
+
+    @Operation(summary = "로그인된 사용자 정보 조회", description = "현재 세션 또는 인증 정보를 기반으로 로그인한 사용자의 정보를 반환합니다.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "사용자 정보 조회 성공"),
+        @ApiResponse(responseCode = "404", description = "로그인된 사용자 정보를 찾을 수 없음")
+    })
+    @GetMapping("/me")
+    public ResponseEntity<LoginUserDto> getLoginUser() {
+        Long kakaoId = SecurityUtil.getLoginUserId();
+
+        Auth auth = authRepository.findByKakaoId(kakaoId)
+                .orElseThrow(() -> new CustomException(ErrorCode.AUTH_NOT_FOUND));
+
+        LoginUserDto requestAuth = new LoginUserDto(
+                auth.getKakaoId(),
+                auth.getNickname()
+        );
+
+        return ResponseEntity.ok(requestAuth);
+    }
+
     private final AuthMapper authMapper;
 
-    @Operation(
-            summary = "카카오 로그인 트리거",
-            description = "카카오 로그인 인증 플로우를 시작합니다. 302 응답으로 리디렉션됩니다.",
-            responses = {@ApiResponse(responseCode = "302", description = "카카오 로그인 페이지로 리디렉션")}
-    )
+    @Operation(summary = "카카오 로그인 트리거", description = "카카오 로그인 인증 플로우를 시작합니다. 302 응답으로 리디렉션됩니다.")
+    @ApiResponse(responseCode = "302", description = "카카오 로그인 페이지로 리디렉션")
     @GetMapping("/login")
     public ResponseEntity<Void> loginTrigger() {
         URI kakaoLoginUri = URI.create("/oauth2/authorization/kakao");
@@ -76,6 +98,8 @@ public class AuthController {
         List<Option> genderCodeList = authService.getOptionsByType(CodeType.GENDER);
         List<Option> tradeMethodCodeList = authService.getOptionsByType(CodeType.TRADE_METHOD);
         List<Option> tradeItemCodeList = authService.getOptionsByType(CodeType.TRADE_ITEM);
+
+        // @TODO 이용약관 내용 추가
 
         AuthRegisterInitResponse response = AuthRegisterInitResponse.builder()
                 .ageCodeList(ageCodeList)
@@ -117,6 +141,18 @@ public class AuthController {
         authService.register(requestAuth, kakaoId);
 
         servletRequest.getSession().setAttribute("welcome", true);
+
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "로그아웃", description = "현재 로그인된 사용자의 세션을 무효화하여 로그아웃 처리합니다.")
+    @ApiResponse(responseCode = "200", description = "로그아웃 성공")
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse response) {
+        HttpSession session = request.getSession(false);
+
+        if (session != null) session.invalidate();
+        SecurityContextHolder.clearContext();
 
         return ResponseEntity.ok().build();
     }

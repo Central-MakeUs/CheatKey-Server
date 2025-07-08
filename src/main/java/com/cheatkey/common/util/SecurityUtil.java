@@ -10,7 +10,7 @@ public class SecurityUtil {
         // 유틸 클래스는 인스턴스화 방지
     }
 
-    public static String getLoginUserId() {
+    public static Long getLoginUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -20,10 +20,10 @@ public class SecurityUtil {
         Object principal = authentication.getPrincipal();
 
         if (principal instanceof OAuth2User oAuth2User) {
-            Object userId = oAuth2User.getAttribute("kakaoId");
+            Long userId = oAuth2User.getAttribute("kakaoId");
 
             if (userId != null) {
-                return userId.toString();
+                return userId;
             }
 
             throw new IllegalStateException("OAuth2User에서 userId를 찾을 수 없습니다.");
