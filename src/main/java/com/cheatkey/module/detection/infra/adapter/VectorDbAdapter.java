@@ -68,13 +68,13 @@ public class VectorDbAdapter implements VectorDbClient {
         return results.stream().map(result -> {
             Map<String, Object> payload = (Map<String, Object>) result.get("payload");
             Double score = (Double) result.get("score");
-            Integer id = (Integer) result.get("id");
-            return new SearchResult(id.longValue(), score.floatValue(), payload);
+            String id = (String) result.get("id");
+            return new SearchResult(id, score.floatValue(), payload);
         }).toList();
     }
 
     @Override
-    public void saveVector(Long id, List<Float> vector, Map<String, Object> payload) {
+    public void saveVector(String id, List<Float> vector, Map<String, Object> payload) {
         String url = QDRANT_HOST + "/collections/" + COLLECTION + "/points";
 
         Map<String, Object> point = Map.of(

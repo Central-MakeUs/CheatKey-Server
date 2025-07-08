@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.hibernate.query.sqm.tree.SqmNode.log;
 
@@ -48,15 +49,17 @@ public class CaseDetectionService {
                     .build();
             detectionHistoryRepository.save(history);
 
-            //@TODO 신뢰도 85% 이상 일 때만 저장 --> 기획 확인 필요
-            if (topScore >= 0.85f) {
+            //@TODO payload 값 재 확인 필요
+            if (topScore >= 0.8f) {
                 Map<String, Object> payload = Map.of(
-                        "text", input.content(),
-                        "label", results.get(0).payload().get("label"),
+                        "SBJECT", input.content(),
+                        "AUTO_EXTRC_KWRD", results.get(0).payload().get("AUTO_EXTRC_KWRD"),
                         "source", "user-analyzed",
                         "userId", SecurityUtil.getLoginUserId()
                 );
-                vectorDbClient.saveVector(history.getId(), embedding, payload);
+
+                String uuid = UUID.randomUUID().toString();
+                vectorDbClient.saveVector(uuid, embedding, payload);
             }
 
             return new DetectionResult(status, "Vector DB API 응답 기반");

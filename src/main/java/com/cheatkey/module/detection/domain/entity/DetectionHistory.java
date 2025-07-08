@@ -28,11 +28,11 @@ public class DetectionHistory {
     @CreationTimestamp
     private LocalDateTime detectedAt;
 
-    // Qdrant 검색 결과 중 Top1의 ID
-    private Long matchedCaseId;
+    // Qdrant 검색 결과 중 Top1의 ID (UUID)
+    private String matchedCaseId;
 
     private String detectionType;
 
-    private String userId;
+    private Long userId;
 }
 

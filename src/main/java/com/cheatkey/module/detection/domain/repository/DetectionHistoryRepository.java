@@ -6,5 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface DetectionHistoryRepository extends JpaRepository<DetectionHistory, Long> {
-    List<DetectionHistory> findByUserId(String userId);
+    List<DetectionHistory> findByUserId(Long userId);
 }
