@@ -4,6 +4,10 @@ import com.cheatkey.common.handler.oauth.KakaoAuthenticationSuccessHandler;
 import com.cheatkey.module.auth.domain.entity.Auth;
 import com.cheatkey.module.auth.domain.repository.AuthRepository;
 import com.cheatkey.module.auth.interfaces.dto.AuthRegisterRequest;
+import com.cheatkey.module.terms.domain.entity.AuthTermsAgreement;
+import com.cheatkey.module.terms.domain.entity.Terms;
+import com.cheatkey.module.terms.domain.repository.AuthTermsAgreementRepository;
+import com.cheatkey.module.terms.domain.repository.TermsRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +32,9 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @AutoConfigureMockMvc
@@ -45,10 +51,44 @@ class AuthControllerTest {
     @Autowired
     private AuthRepository authRepository;
 
+    @Autowired
+    private TermsRepository termsRepository;
+
+    @Autowired
+    private AuthTermsAgreementRepository authTermsAgreementRepository;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
-    void 회원가입_성공() throws Exception {
+    public void 회원가입_초기_데이터_조회_성공() throws Exception {
+        // given
+        Long mockKakaoId = 999999L;
+
+        Map<String, Object> attributes = Map.of("kakaoId", mockKakaoId);
+        OAuth2User oauth2User = new DefaultOAuth2User(
+                List.of(new SimpleGrantedAuthority("ROLE_USER")),
+                attributes,
+                "kakaoId"
+        );
+
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(oauth2User, null, oauth2User.getAuthorities());
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        // when & then
+        mockMvc.perform(get("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.ageCodeList").isArray())
+                .andExpect(jsonPath("$.genderCodeList").isArray())
+                .andExpect(jsonPath("$.tradeMethodCodeList").isArray())
+                .andExpect(jsonPath("$.tradeItemCodeList").isArray())
+                .andExpect(jsonPath("$.termsList").isArray());
+    }
+
+    @Test
+    public void 회원가입_성공() throws Exception {
         // given
         Long kakaoId = 99999L;
 
@@ -69,6 +109,10 @@ class AuthControllerTest {
         request.setTradeMethodCodeList(List.of("SNS", "APP"));
         request.setTradeItemCodeList(List.of("FASHION", "LUXURY"));
 
+        // 운영 약관 ID 기준 하드코딩 (변경 주의)
+        request.setAgreedRequiredTerms(List.of(1L, 2L));
+        request.setAgreedOptionalTerms(List.of(3L));
+
         // when
         mockMvc.perform(post("/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -80,11 +124,15 @@ class AuthControllerTest {
         assertThat(saved).isPresent();
         assertThat(saved.get().getNickname()).isEqualTo("테스터");
         assertThat(saved.get().getTradeMethodCodes()).containsExactlyInAnyOrder("SNS", "APP");
+
+        List<AuthTermsAgreement> agreements = authTermsAgreementRepository.findAllByAuth(saved.get());
+        assertThat(agreements).hasSize(3);
+        assertThat(agreements).extracting(a -> a.getTerms().getId())
+                .containsExactlyInAnyOrder(1L, 2L, 3L);
     }
 
-
     @Test
-    void 로그인_성공시_로그인횟수_증가_및_최근로그인시간_업데이트() throws Exception {
+    public void 로그인_성공시_로그인횟수_증가_및_최근로그인시간_업데이트() throws Exception {
         // given: 기존 가입된 사용자
         Long kakaoId = 99999L;
         Auth saved = authRepository.save(Auth.builder()
@@ -125,7 +173,7 @@ class AuthControllerTest {
 
     @Test
     @WithMockUser
-    void 로그아웃_성공() throws Exception {
+    public void 로그아웃_성공() throws Exception {
         mockMvc.perform(post("/auth/logout"))
                 .andExpect(status().isOk());
     }

@@ -41,7 +41,7 @@ class HomeControllerTest {
     private AuthRepository authRepository;
 
     @Test
-    void 회원가입_후_home_접근시_welcome_true가_반환된다() throws Exception {
+    public void 회원가입_후_home_접근시_welcome_true가_반환된다() throws Exception {
         // given
         Long kakaoId = 999999L;
 
@@ -51,6 +51,10 @@ class HomeControllerTest {
         request.setGenderCode("FEMALE");
         request.setTradeMethodCodeList(List.of("SNS", "APP"));
         request.setTradeItemCodeList(List.of("FASHION", "LUXURY"));
+
+        // 운영 약관 ID 기준 하드코딩 (변경 주의)
+        request.setAgreedRequiredTerms(List.of(1L, 2L));
+        request.setAgreedOptionalTerms(List.of(3L));
 
         // mock OAuth2User 세션 주입
         OAuth2User mockUser = new DefaultOAuth2User(
@@ -82,5 +86,4 @@ class HomeControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.welcome").value(false));
     }
-
 }
