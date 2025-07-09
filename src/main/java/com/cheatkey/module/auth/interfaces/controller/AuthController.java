@@ -36,13 +36,13 @@ import java.util.List;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/auth")
-@Tag(name = "Auth", description = "로그인 및 회원가입 관련 API")
+@Tag(name = "(★)Auth", description = "로그인 및 회원가입 관련 API")
 public class AuthController {
 
     private final AuthService authService;
     private final AuthRepository authRepository;
 
-    @Operation(summary = "로그인된 사용자 정보 조회", description = "현재 세션 또는 인증 정보를 기반으로 로그인한 사용자의 정보를 반환합니다.")
+    @Operation(summary = "(★)로그인된 사용자 정보 조회", description = "현재 세션 또는 인증 정보를 기반으로 로그인한 사용자의 정보를 반환합니다.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "사용자 정보 조회 성공"),
         @ApiResponse(responseCode = "404", description = "로그인된 사용자 정보를 찾을 수 없음")
@@ -64,7 +64,7 @@ public class AuthController {
 
     private final AuthMapper authMapper;
 
-    @Operation(summary = "카카오 로그인 트리거", description = "카카오 로그인 인증 플로우를 시작합니다. 302 응답으로 리디렉션됩니다.")
+    @Operation(summary = "(★)카카오 로그인 트리거", description = "카카오 로그인 인증 플로우를 시작합니다. 302 응답으로 리디렉션됩니다.")
     @ApiResponse(responseCode = "302", description = "카카오 로그인 페이지로 리디렉션")
     @GetMapping("/login")
     public ResponseEntity<Void> loginTrigger() {
@@ -74,7 +74,7 @@ public class AuthController {
                 .build();
     }
 
-    @Operation(summary = "회원가입 초기 정보 조회", description = "카카오 ID로 이미 가입된 회원인지 확인하고, 초기 가입 정보를 반환합니다.")
+    @Operation(summary = "(★)회원가입 초기 정보 조회", description = "카카오 ID로 이미 가입된 회원인지 확인하고, 초기 가입 정보를 반환합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "회원가입 정보 반환"),
             @ApiResponse(responseCode = "409", description = "이미 가입된 사용자")
@@ -111,7 +111,7 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "닉네임 중복 체크", description = "입력한 닉네임이 이미 사용 중인지 검증합니다.")
+    @Operation(summary = "(★)닉네임 중복 체크", description = "입력한 닉네임이 이미 사용 중인지 검증합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "사용 가능한 닉네임"),
             @ApiResponse(responseCode = "409", description = "중복된 닉네임")
@@ -123,7 +123,7 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
 
-    @Operation(summary = "회원가입", description = "사용자 정보를 등록하고 회원가입을 완료합니다.")
+    @Operation(summary = "(★)회원가입", description = "사용자 정보를 등록하고 회원가입을 완료합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "회원가입 성공"),
             @ApiResponse(responseCode = "400", description = "잘못된 요청"),
@@ -145,7 +145,7 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
 
-    @Operation(summary = "로그아웃", description = "현재 로그인된 사용자의 세션을 무효화하여 로그아웃 처리합니다.")
+    @Operation(summary = "(★)로그아웃", description = "현재 로그인된 사용자의 세션을 무효화하여 로그아웃 처리합니다.")
     @ApiResponse(responseCode = "200", description = "로그아웃 성공")
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse response) {
