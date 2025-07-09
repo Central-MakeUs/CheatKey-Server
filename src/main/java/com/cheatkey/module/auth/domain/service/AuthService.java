@@ -9,6 +9,7 @@ import com.cheatkey.module.auth.interfaces.dto.AuthInfoOptionsResponse.Option;
 import com.cheatkey.common.code.domain.repository.CodeRepository;
 import com.cheatkey.module.auth.domain.repository.AuthRepository;
 import com.cheatkey.module.auth.domain.validate.NicknameValidator;
+import com.cheatkey.module.terms.domain.service.TermsAgreementService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +21,8 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class AuthService {
+
+    private final TermsAgreementService termsAgreementService;
 
     private final AuthRepository authRepository;
     private final CodeRepository codeRepository;
@@ -39,7 +42,7 @@ public class AuthService {
     }
 
     @Transactional
-    public void register(Auth auth, Long kakaoId) {
+    public void register(Auth auth, Long kakaoId, List<Long> requiredIds, List<Long> optionalIds) {
 
         if (authRepository.findByKakaoId(kakaoId).isPresent()) {
             throw new CustomException(ErrorCode.AUTH_ALREADY_REGISTERED);
@@ -60,5 +63,7 @@ public class AuthService {
         auth.updateLastLoginTime(LocalDateTime.now());
 
         authRepository.save(auth);
+
+        termsAgreementService.processAgreement(auth, requiredIds, optionalIds);
     }
 }

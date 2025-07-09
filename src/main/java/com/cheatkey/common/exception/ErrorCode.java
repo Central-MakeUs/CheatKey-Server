@@ -24,6 +24,8 @@ public enum ErrorCode {
 
     AUTH_NOT_FOUND(HttpStatus.NOT_FOUND, "회원 정보를 찾지 못했습니다. 다시 로그인 해주세요."),
 
+    AUTH_REQUIRED_TERMS_NOT_AGREED(HttpStatus.NOT_FOUND, "필수 약관에 모두 동의해야 가입할 수 있습니다."),
+
     // Detection (피싱 검색)
     INVALID_INPUT_TYPE_URL(HttpStatus.BAD_REQUEST, "검사 입력 타입은 URL이어야 합니다."),
     INVALID_INPUT_TYPE_CASE(HttpStatus.BAD_REQUEST, "검사 입력 타입은 CASE이어야 합니다."),

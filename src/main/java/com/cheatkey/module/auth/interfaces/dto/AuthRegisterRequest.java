@@ -30,4 +30,10 @@ public class AuthRegisterRequest {
 
     @Schema(description = "거래 품목 코드 목록")
     private List<String> tradeItemCodeList;
+
+    @Schema(description = "필수 항목 동의")
+    private List<Long> agreedRequiredTerms;
+
+    @Schema(description = "선택 항목 동의")
+    private List<Long> agreedOptionalTerms;
 }
