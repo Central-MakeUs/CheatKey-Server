@@ -40,14 +40,16 @@ class CaseDetectionServiceTest {
     private DetectionHistoryRepository historyRepository;
 
     @Test
-    void 입력_받으면_유사도_검색하고_결과를_반환한다() {
+    public void 입력_받으면_유사도_검색하고_결과를_반환한다() {
         // given
+        Long kakaoId = 99999L;
+
         String inputText = "의심스러운 문자 내용입니다.";
         DetectionInput input = new DetectionInput(inputText, DetectionType.CASE);
 
         List<Float> dummyEmbedding = List.of(0.1f, 0.2f, 0.3f);
         List<VectorDbClient.SearchResult> mockResults = List.of(
-                new VectorDbClient.SearchResult(123L, 0.47f, Map.of("category", "phishing"))
+                new VectorDbClient.SearchResult("575aa23f-28bd-4673-ad9d-87e7921f8ee5", 0.47f, Map.of("category", "phishing"))
         );
 
         given(vectorDbClient.embed(inputText)).willReturn(dummyEmbedding);
@@ -55,7 +57,7 @@ class CaseDetectionServiceTest {
         given(detectionMapper.mapToStatus(mockResults)).willReturn(DetectionStatus.WARNING);
 
         try (MockedStatic<SecurityUtil> mockedSecurityUtil = Mockito.mockStatic(SecurityUtil.class)) {
-            mockedSecurityUtil.when(SecurityUtil::getLoginUserId).thenReturn("test-user");
+            mockedSecurityUtil.when(SecurityUtil::getLoginUserId).thenReturn(kakaoId);
 
             // when
             DetectionResult result = caseDetectionService.detect(input);
@@ -69,7 +71,7 @@ class CaseDetectionServiceTest {
     }
 
     @Test
-    void CASE_타입이_아닌_입력은_예외를_던진다() {
+    public void CASE_타입이_아닌_입력은_예외를_던진다() {
         // given
         DetectionInput input = new DetectionInput("http://example.com", DetectionType.URL);
 
