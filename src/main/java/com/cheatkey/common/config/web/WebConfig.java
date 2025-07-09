@@ -13,7 +13,8 @@ public class WebConfig implements WebMvcConfigurer {
                 .allowedOrigins(
                         "https://cheatkey.kr",
                         "http://43.203.30.24",
-                        "http://localhost:8080"
+                        "http://localhost:8080",    // Front-End
+                        "https://cheatcut.kro.kr"   // Front-End
                 )
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*");
