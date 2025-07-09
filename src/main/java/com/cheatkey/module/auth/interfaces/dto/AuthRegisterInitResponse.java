@@ -1,5 +1,6 @@
 package com.cheatkey.module.auth.interfaces.dto;
 
+import com.cheatkey.module.terms.interfaces.dto.TermsDto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
@@ -26,4 +27,6 @@ public class AuthRegisterInitResponse {
     @Schema(description = "거래 품목 옵션 목록")
     List<Option> tradeItemCodeList;
 
+    @Schema(description = "이용 약관 목록")
+    private List<TermsDto> termsList;
 }

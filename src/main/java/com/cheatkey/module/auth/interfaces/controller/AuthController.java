@@ -12,6 +12,11 @@ import com.cheatkey.module.auth.domain.service.AuthService;
 import com.cheatkey.module.auth.interfaces.dto.AuthRegisterInitResponse;
 import com.cheatkey.module.auth.interfaces.dto.AuthRegisterRequest;
 import com.cheatkey.module.auth.interfaces.dto.login.LoginUserDto;
+import com.cheatkey.module.terms.domain.entity.Terms;
+import com.cheatkey.module.terms.domain.mapper.TermsMapper;
+import com.cheatkey.module.terms.domain.repository.TermsRepository;
+import com.cheatkey.module.terms.domain.service.TermsService;
+import com.cheatkey.module.terms.interfaces.dto.TermsDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -40,7 +45,11 @@ import java.util.List;
 public class AuthController {
 
     private final AuthService authService;
+    private final TermsService termsService;
+
     private final AuthRepository authRepository;
+
+    private final TermsMapper termsMapper;
 
     @Operation(summary = "(★)로그인된 사용자 정보 조회", description = "현재 세션 또는 인증 정보를 기반으로 로그인한 사용자의 정보를 반환합니다.")
     @ApiResponses({
@@ -83,13 +92,11 @@ public class AuthController {
     public ResponseEntity<AuthRegisterInitResponse> initRegister() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        if (!(authentication.getPrincipal() instanceof OAuth2User)) {
+        if (!(authentication.getPrincipal() instanceof OAuth2User oauth2User)) {
             throw new CustomException(ErrorCode.AUTH_UNAUTHORIZED); // 또는 401 Unauthorized
         }
 
-        OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
         Long kakaoId = oauth2User.getAttribute("kakaoId");
-
         if (authRepository.findByKakaoId(kakaoId).isPresent()) {
             throw new CustomException(ErrorCode.AUTH_ALREADY_REGISTERED);
         }
@@ -99,13 +106,15 @@ public class AuthController {
         List<Option> tradeMethodCodeList = authService.getOptionsByType(CodeType.TRADE_METHOD);
         List<Option> tradeItemCodeList = authService.getOptionsByType(CodeType.TRADE_ITEM);
 
-        // @TODO 이용약관 내용 추가
+        List<Terms> terms = termsService.getTermsForRegistration();
+        List<TermsDto> termsList = termsMapper.toDtoList(terms);
 
         AuthRegisterInitResponse response = AuthRegisterInitResponse.builder()
                 .ageCodeList(ageCodeList)
                 .genderCodeList(genderCodeList)
                 .tradeMethodCodeList(tradeMethodCodeList)
                 .tradeItemCodeList(tradeItemCodeList)
+                .termsList(termsList)
                 .build();
 
         return ResponseEntity.ok(response);
@@ -138,10 +147,9 @@ public class AuthController {
         Long kakaoId = oauth2User.getAttribute("kakaoId");
 
         Auth requestAuth = authMapper.toAuth(request);
-        authService.register(requestAuth, kakaoId);
+        authService.register(requestAuth, kakaoId, request.getAgreedRequiredTerms(), request.getAgreedOptionalTerms());
 
         servletRequest.getSession().setAttribute("welcome", true);
-
         return ResponseEntity.ok().build();
     }
 
