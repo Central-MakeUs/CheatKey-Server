@@ -14,17 +14,19 @@ public enum ErrorCode {
     INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "입력값이 올바르지 않습니다."),
 
     // Auth (회원)
+    KAKAO_TOKEN_REQUEST_FAILED(HttpStatus.BAD_GATEWAY, "카카오 토큰 요청 실패"),
+
     AUTH_INVALID_NICKNAME_LENGTH(HttpStatus.BAD_REQUEST, "닉네임은 2~5자여야 합니다."),
     AUTH_INVALID_NICKNAME_EMOJI(HttpStatus.BAD_REQUEST, "닉네임에 이모지는 사용할 수 없습니다."),
-    AUTH_DUPLICATE_NICKNAME(HttpStatus.BAD_REQUEST, "이미 사용 중인 닉네임입니다."),
+    AUTH_DUPLICATE_NICKNAME(HttpStatus.CONFLICT, "이미 사용 중인 닉네임입니다."),
     AUTH_NICKNAME_TOO_SHORT(HttpStatus.BAD_REQUEST, "최소 2글자 이상 입력해주세요"),
     AUTH_MISSING_REQUIRED_INFORMATION(HttpStatus.BAD_REQUEST, "필수 정보가 누락되었습니다."),
-    AUTH_ALREADY_REGISTERED(HttpStatus.BAD_REQUEST, "이미 가입된 사용자입니다."),
-    AUTH_UNAUTHORIZED(HttpStatus.BAD_REQUEST, "잘못된 회원가입 접근입니다. 다시 로그인 해주세요."),
+    AUTH_ALREADY_REGISTERED(HttpStatus.CONFLICT, "이미 가입된 사용자입니다."),
+    AUTH_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "로그인이 필요한 요청입니다."),
 
     AUTH_NOT_FOUND(HttpStatus.NOT_FOUND, "회원 정보를 찾지 못했습니다. 다시 로그인 해주세요."),
 
-    AUTH_REQUIRED_TERMS_NOT_AGREED(HttpStatus.NOT_FOUND, "필수 약관에 모두 동의해야 가입할 수 있습니다."),
+    AUTH_REQUIRED_TERMS_NOT_AGREED(HttpStatus.BAD_REQUEST, "필수 약관에 모두 동의해야 가입할 수 있습니다."),
 
     // Detection (피싱 검색)
     INVALID_INPUT_TYPE_URL(HttpStatus.BAD_REQUEST, "검사 입력 타입은 URL이어야 합니다."),

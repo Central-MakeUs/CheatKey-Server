@@ -9,4 +9,6 @@ public interface AuthRepository extends JpaRepository<Auth, Long> {
     Optional<Auth> findByKakaoId(Long kakaoId);
 
     boolean existsByNickname(String nickname);
+
+    void deleteByKakaoId(long kakaoId);
 }

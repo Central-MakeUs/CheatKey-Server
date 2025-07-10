@@ -3,18 +3,18 @@ package com.cheatkey.module.auth.interfaces.controller;
 import com.cheatkey.common.code.domain.entity.CodeType;
 import com.cheatkey.common.exception.CustomException;
 import com.cheatkey.common.exception.ErrorCode;
+import com.cheatkey.common.util.RedirectResolver;
 import com.cheatkey.common.util.SecurityUtil;
 import com.cheatkey.module.auth.domain.entity.Auth;
 import com.cheatkey.module.auth.domain.mapper.AuthMapper;
 import com.cheatkey.module.auth.domain.repository.AuthRepository;
-import com.cheatkey.module.auth.interfaces.dto.AuthInfoOptionsResponse.Option;
 import com.cheatkey.module.auth.domain.service.AuthService;
+import com.cheatkey.module.auth.domain.service.kakao.KakaoAuthService;
+import com.cheatkey.module.auth.interfaces.dto.AuthInfoOptionsResponse.Option;
 import com.cheatkey.module.auth.interfaces.dto.AuthRegisterInitResponse;
 import com.cheatkey.module.auth.interfaces.dto.AuthRegisterRequest;
-import com.cheatkey.module.auth.interfaces.dto.login.LoginUserDto;
 import com.cheatkey.module.terms.domain.entity.Terms;
 import com.cheatkey.module.terms.domain.mapper.TermsMapper;
-import com.cheatkey.module.terms.domain.repository.TermsRepository;
 import com.cheatkey.module.terms.domain.service.TermsService;
 import com.cheatkey.module.terms.interfaces.dto.TermsDto;
 import io.swagger.v3.oas.annotations.Operation;
@@ -28,76 +28,78 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 
-import java.net.URI;
+import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/auth")
 @Tag(name = "(★)Auth", description = "로그인 및 회원가입 관련 API")
 public class AuthController {
 
     private final AuthService authService;
+    private final KakaoAuthService kakaoAuthService;
     private final TermsService termsService;
 
     private final AuthRepository authRepository;
 
+    private final AuthMapper authMapper;
     private final TermsMapper termsMapper;
 
-    @Operation(summary = "(★)로그인된 사용자 정보 조회", description = "현재 세션 또는 인증 정보를 기반으로 로그인한 사용자의 정보를 반환합니다.")
+    private final RedirectResolver redirectResolver;
+
+    @Operation(summary = "(★)카카오 로그인 콜백", description = "JS SDK 로그인 완료 후 인가코드를 처리하고, 세션에 사용자 정보를 저장합니다.")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "사용자 정보 조회 성공"),
-        @ApiResponse(responseCode = "404", description = "로그인된 사용자 정보를 찾을 수 없음")
+            @ApiResponse(responseCode = "302", description = "로그인 성공 후 프론트로 리다이렉트 (/signup 또는 /home)")
+    })
+    @GetMapping("/login/kakao/callback")
+    public void kakaoCallback(@RequestParam("code") String code,
+                              HttpServletResponse response, HttpServletRequest request) throws IOException {
+
+        Long kakaoId = kakaoAuthService.handleKakaoLogin(code, request);
+        String baseRedirect = redirectResolver.resolveRedirectBase(request);
+
+        if(authRepository.findByKakaoId(kakaoId).isEmpty()) {
+            response.sendRedirect(baseRedirect + "/signup");
+        } else {
+            response.sendRedirect(baseRedirect + "/home");
+        }
+    }
+
+    @Operation(summary = "(★)로그인 상태 확인", description = "세션에 로그인된 사용자의 kakaoId를 반환합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "로그인된 사용자"),
+            @ApiResponse(responseCode = "401", description = "로그인되지 않은 상태")
     })
     @GetMapping("/me")
-    public ResponseEntity<LoginUserDto> getLoginUser() {
-        Long kakaoId = SecurityUtil.getLoginUserId();
-
-        Auth auth = authRepository.findByKakaoId(kakaoId)
-                .orElseThrow(() -> new CustomException(ErrorCode.AUTH_NOT_FOUND));
-
-        LoginUserDto requestAuth = new LoginUserDto(
-                auth.getKakaoId(),
-                auth.getNickname()
-        );
-
-        return ResponseEntity.ok(requestAuth);
+    public ResponseEntity<?> me(HttpServletRequest request) {
+        Object kakaoId = SecurityUtil.getLoginUserId(request);
+        if (kakaoId == null) {
+            throw new CustomException(ErrorCode.AUTH_UNAUTHORIZED);
+        }
+        return ResponseEntity.ok(Map.of("loginUser", kakaoId));
     }
 
-    private final AuthMapper authMapper;
-
-    @Operation(summary = "(★)카카오 로그인 트리거", description = "카카오 로그인 인증 플로우를 시작합니다. 302 응답으로 리디렉션됩니다.")
-    @ApiResponse(responseCode = "302", description = "카카오 로그인 페이지로 리디렉션")
-    @GetMapping("/login")
-    public ResponseEntity<Void> loginTrigger() {
-        URI kakaoLoginUri = URI.create("/oauth2/authorization/kakao");
-        return ResponseEntity.status(HttpStatus.FOUND)
-                .location(kakaoLoginUri)
-                .build();
-    }
-
-    @Operation(summary = "(★)회원가입 초기 정보 조회", description = "카카오 ID로 이미 가입된 회원인지 확인하고, 초기 가입 정보를 반환합니다.")
+    @Operation(summary = "(★)회원가입 초기 정보 조회", description = "세션에 로그인된 사용자만 접근할 수 있으며, 이미 가입된 사용자인 경우 예외를 반환합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "회원가입 정보 반환"),
+            @ApiResponse(responseCode = "401", description = "로그인되지 않은 상태"),
             @ApiResponse(responseCode = "409", description = "이미 가입된 사용자")
     })
     @GetMapping("/register")
-    public ResponseEntity<AuthRegisterInitResponse> initRegister() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    public ResponseEntity<AuthRegisterInitResponse> initRegister(HttpServletRequest request) {
+        Object kakaoId = request.getSession().getAttribute("loginUser");
 
-        if (!(authentication.getPrincipal() instanceof OAuth2User oauth2User)) {
-            throw new CustomException(ErrorCode.AUTH_UNAUTHORIZED); // 또는 401 Unauthorized
+        if (!(kakaoId instanceof Long id)) {
+            throw new CustomException(ErrorCode.AUTH_UNAUTHORIZED);
         }
 
-        Long kakaoId = oauth2User.getAttribute("kakaoId");
-        if (authRepository.findByKakaoId(kakaoId).isPresent()) {
+        if (authRepository.findByKakaoId(id).isPresent()) {
             throw new CustomException(ErrorCode.AUTH_ALREADY_REGISTERED);
         }
 
@@ -120,7 +122,7 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "(★)닉네임 중복 체크", description = "입력한 닉네임이 이미 사용 중인지 검증합니다.")
+    @Operation(summary = "(★)닉네임 중복 체크", description = "세션에 로그인된 사용자만 사용할 수 있으며, 입력한 닉네임이 이미 사용 중인지 검증합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "사용 가능한 닉네임"),
             @ApiResponse(responseCode = "409", description = "중복된 닉네임")
@@ -132,36 +134,44 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
 
-    @Operation(summary = "(★)회원가입", description = "사용자 정보를 등록하고 회원가입을 완료합니다.")
+    @Operation(summary = "(★)회원가입", description = "세션에 로그인된 사용자만 접근 가능하며, 사용자 정보를 등록하고 회원가입을 완료합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "회원가입 성공"),
             @ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            @ApiResponse(responseCode = "401", description = "로그인되지 않은 상태"),
             @ApiResponse(responseCode = "409", description = "중복된 정보 등으로 실패")
     })
     @PostMapping("/register")
     public ResponseEntity<Void> register(@io.swagger.v3.oas.annotations.parameters.RequestBody(description = "회원가입 요청 정보")
-                                         @RequestBody @Valid AuthRegisterRequest request,
-                                         HttpServletRequest servletRequest) {
+                                         @RequestBody @Valid AuthRegisterRequest registerRequest,
+                                         HttpServletRequest request) {
+        Object sessionUser = request.getSession().getAttribute("loginUser");
 
-        OAuth2User oauth2User = (OAuth2User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        Long kakaoId = oauth2User.getAttribute("kakaoId");
+        if (!(sessionUser instanceof Long kakaoId)) {
+            throw new CustomException(ErrorCode.AUTH_UNAUTHORIZED);
+        }
 
-        Auth requestAuth = authMapper.toAuth(request);
-        authService.register(requestAuth, kakaoId, request.getAgreedRequiredTerms(), request.getAgreedOptionalTerms());
+        Auth requestAuth = authMapper.toAuth(registerRequest);
+        authService.register(requestAuth, kakaoId, registerRequest.getAgreedRequiredTerms(), registerRequest.getAgreedOptionalTerms());
 
-        servletRequest.getSession().setAttribute("welcome", true);
+        request.getSession().setAttribute("welcome", true);
         return ResponseEntity.ok().build();
     }
 
-    @Operation(summary = "(★)로그아웃", description = "현재 로그인된 사용자의 세션을 무효화하여 로그아웃 처리합니다.")
-    @ApiResponse(responseCode = "200", description = "로그아웃 성공")
+    @Operation(summary = "(★)로그아웃", description = "서버 세션을 무효화합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "로그아웃 성공"),
+            @ApiResponse(responseCode = "401", description = "이미 로그인되어 있지 않음")
+    })
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<Void> logout(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
 
-        if (session != null) session.invalidate();
-        SecurityContextHolder.clearContext();
+        if (session == null || session.getAttribute("loginUser") == null) {
+            throw new CustomException(ErrorCode.AUTH_UNAUTHORIZED);
+        }
 
-        return ResponseEntity.ok().build();
+        session.invalidate();
+        return ResponseEntity.noContent().build();
     }
 }
