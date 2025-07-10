@@ -26,7 +26,7 @@ public class CaseDetectionService {
     private final DetectionHistoryRepository detectionHistoryRepository;
 
     @Transactional
-    public DetectionResult detect(DetectionInput input) {
+    public DetectionResult detect(DetectionInput input, Long loginUserId) {
 
         if (input.type() != DetectionType.CASE) {
             throw new CustomException(ErrorCode.INVALID_INPUT_TYPE_CASE);
@@ -44,7 +44,7 @@ public class CaseDetectionService {
                     .topScore(topScore)
                     .status(status)
                     .detectionType(DetectionType.CASE.name())
-                    .userId(SecurityUtil.getLoginUserId())
+                    .userId(loginUserId)
                     .matchedCaseId(results.isEmpty() ? null : results.get(0).id())
                     .build();
             detectionHistoryRepository.save(history);
@@ -55,7 +55,7 @@ public class CaseDetectionService {
                         "SBJECT", input.content(),
                         "AUTO_EXTRC_KWRD", results.get(0).payload().get("AUTO_EXTRC_KWRD"),
                         "source", "user-analyzed",
-                        "userId", SecurityUtil.getLoginUserId()
+                        "userId", loginUserId
                 );
 
                 String uuid = UUID.randomUUID().toString();

@@ -16,7 +16,7 @@ public class UrlDetectionService {
     private final UrlDetectionClient urlDetectionClient;
     private final DetectionHistoryRepository detectionHistoryRepository;
 
-    public DetectionResult detect(DetectionInput input) {
+    public DetectionResult detect(DetectionInput input, Long loginUserId) {
         if (input.type() != DetectionType.URL) {
             throw new CustomException(ErrorCode.INVALID_INPUT_TYPE_URL);
         }
@@ -29,7 +29,7 @@ public class UrlDetectionService {
                     .inputText(input.content())
                     .status(status)
                     .detectionType(DetectionType.URL.name())
-                    .userId(SecurityUtil.getLoginUserId())
+                    .userId(loginUserId)
                     .build();
             detectionHistoryRepository.save(history);
 
