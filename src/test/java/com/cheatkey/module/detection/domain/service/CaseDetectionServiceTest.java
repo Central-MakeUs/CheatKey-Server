@@ -2,7 +2,6 @@ package com.cheatkey.module.detection.domain.service;
 
 import com.cheatkey.common.exception.CustomException;
 import com.cheatkey.common.exception.ErrorCode;
-import com.cheatkey.common.util.SecurityUtil;
 import com.cheatkey.module.detection.domain.entity.*;
 import com.cheatkey.module.detection.domain.mapper.DetectionMapper;
 import com.cheatkey.module.detection.domain.repository.DetectionHistoryRepository;
@@ -11,8 +10,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
@@ -20,9 +17,9 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
-import static org.mockito.ArgumentMatchers.any;
 
 @ExtendWith(MockitoExtension.class)
 class CaseDetectionServiceTest {
@@ -56,18 +53,14 @@ class CaseDetectionServiceTest {
         given(vectorDbClient.searchSimilarCases(dummyEmbedding, 5)).willReturn(mockResults);
         given(detectionMapper.mapToStatus(mockResults)).willReturn(DetectionStatus.WARNING);
 
-        try (MockedStatic<SecurityUtil> mockedSecurityUtil = Mockito.mockStatic(SecurityUtil.class)) {
-            mockedSecurityUtil.when(SecurityUtil::getLoginUserId).thenReturn(kakaoId);
+        // when
+        DetectionResult result = caseDetectionService.detect(input, kakaoId);
 
-            // when
-            DetectionResult result = caseDetectionService.detect(input);
+        // then
+        assertThat(result.status()).isEqualTo(DetectionStatus.WARNING);
+        assertThat(result.reason()).isEqualTo("Vector DB API 응답 기반");
 
-            // then
-            assertThat(result.status()).isEqualTo(DetectionStatus.WARNING);
-            assertThat(result.reason()).isEqualTo("Vector DB API 응답 기반");
-
-            then(historyRepository).should().save(any(DetectionHistory.class));
-        }
+        then(historyRepository).should().save(any(DetectionHistory.class));
     }
 
     @Test
@@ -76,7 +69,7 @@ class CaseDetectionServiceTest {
         DetectionInput input = new DetectionInput("http://example.com", DetectionType.URL);
 
         // when + then
-        assertThatThrownBy(() -> caseDetectionService.detect(input))
+        assertThatThrownBy(() -> caseDetectionService.detect(input, 99999L))
                 .isInstanceOf(CustomException.class)
                 .hasMessage(ErrorCode.INVALID_INPUT_TYPE_CASE.getMessage());
     }
