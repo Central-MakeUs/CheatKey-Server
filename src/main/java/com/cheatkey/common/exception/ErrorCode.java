@@ -38,6 +38,16 @@ public enum ErrorCode {
      * 시스템 예외
      */
 
+    // JWT
+    TOKEN_NOT_FOUND(HttpStatus.NOT_FOUND, "헤더에 Access Token을 찾을 수 없습니다."),
+    TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "토큰이 만료 되었습니다."),
+    INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다."),
+    MALFORMED_TOKEN(HttpStatus.BAD_REQUEST, "토큰 형식에 문제가 있습니다."),
+    REFRESH_TOKEN_NOT_FOUND(HttpStatus.NOT_FOUND, "Refresh Token을 찾을 수 없습니다."),
+
+    // Cookie
+    COOKIE_NOT_FOUND(HttpStatus.BAD_REQUEST, "요청에 쿠키가 존재하지 않습니다."),
+
     // 404 Not Found
     RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "요청한 리소스를 찾을 수 없습니다."),
 
