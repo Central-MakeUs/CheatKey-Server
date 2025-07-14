@@ -33,6 +33,8 @@ public class Auth {
 
     private LocalDateTime lastLoginAt;
 
+    private AuthStatus authStatus;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 
