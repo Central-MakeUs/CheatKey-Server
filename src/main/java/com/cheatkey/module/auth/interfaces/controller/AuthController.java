@@ -3,13 +3,11 @@ package com.cheatkey.module.auth.interfaces.controller;
 import com.cheatkey.common.code.domain.entity.CodeType;
 import com.cheatkey.common.exception.CustomException;
 import com.cheatkey.common.exception.ErrorCode;
-import com.cheatkey.common.util.RedirectResolver;
 import com.cheatkey.common.util.SecurityUtil;
 import com.cheatkey.module.auth.domain.entity.Auth;
 import com.cheatkey.module.auth.domain.mapper.AuthMapper;
 import com.cheatkey.module.auth.domain.repository.AuthRepository;
 import com.cheatkey.module.auth.domain.service.AuthService;
-import com.cheatkey.module.auth.domain.service.kakao.KakaoAuthService;
 import com.cheatkey.module.auth.interfaces.dto.AuthInfoOptionsResponse.Option;
 import com.cheatkey.module.auth.interfaces.dto.AuthRegisterInitResponse;
 import com.cheatkey.module.auth.interfaces.dto.AuthRegisterRequest;
@@ -23,27 +21,23 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/v1/api/auth")
 @Tag(name = "(★)Auth", description = "로그인 및 회원가입 관련 API")
 public class AuthController {
 
     private final AuthService authService;
-    private final KakaoAuthService kakaoAuthService;
     private final TermsService termsService;
 
     private final AuthRepository authRepository;
@@ -51,25 +45,6 @@ public class AuthController {
     private final AuthMapper authMapper;
     private final TermsMapper termsMapper;
 
-    private final RedirectResolver redirectResolver;
-
-    @Operation(summary = "(★)카카오 로그인 콜백", description = "JS SDK 로그인 완료 후 인가코드를 처리하고, 세션에 사용자 정보를 저장합니다.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "302", description = "로그인 성공 후 프론트로 리다이렉트 (/signup 또는 /home)")
-    })
-    @GetMapping("/login/kakao/callback")
-    public void kakaoCallback(@RequestParam("code") String code,
-                              HttpServletResponse response, HttpServletRequest request) throws IOException {
-
-        Long kakaoId = kakaoAuthService.handleKakaoLogin(code, request);
-        String baseRedirect = redirectResolver.resolveRedirectBase(request);
-
-        if(authRepository.findByKakaoId(kakaoId).isEmpty()) {
-            response.sendRedirect(baseRedirect + "/signup");
-        } else {
-            response.sendRedirect(baseRedirect + "/home");
-        }
-    }
 
     @Operation(summary = "(★)로그인 상태 확인", description = "세션에 로그인된 사용자의 kakaoId를 반환합니다.")
     @ApiResponses({
