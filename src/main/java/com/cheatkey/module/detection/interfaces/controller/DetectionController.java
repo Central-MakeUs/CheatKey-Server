@@ -31,6 +31,8 @@ public class DetectionController {
     public ResponseEntity<DetectionResponse> detectUrl(@RequestBody UrlDetectionRequest urlDetectionRequest,
                                                        HttpServletRequest request) {
         DetectionInput input = new DetectionInput(urlDetectionRequest.getUrl(), DetectionType.URL);
+
+        // @TODO 로그인 유저 검색 방식 수정
         Long kakaoId = SecurityUtil.getLoginUserId(request);
 
         DetectionResult result = urlDetectionService.detect(input, kakaoId);
@@ -41,6 +43,8 @@ public class DetectionController {
     public ResponseEntity<DetectionResponse> detect(@RequestBody CaseDetectionRequest caseDetectionRequest,
                                                     HttpServletRequest request) {
         DetectionInput input = new DetectionInput(caseDetectionRequest.getText(), DetectionType.CASE);
+
+        // @TODO 로그인 유저 검색 방식 수정
         Long kakaoId = SecurityUtil.getLoginUserId(request);
 
         DetectionResult result = caseDetectionService.detect(input, kakaoId);
