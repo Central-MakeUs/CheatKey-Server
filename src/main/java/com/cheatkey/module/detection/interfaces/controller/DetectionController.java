@@ -1,6 +1,5 @@
 package com.cheatkey.module.detection.interfaces.controller;
 
-import com.cheatkey.common.util.SecurityUtil;
 import com.cheatkey.module.detection.domain.entity.DetectionInput;
 import com.cheatkey.module.detection.domain.entity.DetectionResult;
 import com.cheatkey.module.detection.domain.entity.DetectionType;
@@ -33,9 +32,9 @@ public class DetectionController {
         DetectionInput input = new DetectionInput(urlDetectionRequest.getUrl(), DetectionType.URL);
 
         // @TODO 로그인 유저 검색 방식 수정
-        Long kakaoId = SecurityUtil.getLoginUserId(request);
+        Long userId = 99999L;
 
-        DetectionResult result = urlDetectionService.detect(input, kakaoId);
+        DetectionResult result = urlDetectionService.detect(input, userId);
         return ResponseEntity.ok(new DetectionResponse(result));
     }
 
@@ -45,9 +44,9 @@ public class DetectionController {
         DetectionInput input = new DetectionInput(caseDetectionRequest.getText(), DetectionType.CASE);
 
         // @TODO 로그인 유저 검색 방식 수정
-        Long kakaoId = SecurityUtil.getLoginUserId(request);
+        Long userId = 99999L;
 
-        DetectionResult result = caseDetectionService.detect(input, kakaoId);
+        DetectionResult result = caseDetectionService.detect(input, userId);
         return ResponseEntity.ok(new DetectionResponse(result));
     }
 }

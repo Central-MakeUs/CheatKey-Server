@@ -2,7 +2,6 @@ package com.cheatkey.module.detection.domain.service;
 
 import com.cheatkey.common.exception.CustomException;
 import com.cheatkey.common.exception.ErrorCode;
-import com.cheatkey.common.util.SecurityUtil;
 import com.cheatkey.module.detection.domain.entity.*;
 import com.cheatkey.module.detection.domain.mapper.DetectionMapper;
 import com.cheatkey.module.detection.domain.repository.DetectionHistoryRepository;

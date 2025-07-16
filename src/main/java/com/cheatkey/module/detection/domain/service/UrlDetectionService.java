@@ -2,7 +2,6 @@ package com.cheatkey.module.detection.domain.service;
 
 import com.cheatkey.common.exception.CustomException;
 import com.cheatkey.common.exception.ErrorCode;
-import com.cheatkey.common.util.SecurityUtil;
 import com.cheatkey.module.detection.domain.entity.*;
 import com.cheatkey.module.detection.domain.repository.DetectionHistoryRepository;
 import com.cheatkey.module.detection.infra.client.UrlDetectionClient;
@@ -16,7 +15,7 @@ public class UrlDetectionService {
     private final UrlDetectionClient urlDetectionClient;
     private final DetectionHistoryRepository detectionHistoryRepository;
 
-    public DetectionResult detect(DetectionInput input, Long loginUserId) {
+    public DetectionResult detect(DetectionInput input, Long userId) {
         if (input.type() != DetectionType.URL) {
             throw new CustomException(ErrorCode.INVALID_INPUT_TYPE_URL);
         }
@@ -29,7 +28,7 @@ public class UrlDetectionService {
                     .inputText(input.content())
                     .status(status)
                     .detectionType(DetectionType.URL.name())
-                    .userId(loginUserId)
+                    .userId(userId)
                     .build();
             detectionHistoryRepository.save(history);
 
