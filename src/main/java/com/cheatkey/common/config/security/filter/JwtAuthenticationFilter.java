@@ -2,9 +2,7 @@ package com.cheatkey.common.config.security.filter;
 
 import com.cheatkey.common.exception.ErrorCode;
 import com.cheatkey.common.exception.JwtAuthenticationException;
-import com.cheatkey.module.auth.interfaces.dto.AppUserDetails;
-import com.cheatkey.module.auth.interfaces.dto.AppUserDetailsRequest;
-import com.cheatkey.common.jwt.JwtUtil;
+import com.cheatkey.common.jwt.JwtProvider;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -25,18 +23,16 @@ import java.io.IOException;
 @Slf4j
 public class JwtAuthenticationFilter extends AbstractAuthenticationProcessingFilter {
 
-    private final JwtUtil jwtUtil;
+    private final JwtProvider jwtProvider;
 
-    public JwtAuthenticationFilter(RequestMatcher matcher, JwtUtil jwtUtil) {
+    public JwtAuthenticationFilter(RequestMatcher matcher, JwtProvider jwtProvider) {
         super(matcher);
-        this.jwtUtil = jwtUtil;
+        this.jwtProvider = jwtProvider;
     }
 
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
             throws AuthenticationException {
-
-        // 요청 헤더에서 Authorization 값 추출
         String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
 
         if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
@@ -44,15 +40,19 @@ public class JwtAuthenticationFilter extends AbstractAuthenticationProcessingFil
             throw new JwtAuthenticationException(ErrorCode.INVALID_TOKEN);
         }
 
-        // "Bearer " 이후의 토큰 값만 추출
         String token = authorizationHeader.substring(7).trim();
         log.info("Token extracted from header: {}", token);
 
-        // 사용자 정보 추출 및 인증 객체 생성
-        AppUserDetailsRequest detailsRequest = createPrincipalDetailsRequest(token);
-        AppUserDetails appUserDetails = new AppUserDetails(detailsRequest);
+        // JwtProvider를 통해 토큰 검증 및 사용자 정보 추출
+        if (!jwtProvider.validateToken(token)) {
+            throw new JwtAuthenticationException(ErrorCode.INVALID_TOKEN);
+        }
 
-        return new UsernamePasswordAuthenticationToken(appUserDetails, null, appUserDetails.getAuthorities());
+        // 사용자 정보 추출 (예: userId, provider 등)
+        String userId = jwtProvider.getUserIdFromToken(token); // JwtProvider에 맞게 구현
+
+        // 인증 객체 생성 (권한이 있다면 authorities도 추가)
+        return new UsernamePasswordAuthenticationToken(userId, null, null);
     }
 
     @Override
@@ -71,9 +71,5 @@ public class JwtAuthenticationFilter extends AbstractAuthenticationProcessingFil
         SecurityContextHolder.clearContext();
         log.error("Authentication not successful: {}", authenticationException.getMessage());
         response.sendError(HttpServletResponse.SC_UNAUTHORIZED, authenticationException.getMessage());
-    }
-
-    private AppUserDetailsRequest createPrincipalDetailsRequest(String token) {
-        return AppUserDetailsRequest.of(jwtUtil.getKakaoId(token));
     }
 }
