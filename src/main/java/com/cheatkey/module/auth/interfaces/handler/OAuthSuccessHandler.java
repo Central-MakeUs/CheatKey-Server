@@ -2,6 +2,8 @@ package com.cheatkey.module.auth.interfaces.handler;
 
 import java.io.IOException;
 
+import com.cheatkey.common.exception.CustomException;
+import com.cheatkey.common.exception.ErrorCode;
 import com.cheatkey.module.auth.interfaces.oauth.dto.CustomOAuth2User;
 import com.cheatkey.module.auth.util.CookieUtil;
 import com.cheatkey.common.jwt.JwtUtil;
@@ -30,10 +32,9 @@ public class OAuthSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
     private static final Long ACCESS_TOKEN_EXP = 604800000L; // 일주일
     private static final Long REFRESH_TOKEN_EXP = 86400000L;
 
-    // @TODO 도메인 수정
-    private static final String REDIRECT_URL = "http://43.203.30.24/login/kakao";
+    private static final String REDIRECT_URL = "https://mockzone.dev/signup";
     private static final String DEV_ORIGIN = "http://localhost";
-    private static final String DEV_REDIRECT_URL = "http://localhost:3000/login/kakao";
+    private static final String DEV_REDIRECT_URL = "http://localhost:3000/signup";
 
     // 개발 환경 체크 함수 - 추후 제거 예정
     private boolean isDevelopment(HttpServletRequest request) {
@@ -46,7 +47,9 @@ public class OAuthSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException {
 
-        CustomOAuth2User customOAuth2User = (CustomOAuth2User)authentication.getPrincipal();
+        if (!(authentication.getPrincipal() instanceof CustomOAuth2User customOAuth2User)) {
+            throw new CustomException(ErrorCode.AUTH_NOT_FOUND);  // 또는 적절한 에러 코드
+        }
 
         Long kakaoId = customOAuth2User.getKakaoId();
 

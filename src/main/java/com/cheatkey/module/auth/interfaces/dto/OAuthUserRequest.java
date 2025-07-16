@@ -14,7 +14,7 @@ public class OAuthUserRequest {
 
     public OAuthUserRequest(Auth auth) {
         this.kakaoId = auth.getKakaoId();
-        this.authStatus = auth.getAuthStatus();
+        this.authStatus = auth.getStatus();
     }
 
     @Builder

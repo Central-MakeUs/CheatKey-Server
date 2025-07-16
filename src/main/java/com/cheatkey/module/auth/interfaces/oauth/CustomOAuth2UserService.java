@@ -1,6 +1,7 @@
 package com.cheatkey.module.auth.interfaces.oauth;
 
 import com.cheatkey.module.auth.domain.entity.Auth;
+import com.cheatkey.module.auth.domain.entity.AuthStatus;
 import com.cheatkey.module.auth.domain.repository.AuthRepository;
 import com.cheatkey.module.auth.interfaces.oauth.dto.CustomOAuth2User;
 import com.cheatkey.module.auth.interfaces.dto.OAuthUserRequest;
@@ -38,7 +39,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                     log.info("신규 카카오 사용자: {}", kakaoId);
                     return Auth.builder()
                             .kakaoId(kakaoId)
-                            .authStatus(com.cheatkey.module.auth.domain.entity.AuthStatus.ACTIVE)
+                            .status(AuthStatus.PENDING)
                             .build();
                 });
 
@@ -46,7 +47,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         OAuthUserRequest customUserRequest = OAuthUserRequest.builder()
                 .kakaoId(auth.getKakaoId())
-                .authStatus(auth.getAuthStatus())
+                .authStatus(auth.getStatus())
                 .build();
 
         return new CustomOAuth2User(customUserRequest);

@@ -1,12 +1,14 @@
 package com.cheatkey.module.auth.interfaces.oauth.dto;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import com.cheatkey.module.auth.interfaces.dto.OAuthUserRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
 @RequiredArgsConstructor
@@ -17,12 +19,15 @@ public class CustomOAuth2User implements OAuth2User {
 
     @Override
     public Map<String, Object> getAttributes() {
-        return null;
+        return Map.of(
+                "kakaoId", OAuthUserPrincipal.getKakaoId(),
+                "authStatus", OAuthUserPrincipal.getAuthStatus()
+        );
     }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return null;
+        return List.of(new SimpleGrantedAuthority("ROLE_USER"));
     }
 
     public Long getKakaoId() {
@@ -31,6 +36,6 @@ public class CustomOAuth2User implements OAuth2User {
 
     @Override
     public String getName() {
-        return null;
+        return String.valueOf(OAuthUserPrincipal.getKakaoId());
     }
 }

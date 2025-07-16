@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
-@Table(name = "refresh_entity", indexes = {
+@Table(name = "t_refresh_entity", indexes = {
         @Index(name = "idx_kakao_id", columnList = "kakao_id")
 })
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

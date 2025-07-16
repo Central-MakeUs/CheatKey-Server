@@ -33,7 +33,8 @@ public class Auth {
 
     private LocalDateTime lastLoginAt;
 
-    private AuthStatus authStatus;
+    @Enumerated(EnumType.STRING)
+    private AuthStatus status;
 
     @CreationTimestamp
     private LocalDateTime createdAt;

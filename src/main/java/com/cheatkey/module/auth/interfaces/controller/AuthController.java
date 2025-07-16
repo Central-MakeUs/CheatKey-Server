@@ -3,11 +3,13 @@ package com.cheatkey.module.auth.interfaces.controller;
 import com.cheatkey.common.code.domain.entity.CodeType;
 import com.cheatkey.common.exception.CustomException;
 import com.cheatkey.common.exception.ErrorCode;
+import com.cheatkey.common.jwt.JwtUtil;
 import com.cheatkey.common.util.SecurityUtil;
 import com.cheatkey.module.auth.domain.entity.Auth;
 import com.cheatkey.module.auth.domain.mapper.AuthMapper;
 import com.cheatkey.module.auth.domain.repository.AuthRepository;
 import com.cheatkey.module.auth.domain.service.AuthService;
+import com.cheatkey.module.auth.domain.service.RefreshManager;
 import com.cheatkey.module.auth.interfaces.dto.AuthInfoOptionsResponse.Option;
 import com.cheatkey.module.auth.interfaces.dto.AuthRegisterInitResponse;
 import com.cheatkey.module.auth.interfaces.dto.AuthRegisterRequest;
@@ -21,7 +23,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +35,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/v1/api/auth")
-@Tag(name = "(★)Auth", description = "로그인 및 회원가입 관련 API")
+@Tag(name = "Auth", description = "로그인 및 회원가입 관련 API")
 public class AuthController {
 
     private final AuthService authService;
@@ -45,8 +46,14 @@ public class AuthController {
     private final AuthMapper authMapper;
     private final TermsMapper termsMapper;
 
+    private final JwtUtil jwtUtil;
+    private final RefreshManager refreshManager;
 
-    @Operation(summary = "(★)로그인 상태 확인", description = "세션에 로그인된 사용자의 kakaoId를 반환합니다.")
+
+    //@TODO 변경된 로그인 방식으로 수정
+    //@TODO 테스트 코드 작성
+
+    @Operation(summary = "로그인 상태 확인", description = "세션에 로그인된 사용자의 kakaoId를 반환합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "로그인된 사용자"),
             @ApiResponse(responseCode = "401", description = "로그인되지 않은 상태")
@@ -60,7 +67,7 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("loginUser", kakaoId));
     }
 
-    @Operation(summary = "(★)회원가입 초기 정보 조회", description = "세션에 로그인된 사용자만 접근할 수 있으며, 이미 가입된 사용자인 경우 예외를 반환합니다.")
+    @Operation(summary = "회원가입 초기 정보 조회", description = "세션에 로그인된 사용자만 접근할 수 있으며, 이미 가입된 사용자인 경우 예외를 반환합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "회원가입 정보 반환"),
             @ApiResponse(responseCode = "401", description = "로그인되지 않은 상태"),
@@ -97,7 +104,7 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "(★)닉네임 중복 체크", description = "세션에 로그인된 사용자만 사용할 수 있으며, 입력한 닉네임이 이미 사용 중인지 검증합니다.")
+    @Operation(summary = "닉네임 중복 체크", description = "세션에 로그인된 사용자만 사용할 수 있으며, 입력한 닉네임이 이미 사용 중인지 검증합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "사용 가능한 닉네임"),
             @ApiResponse(responseCode = "409", description = "중복된 닉네임")
@@ -109,7 +116,7 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
 
-    @Operation(summary = "(★)회원가입", description = "세션에 로그인된 사용자만 접근 가능하며, 사용자 정보를 등록하고 회원가입을 완료합니다.")
+    @Operation(summary = "회원가입", description = "세션에 로그인된 사용자만 접근 가능하며, 사용자 정보를 등록하고 회원가입을 완료합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "회원가입 성공"),
             @ApiResponse(responseCode = "400", description = "잘못된 요청"),
@@ -133,20 +140,24 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
 
-    @Operation(summary = "(★)로그아웃", description = "서버 세션을 무효화합니다.")
+    @Operation(summary = "로그아웃", description = "서버 세션을 무효화합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "로그아웃 성공"),
             @ApiResponse(responseCode = "401", description = "이미 로그인되어 있지 않음")
     })
-    @PostMapping("/logout")
-    public ResponseEntity<Void> logout(HttpServletRequest request) {
-        HttpSession session = request.getSession(false);
 
-        if (session == null || session.getAttribute("loginUser") == null) {
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@RequestHeader("Refresh-Token") String refreshToken) {
+        Long kakaoId = jwtUtil.getKakaoId(refreshToken);
+
+        // @TODO 로그인 된 사용자 정보 추가
+        if(kakaoId == null) {
             throw new CustomException(ErrorCode.AUTH_UNAUTHORIZED);
         }
 
-        session.invalidate();
-        return ResponseEntity.noContent().build();
+        refreshManager.deleteRefreshToken(kakaoId);
+        return ResponseEntity.ok().build();
     }
+
+    //@TODO 회원 탈퇴
 }
