@@ -2,19 +2,16 @@ package com.cheatkey.module.auth.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "auth_login_history")
+@Table(name = "t_auth_login_history")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
 public class AuthLoginHistory {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -22,26 +19,13 @@ public class AuthLoginHistory {
     private Auth auth;
 
     private LocalDateTime loginAt;
-
     private String ipAddress;
-
+    private String userAgent;
     private Boolean success;
+    private String failReason;
 
-    public static AuthLoginHistory success(Auth auth, String ipAddress) {
-        return AuthLoginHistory.builder()
-                .auth(auth)
-                .loginAt(LocalDateTime.now())
-                .ipAddress(ipAddress)
-                .success(true)
-                .build();
-    }
-
-    public static AuthLoginHistory fail(Auth auth, String ipAddress) {
-        return AuthLoginHistory.builder()
-                .auth(auth)
-                .loginAt(LocalDateTime.now())
-                .ipAddress(ipAddress)
-                .success(false)
-                .build();
+    @PrePersist
+    public void prePersist() {
+        if (loginAt == null) loginAt = LocalDateTime.now();
     }
 }

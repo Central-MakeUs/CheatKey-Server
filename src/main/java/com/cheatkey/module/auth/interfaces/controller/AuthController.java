@@ -3,16 +3,17 @@ package com.cheatkey.module.auth.interfaces.controller;
 import com.cheatkey.common.code.domain.entity.CodeType;
 import com.cheatkey.common.exception.CustomException;
 import com.cheatkey.common.exception.ErrorCode;
-import com.cheatkey.common.jwt.JwtUtil;
-import com.cheatkey.common.util.SecurityUtil;
+import com.cheatkey.common.jwt.JwtProvider;
 import com.cheatkey.module.auth.domain.entity.Auth;
+import com.cheatkey.module.auth.domain.entity.Provider;
 import com.cheatkey.module.auth.domain.mapper.AuthMapper;
-import com.cheatkey.module.auth.domain.repository.AuthRepository;
 import com.cheatkey.module.auth.domain.service.AuthService;
-import com.cheatkey.module.auth.domain.service.RefreshManager;
+import com.cheatkey.module.auth.domain.service.AuthSignInService;
 import com.cheatkey.module.auth.interfaces.dto.AuthInfoOptionsResponse.Option;
 import com.cheatkey.module.auth.interfaces.dto.AuthRegisterInitResponse;
 import com.cheatkey.module.auth.interfaces.dto.AuthRegisterRequest;
+import com.cheatkey.module.auth.interfaces.dto.SignInResponse;
+import com.cheatkey.module.auth.interfaces.dto.SocialLoginRequest;
 import com.cheatkey.module.terms.domain.entity.Terms;
 import com.cheatkey.module.terms.domain.mapper.TermsMapper;
 import com.cheatkey.module.terms.domain.service.TermsService;
@@ -30,7 +31,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RequiredArgsConstructor
 @RestController
@@ -40,31 +40,43 @@ public class AuthController {
 
     private final AuthService authService;
     private final TermsService termsService;
-
-    private final AuthRepository authRepository;
+    private final AuthSignInService authSignInService;
 
     private final AuthMapper authMapper;
     private final TermsMapper termsMapper;
+    private final JwtProvider jwtProvider;
 
-    private final JwtUtil jwtUtil;
-    private final RefreshManager refreshManager;
-
-
-    //@TODO 변경된 로그인 방식으로 수정
-    //@TODO 테스트 코드 작성
-
-    @Operation(summary = "로그인 상태 확인", description = "세션에 로그인된 사용자의 kakaoId를 반환합니다.")
+    @Operation(summary = "소셜 로그인", description = "provider, idToken, accessToken(카카오만)을 받아 JWT를 발급합니다. 신규 사용자는 자동 회원가입.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "로그인된 사용자"),
-            @ApiResponse(responseCode = "401", description = "로그인되지 않은 상태")
+            @ApiResponse(responseCode = "200", description = "로그인 성공, JWT 반환"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청/토큰 오류"),
+            @ApiResponse(responseCode = "500", description = "서버 오류")
     })
-    @GetMapping("/me")
-    public ResponseEntity<?> me(HttpServletRequest request) {
-        Object kakaoId = SecurityUtil.getLoginUserId(request);
-        if (kakaoId == null) {
+    @PostMapping("/login")
+    public ResponseEntity<?> socialLogin(HttpServletRequest request, @Valid @RequestBody SocialLoginRequest socialLoginRequest) {
+        String ip = request.getRemoteAddr();
+        String userAgent = request.getHeader("User-Agent");
+        Provider provider;
+
+        try {
+            provider = Provider.valueOf(socialLoginRequest.getProvider().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new CustomException(ErrorCode.INVALID_PROVIDER);
+        }
+
+        Auth auth = authSignInService.signIn(provider, socialLoginRequest.getIdToken(), socialLoginRequest.getAccessToken(), ip, userAgent);
+        if (auth == null) {
             throw new CustomException(ErrorCode.AUTH_UNAUTHORIZED);
         }
-        return ResponseEntity.ok(Map.of("loginUser", kakaoId));
+
+        String accessJwt = jwtProvider.createAccessToken(auth.getId(), auth.getProvider());
+        String refreshJwt = jwtProvider.createRefreshToken(auth.getId());
+        return ResponseEntity.ok(SignInResponse.builder()
+                .memberState(auth.getStatus().name())
+                .grantType("Bearer")
+                .accessToken(accessJwt)
+                .refreshToken(refreshJwt)
+                .build());
     }
 
     @Operation(summary = "회원가입 초기 정보 조회", description = "세션에 로그인된 사용자만 접근할 수 있으며, 이미 가입된 사용자인 경우 예외를 반환합니다.")
@@ -81,9 +93,9 @@ public class AuthController {
             throw new CustomException(ErrorCode.AUTH_UNAUTHORIZED);
         }
 
-        if (authRepository.findByKakaoId(id).isPresent()) {
-            throw new CustomException(ErrorCode.AUTH_ALREADY_REGISTERED);
-        }
+//        if (authRepository.findByKakaoId(id).isPresent()) {
+//            throw new CustomException(ErrorCode.AUTH_ALREADY_REGISTERED);
+//        }
 
         List<Option> ageCodeList = authService.getOptionsByType(CodeType.AGE_GROUP);
         List<Option> genderCodeList = authService.getOptionsByType(CodeType.GENDER);
@@ -140,24 +152,9 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
 
-    @Operation(summary = "로그아웃", description = "서버 세션을 무효화합니다.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "로그아웃 성공"),
-            @ApiResponse(responseCode = "401", description = "이미 로그인되어 있지 않음")
-    })
 
-    @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@RequestHeader("Refresh-Token") String refreshToken) {
-        Long kakaoId = jwtUtil.getKakaoId(refreshToken);
 
-        // @TODO 로그인 된 사용자 정보 추가
-        if(kakaoId == null) {
-            throw new CustomException(ErrorCode.AUTH_UNAUTHORIZED);
-        }
-
-        refreshManager.deleteRefreshToken(kakaoId);
-        return ResponseEntity.ok().build();
-    }
+    //@TODO 로그아웃
 
     //@TODO 회원 탈퇴
 }

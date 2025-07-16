@@ -12,7 +12,7 @@ import java.util.List;
 
 
 @Entity
-@Table(name = "t_auth", uniqueConstraints = @UniqueConstraint(columnNames = "kakaoId"))
+@Table(name = "t_auth")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
@@ -22,7 +22,11 @@ public class Auth {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Long kakaoId;
+    @Enumerated(EnumType.STRING)
+    private Provider provider;
+    private String providerId; // 카카오ID, 애플ID 등
+
+    private String email;
     private String nickname;
     private String ageCode;
     private String genderCode;
@@ -30,7 +34,6 @@ public class Auth {
     private String tradeItemCode;
 
     private Integer loginCount;
-
     private LocalDateTime lastLoginAt;
 
     @Enumerated(EnumType.STRING)
@@ -42,9 +45,9 @@ public class Auth {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
-
-    public void assignKakaoId(Long kakaoId) {
-        this.kakaoId = kakaoId;
+    public void assignProviderId(Provider provider, String providerId) {
+        this.provider = provider;
+        this.providerId = providerId;
     }
 
     public void increaseLoginCount() {

@@ -44,9 +44,9 @@ public class AuthService {
     @Transactional
     public void register(Auth auth, Long kakaoId, List<Long> requiredIds, List<Long> optionalIds) {
 
-        if (authRepository.findByKakaoId(kakaoId).isPresent()) {
-            throw new CustomException(ErrorCode.AUTH_ALREADY_REGISTERED);
-        }
+//        if (authRepository.findByKakaoId(kakaoId).isPresent()) {
+//            throw new CustomException(ErrorCode.AUTH_ALREADY_REGISTERED);
+//        }
 
         if (authRepository.existsByNickname(auth.getNickname())) {
             throw new CustomException(ErrorCode.AUTH_DUPLICATE_NICKNAME);
@@ -58,7 +58,7 @@ public class AuthService {
 
         nicknameValidator.checkFormat(auth.getNickname());
 
-        auth.assignKakaoId(kakaoId);
+//        auth.assignKakaoId(kakaoId);
         auth.increaseLoginCount();
         auth.updateLastLoginTime(LocalDateTime.now());
 
