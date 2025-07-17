@@ -2,9 +2,11 @@ package com.cheatkey.module.auth.interfaces.dto;
 
 import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.validation.constraints.NotBlank;
+import lombok.Builder;
 import lombok.Data;
 
 @Data
+@Builder
 public class SocialLoginRequest {
     @Parameter(description = "소셜 로그인 제공자 (KAKAO, APPLE)", example = "KAKAO")
     @NotBlank

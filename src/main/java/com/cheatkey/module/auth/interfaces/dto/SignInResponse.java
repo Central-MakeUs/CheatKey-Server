@@ -10,16 +10,18 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Schema(description = "소셜 로그인 응답")
 public class SignInResponse {
-    @Schema(description = "회원 상태 (ACTIVE: 정식회원, PENDING: 가입대기)", example = "ACTIVE")
-    private String memberState;
-
-    @Schema(description = "토큰 타입 (항상 Bearer)", example = "Bearer")
+    
+    @Schema(description = "사용자 상태", example = "ACTIVE", allowableValues = {"ACTIVE", "PENDING", "SUSPENDED"})
+    private String userState;
+    
+    @Schema(description = "인증 타입", example = "Bearer")
     private String grantType;
-
-    @Schema(description = "JWT Access Token", example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
+    
+    @Schema(description = "액세스 토큰", example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
     private String accessToken;
-
-    @Schema(description = "JWT Refresh Token", example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
+    
+    @Schema(description = "리프레시 토큰", example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
     private String refreshToken;
 } 

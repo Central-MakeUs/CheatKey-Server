@@ -4,8 +4,8 @@ import com.cheatkey.module.auth.domain.entity.AuthStatus;
 import com.cheatkey.module.auth.domain.entity.Provider;
 import com.cheatkey.module.auth.domain.entity.Auth;
 import com.cheatkey.module.auth.domain.service.apple.AppleSignInService;
+import com.cheatkey.module.auth.domain.service.dto.AuthTokenRequest;
 import com.cheatkey.module.auth.domain.service.kakao.KakaoSignInService;
-import com.cheatkey.module.auth.domain.service.AuthLoginHistoryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -27,10 +27,16 @@ public class AuthSignInService {
 
         try {
             if (provider == Provider.KAKAO) {
-                auth = kakaoSignInService.signIn(idToken, accessToken);
+                AuthTokenRequest request = AuthTokenRequest.builder()
+                        .idToken(idToken)
+                        .accessToken(accessToken)
+                        .build();
+                auth = kakaoSignInService.signIn(request);
             } else if (provider == Provider.APPLE) {
-                // auth = appleSignInService.signIn(idToken);
-                throw new UnsupportedOperationException("Apple 로그인은 아직 지원하지 않습니다.");
+                AuthTokenRequest request = AuthTokenRequest.builder()
+                        .idToken(idToken)
+                        .build();
+                auth = appleSignInService.signIn(request);
             } else {
                 throw new IllegalArgumentException("Invalid provider");
             }

@@ -72,7 +72,7 @@ public class AuthController {
         String accessJwt = jwtProvider.createAccessToken(auth.getId(), auth.getProvider(), auth.getRole());
         String refreshJwt = jwtProvider.createRefreshToken(auth.getId());
         return ResponseEntity.ok(SignInResponse.builder()
-                .memberState(auth.getStatus().name())
+                .userState(auth.getStatus().name())
                 .grantType("Bearer")
                 .accessToken(accessJwt)
                 .refreshToken(refreshJwt)
