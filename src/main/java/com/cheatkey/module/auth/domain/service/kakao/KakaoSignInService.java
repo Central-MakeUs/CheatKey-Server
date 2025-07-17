@@ -55,7 +55,7 @@ public class KakaoSignInService {
     }
 
     public SignInResponse toSignInResponse(Auth auth) {
-        String accessJwt = jwtProvider.createAccessToken(auth.getId(), auth.getProvider());
+        String accessJwt = jwtProvider.createAccessToken(auth.getId(), auth.getProvider(), auth.getRole());
         String refreshJwt = jwtProvider.createRefreshToken(auth.getId());
         return SignInResponse.builder()
                 .memberState(auth.getStatus().name())

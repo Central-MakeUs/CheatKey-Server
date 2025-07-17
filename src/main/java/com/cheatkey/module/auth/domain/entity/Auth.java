@@ -39,6 +39,9 @@ public class Auth {
     @Enumerated(EnumType.STRING)
     private AuthStatus status;
 
+    @Enumerated(EnumType.STRING)
+    private AuthRole role;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 

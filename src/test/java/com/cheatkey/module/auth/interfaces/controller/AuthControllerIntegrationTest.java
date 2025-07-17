@@ -53,7 +53,7 @@ class AuthControllerIntegrationTest {
 
         given(authSignInService.signIn(any(), any(), any(), any(), any()))
                 .willReturn(mockAuth);
-        given(jwtProvider.createAccessToken(anyLong(), any())).willReturn("mockAccessTokenJwt");
+        given(jwtProvider.createAccessToken(anyLong(), any(), any())).willReturn("mockAccessTokenJwt");
         given(jwtProvider.createRefreshToken(anyLong())).willReturn("mockRefreshTokenJwt");
 
         Map<String, Object> req = new HashMap<>();

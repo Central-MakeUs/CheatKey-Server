@@ -1,5 +1,6 @@
 package com.cheatkey.common.jwt;
 
+import com.cheatkey.module.auth.domain.entity.AuthRole;
 import com.cheatkey.module.auth.domain.entity.Provider;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -29,20 +30,19 @@ public class JwtProvider {
         return Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
     }
 
-    // AccessToken 생성
-    public String createAccessToken(Long userId, Provider provider) {
+    public String createAccessToken(Long userId, Provider provider, AuthRole role) {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + accessTokenExpirationMs);
         return Jwts.builder()
                 .setSubject(String.valueOf(userId))
                 .claim("provider", provider.name())
+                .claim("role", "ROLE_" + role)
                 .setIssuedAt(now)
                 .setExpiration(expiry)
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    // RefreshToken 생성
     public String createRefreshToken(Long userId) {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + refreshTokenExpirationMs);
@@ -54,7 +54,6 @@ public class JwtProvider {
                 .compact();
     }
 
-    // 토큰 유효성 검증
     public boolean validateToken(String token) {
         try {
             getClaimsFromToken(token);
@@ -64,7 +63,6 @@ public class JwtProvider {
         }
     }
 
-    // Claims 추출
     public Claims getClaimsFromToken(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
@@ -73,13 +71,15 @@ public class JwtProvider {
                 .getBody();
     }
 
-    // userId 추출
     public String getUserIdFromToken(String token) {
         return getClaimsFromToken(token).getSubject();
     }
 
-    // provider 추출
     public String getProviderFromToken(String token) {
         return getClaimsFromToken(token).get("provider", String.class);
+    }
+
+    public String getRoleFromToken(String token) {
+        return getClaimsFromToken(token).get("role", String.class);
     }
 }

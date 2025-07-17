@@ -7,6 +7,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
@@ -19,6 +21,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
+import java.util.List;
 
 @Slf4j
 public class JwtAuthenticationFilter extends AbstractAuthenticationProcessingFilter {
@@ -43,16 +46,15 @@ public class JwtAuthenticationFilter extends AbstractAuthenticationProcessingFil
         String token = authorizationHeader.substring(7).trim();
         log.info("Token extracted from header: {}", token);
 
-        // JwtProvider를 통해 토큰 검증 및 사용자 정보 추출
         if (!jwtProvider.validateToken(token)) {
             throw new JwtAuthenticationException(ErrorCode.INVALID_TOKEN);
         }
 
-        // 사용자 정보 추출 (예: userId, provider 등)
-        String userId = jwtProvider.getUserIdFromToken(token); // JwtProvider에 맞게 구현
+        String userId = jwtProvider.getUserIdFromToken(token);
+        String role = jwtProvider.getRoleFromToken(token);
+        List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(role));
 
-        // 인증 객체 생성 (권한이 있다면 authorities도 추가)
-        return new UsernamePasswordAuthenticationToken(userId, null, null);
+        return new UsernamePasswordAuthenticationToken(userId, null, authorities);
     }
 
     @Override

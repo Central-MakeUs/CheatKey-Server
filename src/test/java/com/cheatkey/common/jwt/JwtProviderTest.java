@@ -1,5 +1,6 @@
 package com.cheatkey.common.jwt;
 
+import com.cheatkey.module.auth.domain.entity.AuthRole;
 import com.cheatkey.module.auth.domain.entity.Provider;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -22,7 +23,7 @@ class JwtProviderTest {
 
     @Test
     void accessToken_정상발급_및_파싱() {
-        String token = jwtProvider.createAccessToken(123L, Provider.KAKAO);
+        String token = jwtProvider.createAccessToken(123L, Provider.KAKAO, AuthRole.USER);
         assertNotNull(token);
         assertTrue(jwtProvider.validateToken(token));
         Claims claims = jwtProvider.getClaimsFromToken(token);
@@ -45,13 +46,13 @@ class JwtProviderTest {
     void 만료된_토큰_검증시_false_반환() {
         // 만료시간을 과거로 설정
         ReflectionTestUtils.setField(jwtProvider, "accessTokenExpirationMs", -1000L);
-        String token = jwtProvider.createAccessToken(1L, Provider.KAKAO);
+        String token = jwtProvider.createAccessToken(1L, Provider.KAKAO, AuthRole.USER);
         assertFalse(jwtProvider.validateToken(token));
     }
 
     @Test
     void 잘못된_시크릿_서명오류_예외() {
-        String token = jwtProvider.createAccessToken(1L, Provider.KAKAO);
+        String token = jwtProvider.createAccessToken(1L, Provider.KAKAO, AuthRole.USER);
         JwtProvider otherProvider = new JwtProvider();
         ReflectionTestUtils.setField(otherProvider, "secretKey", "wrongwrongwrongwrongwrongwrongwrongwrongwrongwrongwrongwrong");
         ReflectionTestUtils.setField(otherProvider, "accessTokenExpirationMs", 1000L * 60 * 10);
@@ -63,7 +64,7 @@ class JwtProviderTest {
         JwtProvider noSecretProvider = new JwtProvider();
         ReflectionTestUtils.setField(noSecretProvider, "secretKey", null);
         ReflectionTestUtils.setField(noSecretProvider, "accessTokenExpirationMs", 1000L * 60 * 10);
-        assertThrows(NullPointerException.class, () -> noSecretProvider.createAccessToken(1L, Provider.KAKAO));
+        assertThrows(NullPointerException.class, () -> noSecretProvider.createAccessToken(1L, Provider.KAKAO, AuthRole.USER));
     }
 
     @Test
@@ -71,6 +72,6 @@ class JwtProviderTest {
         JwtProvider noExpProvider = new JwtProvider();
         ReflectionTestUtils.setField(noExpProvider, "secretKey", "testtesttesttesttesttesttesttesttesttesttesttesttesttesttesttest");
         ReflectionTestUtils.setField(noExpProvider, "accessTokenExpirationMs", 0L);
-        assertDoesNotThrow(() -> noExpProvider.createAccessToken(1L, Provider.KAKAO)); // 0이면 즉시 만료지만 예외는 아님
+        assertDoesNotThrow(() -> noExpProvider.createAccessToken(1L, Provider.KAKAO, AuthRole.USER)); // 0이면 즉시 만료지만 예외는 아님
     }
 } 
