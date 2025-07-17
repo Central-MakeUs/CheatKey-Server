@@ -1,4 +1,4 @@
-package com.cheatkey.module.auth.domain.service.kakao;
+package com.cheatkey.module.auth.domain.service.apple;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -19,15 +19,14 @@ import java.util.Optional;
 import static org.mockito.Mockito.*;
 
 @ActiveProfiles("test")
-class KakaoSignInServiceTest {
+class AppleSignInServiceTest {
 
     @Mock private AuthRepository authRepository;
-    @Mock private KakaoIdTokenService kakaoIdTokenService;
-    @Mock private KakaoUserInfoService kakaoUserInfoService;
+    @Mock private AppleIdTokenService appleIdTokenService;
     @Mock private JwtProvider jwtProvider;
 
     @InjectMocks
-    private KakaoSignInService kakaoSignInService;
+    private AppleSignInService appleSignInService;
 
     @BeforeEach
     void setUp() {
@@ -35,49 +34,43 @@ class KakaoSignInServiceTest {
     }
 
     @Test
-    void 신규회원_카카오로그인_성공시_PENDING상태() {
+    void 신규회원_애플로그인_성공시_PENDING상태() {
         // given
         String idToken = "mockIdToken";
-        String accessToken = "mockAccessToken";
-        String providerId = "kakaoId123";
-        String email = "test@kakao.com";
+        String providerId = "appleId123";
+        String email = "test@apple.com";
         
         AuthTokenRequest request = AuthTokenRequest.builder()
                 .idToken(idToken)
-                .accessToken(accessToken)
                 .build();
 
-        when(kakaoIdTokenService.validateToken(idToken)).thenReturn(providerId);
-        when(kakaoUserInfoService.fetchEmail(accessToken)).thenReturn(email);
-        when(authRepository.findByProviderAndProviderId(Provider.KAKAO, providerId)).thenReturn(Optional.empty());
+        when(appleIdTokenService.validateToken(idToken)).thenReturn(providerId);
+        when(authRepository.findByProviderAndProviderId(Provider.APPLE, providerId)).thenReturn(Optional.empty());
         when(authRepository.save(any(Auth.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // when
-        Auth auth = kakaoSignInService.signIn(request);
+        Auth auth = appleSignInService.signIn(request);
 
         // then
         assertNotNull(auth);
-        assertEquals(Provider.KAKAO, auth.getProvider());
+        assertEquals(Provider.APPLE, auth.getProvider());
         assertEquals(providerId, auth.getProviderId());
-        assertEquals(email, auth.getEmail());
         assertEquals(AuthStatus.PENDING, auth.getStatus());
     }
 
     @Test
-    void 기존회원_카카오로그인_성공시_ACTIVE상태_및_로그인카운트증가() {
+    void 기존회원_애플로그인_성공시_ACTIVE상태_및_로그인카운트증가() {
         // given
         String idToken = "mockIdToken";
-        String accessToken = "mockAccessToken";
-        String providerId = "kakaoId123";
-        String email = "test@kakao.com";
+        String providerId = "appleId123";
+        String email = "test@apple.com";
         
         AuthTokenRequest request = AuthTokenRequest.builder()
                 .idToken(idToken)
-                .accessToken(accessToken)
                 .build();
                 
         Auth existingAuth = Auth.builder()
-                .provider(Provider.KAKAO)
+                .provider(Provider.APPLE)
                 .providerId(providerId)
                 .email(email)
                 .loginCount(1)
@@ -85,13 +78,12 @@ class KakaoSignInServiceTest {
                 .role(AuthRole.USER)
                 .build();
 
-        when(kakaoIdTokenService.validateToken(idToken)).thenReturn(providerId);
-        when(kakaoUserInfoService.fetchEmail(accessToken)).thenReturn(email);
-        when(authRepository.findByProviderAndProviderId(Provider.KAKAO, providerId)).thenReturn(Optional.of(existingAuth));
+        when(appleIdTokenService.validateToken(idToken)).thenReturn(providerId);
+        when(authRepository.findByProviderAndProviderId(Provider.APPLE, providerId)).thenReturn(Optional.of(existingAuth));
         when(authRepository.save(any(Auth.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // when
-        Auth auth = kakaoSignInService.signIn(request);
+        Auth auth = appleSignInService.signIn(request);
 
         // then
         assertNotNull(auth);
@@ -100,44 +92,43 @@ class KakaoSignInServiceTest {
     }
 
     @Test
-    void 카카오idToken_검증실패시_예외발생() {
+    void 애플idToken_검증실패시_예외발생() {
         // given
         String idToken = "invalidIdToken";
-        String accessToken = "mockAccessToken";
         
         AuthTokenRequest request = AuthTokenRequest.builder()
                 .idToken(idToken)
-                .accessToken(accessToken)
                 .build();
                 
-        when(kakaoIdTokenService.validateToken(idToken)).thenThrow(new RuntimeException("idToken 검증 실패"));
+        when(appleIdTokenService.validateToken(idToken)).thenThrow(new RuntimeException("idToken 검증 실패"));
 
         // when & then
         RuntimeException ex = assertThrows(RuntimeException.class, () -> {
-            kakaoSignInService.signIn(request);
+            appleSignInService.signIn(request);
         });
         assertTrue(ex.getMessage().contains("idToken 검증 실패"));
     }
 
     @Test
-    void 카카오이메일조회_실패시_예외발생() {
+    void 애플idToken에서_이메일추출_성공() {
         // given
-        String idToken = "mockIdToken";
-        String accessToken = "mockAccessToken";
-        String providerId = "kakaoId123";
+        String idToken = "validIdTokenWithEmail";
+        String providerId = "appleId123";
         
         AuthTokenRequest request = AuthTokenRequest.builder()
                 .idToken(idToken)
-                .accessToken(accessToken)
                 .build();
 
-        when(kakaoIdTokenService.validateToken(idToken)).thenReturn(providerId);
-        when(kakaoUserInfoService.fetchEmail(accessToken)).thenThrow(new RuntimeException("이메일 조회 실패"));
+        when(appleIdTokenService.validateToken(idToken)).thenReturn(providerId);
+        when(authRepository.findByProviderAndProviderId(Provider.APPLE, providerId)).thenReturn(Optional.empty());
+        when(authRepository.save(any(Auth.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        // when & then
-        RuntimeException ex = assertThrows(RuntimeException.class, () -> {
-            kakaoSignInService.signIn(request);
-        });
-        assertTrue(ex.getMessage().contains("이메일 조회 실패"));
+        // when
+        Auth auth = appleSignInService.signIn(request);
+
+        // then
+        assertNotNull(auth);
+        assertEquals(Provider.APPLE, auth.getProvider());
+        assertEquals(providerId, auth.getProviderId());
     }
-}
+} 

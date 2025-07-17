@@ -2,6 +2,7 @@ package com.cheatkey.module.auth.interfaces.controller;
 
 import com.cheatkey.common.jwt.JwtProvider;
 import com.cheatkey.module.auth.domain.entity.Auth;
+import com.cheatkey.module.auth.domain.entity.AuthRole;
 import com.cheatkey.module.auth.domain.entity.AuthStatus;
 import com.cheatkey.module.auth.domain.entity.Provider;
 import com.cheatkey.module.auth.domain.service.AuthSignInService;
@@ -49,6 +50,7 @@ class AuthControllerIntegrationTest {
                 .providerId("mockProviderId")
                 .email("test@kakao.com")
                 .status(AuthStatus.ACTIVE)
+                .role(AuthRole.USER)
                 .build();
 
         given(authSignInService.signIn(any(), any(), any(), any(), any()))
@@ -114,5 +116,49 @@ class AuthControllerIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("애플 로그인 성공시 JWT가 발급된다")
+    void appleLogin_success() throws Exception {
+        Auth mockAuth = Auth.builder()
+                .id(2L)
+                .provider(Provider.APPLE)
+                .providerId("apple123")
+                .email("test@apple.com")
+                .status(AuthStatus.PENDING)
+                .role(AuthRole.USER)
+                .build();
+
+        given(authSignInService.signIn(any(), any(), any(), any(), any()))
+                .willReturn(mockAuth);
+        given(jwtProvider.createAccessToken(anyLong(), any(), any())).willReturn("mockAppleAccessTokenJwt");
+        given(jwtProvider.createRefreshToken(anyLong())).willReturn("mockAppleRefreshTokenJwt");
+
+        Map<String, Object> req = new HashMap<>();
+        req.put("provider", "APPLE");
+        req.put("idToken", "mockAppleIdToken");
+        // 애플은 accessToken 없음
+
+        mockMvc.perform(post("/v1/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").value("mockAppleAccessTokenJwt"))
+                .andExpect(jsonPath("$.refreshToken").value("mockAppleRefreshTokenJwt"))
+                .andExpect(jsonPath("$.memberState").value("PENDING"));
+    }
+
+    @Test
+    @DisplayName("애플 로그인시 잘못된 provider 400 반환")
+    void appleLogin_invalidProvider() throws Exception {
+        Map<String, Object> req = new HashMap<>();
+        req.put("provider", "INVALID_APPLE");
+        req.put("idToken", "mockAppleIdToken");
+
+        mockMvc.perform(post("/v1/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest());
     }
 } 
