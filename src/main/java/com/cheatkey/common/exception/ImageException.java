@@ -1,6 +1,5 @@
 package com.cheatkey.common.exception;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 import java.io.IOException;
