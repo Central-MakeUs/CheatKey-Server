@@ -71,6 +71,7 @@ dependencies {
 	// webp 변환 라이브러리
 	implementation 'com.sksamuel.scrimage:scrimage-core:4.3.0'
 	implementation 'com.sksamuel.scrimage:scrimage-webp:4.3.0'
+	implementation 'com.twelvemonkeys.imageio:imageio-webp:3.10.1'
 
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
