@@ -1,6 +1,6 @@
 package com.cheatkey.module.auth.interfaces.dto;
 
-import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Builder;
 import lombok.Data;
@@ -8,14 +8,14 @@ import lombok.Data;
 @Data
 @Builder
 public class SocialLoginRequest {
-    @Parameter(description = "소셜 로그인 제공자 (KAKAO, APPLE)", example = "KAKAO")
+    @Schema(description = "소셜 로그인 제공자 (KAKAO, APPLE)", example = "KAKAO")
     @NotBlank
     private String provider;
 
-    @Parameter(description = "ID Token (OIDC)", example = "eyJhbGciOi...")
+    @Schema(description = "ID Token (OIDC)", example = "eyJhbGciOi...")
     @NotBlank
     private String idToken;
 
-    @Parameter(description = "Access Token (카카오만)", example = "eyJhbGciOi...")
+    @Schema(description = "Access Token (카카오만)", example = "eyJhbGciOi...")
     private String accessToken;
 }

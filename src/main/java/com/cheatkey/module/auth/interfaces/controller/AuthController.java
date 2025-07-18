@@ -20,6 +20,8 @@ import com.cheatkey.module.terms.domain.service.TermsService;
 import com.cheatkey.module.terms.interfaces.dto.TermsDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -46,11 +48,10 @@ public class AuthController {
     private final TermsMapper termsMapper;
     private final JwtProvider jwtProvider;
 
-    @Operation(summary = "소셜 로그인", description = "provider, idToken, accessToken(카카오만)을 받아 JWT를 발급합니다. 신규 사용자는 자동 회원가입.")
+    @Operation(summary = "(★) 소셜 로그인", description = "provider, idToken, accessToken(카카오만)을 받아 JWT를 발급합니다. 신규 사용자는 자동 회원가입.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "로그인 성공, JWT 반환"),
-            @ApiResponse(responseCode = "400", description = "잘못된 요청/토큰 오류"),
-            @ApiResponse(responseCode = "500", description = "서버 오류")
+            @ApiResponse(responseCode = "200", description = "로그인 성공, JWT 반환", content = @Content(schema = @Schema(implementation = SignInResponse.class))),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청/토큰 오류")
     })
     @PostMapping("/login")
     public ResponseEntity<?> socialLogin(HttpServletRequest request, @Valid @RequestBody SocialLoginRequest socialLoginRequest) {
@@ -116,7 +117,7 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "닉네임 중복 체크", description = "세션에 로그인된 사용자만 사용할 수 있으며, 입력한 닉네임이 이미 사용 중인지 검증합니다.")
+    @Operation(summary = "(★) 닉네임 중복 체크", description = "세션에 로그인된 사용자만 사용할 수 있으며, 입력한 닉네임이 이미 사용 중인지 검증합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "사용 가능한 닉네임"),
             @ApiResponse(responseCode = "409", description = "중복된 닉네임")
@@ -151,8 +152,6 @@ public class AuthController {
         request.getSession().setAttribute("welcome", true);
         return ResponseEntity.ok().build();
     }
-
-
 
     //@TODO 로그아웃
 
