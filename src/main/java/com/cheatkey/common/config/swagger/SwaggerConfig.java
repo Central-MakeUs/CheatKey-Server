@@ -17,6 +17,6 @@ public class SwaggerConfig {
         return new OpenAPI()
                 .info(info)
 //                .addServersItem(new Server().url("https://cheatkey.kr").description("운영 환경 (도메인)"))
-                .addServersItem(new Server().url("http://43.203.30.24").description("운영 환경 (IP 접근)"));
+                .addServersItem(new Server().url("https://mockzone.dev").description("운영 환경 (IP 접근)"));
     }
 }
