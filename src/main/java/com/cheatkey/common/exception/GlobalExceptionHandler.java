@@ -32,4 +32,12 @@ public class GlobalExceptionHandler {
                 .status(ErrorCode.INTERNAL_SERVER_ERROR.getHttpStatus())
                 .body(new ErrorResponse("INTERNAL_SERVER_ERROR", "서버 내부 오류가 발생했습니다."));
     }
+
+    @ExceptionHandler(ImageException.class)
+    public ResponseEntity<ErrorResponse> handleImageException(ImageException ex) {
+        ErrorCode errorCode = ex.getErrorCode();
+        return ResponseEntity
+                .status(errorCode.getHttpStatus())
+                .body(new ErrorResponse(errorCode.name(), errorCode.getMessage()));
+    }
 }

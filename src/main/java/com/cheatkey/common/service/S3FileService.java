@@ -51,12 +51,13 @@ public class S3FileService {
      * 파일을 S3에 업로드
      * @param file 업로드할 파일
      * @param folder 파일 폴더 정보
+     * @param userId 업로드한 사용자 ID
      * @param isTemp 임시 파일 여부
      * @return S3 key
      */
-    public String uploadFile(MultipartFile file, FileFolder folder, boolean isTemp) throws ImageException {
+    public String uploadFile(MultipartFile file, FileFolder folder, Long userId, boolean isTemp) throws ImageException {
         validateFile(file);
-        String fileKey = generateFileKey(file, folder);
+        String fileKey = generateFileKey(file, folder, userId, isTemp);
         try {
             InputStream inputStream = processImageIfNeeded(file);
             ObjectMetadata metadata = new ObjectMetadata();
@@ -121,6 +122,22 @@ public class S3FileService {
         } catch (Exception e) {
             log.error("파일 삭제 실패: fileKey={}, reason={}", fileKey, e.getMessage());
             throw new ImageException(ErrorCode.FILE_DELETE_FAILED);
+        }
+    }
+
+    /**
+     * S3 임시 파일을 영구 경로로 이동 (copy + delete)
+     * @param tempKey 임시 파일 S3 key (예: temp/uuid.jpg)
+     * @param permanentKey 영구 파일 S3 key (예: community/uuid.jpg)
+     */
+    public void moveToPermanent(String tempKey, String permanentKey) throws ImageException {
+        try {
+            amazonS3.copyObject(bucketName, tempKey, bucketName, permanentKey);
+            amazonS3.deleteObject(bucketName, tempKey);
+            log.info("S3 파일 이동: {} -> {}", tempKey, permanentKey);
+        } catch (Exception e) {
+            log.error("S3 파일 이동 실패: {} -> {}, reason={}", tempKey, permanentKey, e.getMessage());
+            throw new ImageException(ErrorCode.FILE_UPLOAD_FAILED);
         }
     }
 
@@ -225,16 +242,22 @@ public class S3FileService {
 
     /**
      * S3 key 생성
-     * 형식: uploads/{folder}/{yyyy}/{MM}/{dd}/{uuid}_{originalFilename}
+     * 임시: uploads/temp/{folder}/{userId}/{yyyy}/{MM}/{dd}/{uuid}_{originalFilename}
+     * 영구: uploads/{folder}/{userId}/{yyyy}/{MM}/{dd}/{uuid}_{originalFilename}
      */
-    public String generateFileKey(MultipartFile file, FileFolder folder) {
+    public String generateFileKey(MultipartFile file, FileFolder folder, Long userId, boolean isTemp) {
         LocalDateTime now = LocalDateTime.now();
         String year = String.valueOf(now.getYear());
         String month = String.format("%02d", now.getMonthValue());
         String day = String.format("%02d", now.getDayOfMonth());
         String uuid = UUID.randomUUID().toString();
         String originalFilename = file.getOriginalFilename();
-        return String.format("uploads/%s/%s/%s/%s/%s_%s",
-                folder.getFolderName(), year, month, day, uuid, originalFilename);
+        if (isTemp) {
+            return String.format("uploads/temp/%s/%d/%s/%s/%s/%s_%s",
+                    folder.getFolderName(), userId, year, month, day, uuid, originalFilename);
+        } else {
+            return String.format("uploads/%s/%d/%s/%s/%s/%s_%s",
+                    folder.getFolderName(), userId, year, month, day, uuid, originalFilename);
+        }
     }
 } 

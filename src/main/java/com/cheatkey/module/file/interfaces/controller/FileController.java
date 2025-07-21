@@ -7,6 +7,7 @@ import com.cheatkey.module.file.interfaces.dto.FileUploadRequest;
 import com.cheatkey.module.file.interfaces.dto.FileUploadResponse;
 import com.cheatkey.module.file.interfaces.dto.PresignedUrlRequest;
 import com.cheatkey.module.file.domain.entity.FileFolder;
+import com.cheatkey.module.file.domain.entity.FileUpload;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -41,23 +42,17 @@ public class FileController {
         @ApiResponse(responseCode = "500", description = "서버 내부 오류 (파일 업로드 실패)")
     })
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<List<FileUploadResponse>> upload(@Parameter(required = true) @RequestParam("files") List<MultipartFile> files,
-                                                           @ModelAttribute FileUploadRequest request) throws ImageException {
+    public ResponseEntity<List<FileUploadResponse>> upload(@RequestParam("files") List<MultipartFile> files,
+                                                           @RequestParam("userId") Long userId) throws ImageException {
         List<FileUploadResponse> responses = new ArrayList<>();
-        FileFolder folderType;
-        try {
-            folderType = request.getFolderType() == null ? FileFolder.COMMUNITY : FileFolder.valueOf(request.getFolderType().toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw new ImageException(com.cheatkey.common.exception.ErrorCode.INVALID_FILE_TYPE); // 400 에러 반환
-        }
         for (MultipartFile file : files) {
-            String presignedUrl = fileService.uploadFile(file, folderType, request.getUserId());
+            FileUpload fileUpload = fileService.uploadTempFile(file, userId);
             FileUploadResponse response = FileUploadResponse.builder()
-                    .presignedUrl(presignedUrl)
-                    .originalName(file.getOriginalFilename())
-                    .size(file.getSize())
-                    .contentType(file.getContentType())
-                    .isTemp(true)
+                    .fileUploadId(fileUpload.getId())
+                    .originalName(fileUpload.getOriginalName())
+                    .size(fileUpload.getSize())
+                    .contentType(fileUpload.getContentType())
+                    .isTemp(fileUpload.getIsTemp())
                     .build();
             responses.add(response);
         }

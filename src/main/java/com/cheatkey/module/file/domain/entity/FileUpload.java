@@ -24,8 +24,6 @@ public class FileUpload {
     @Column(name = "s3_key")
     private String s3Key;
 
-    private String presignedUrl;
-
     @Enumerated(EnumType.STRING)
     private FileFolder folder;
 
@@ -38,6 +36,15 @@ public class FileUpload {
     private LocalDateTime createdAt;
 
     public void markAsPermanent() {
+        this.isTemp = false;
+    }
+
+    public boolean getIsTemp() {
+        return isTemp;
+    }
+
+    public void updateToPermanent(String newS3Key) {
+        this.s3Key = newS3Key;
         this.isTemp = false;
     }
 }

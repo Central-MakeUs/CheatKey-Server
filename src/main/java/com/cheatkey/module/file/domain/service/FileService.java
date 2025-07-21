@@ -24,44 +24,20 @@ public class FileService {
     private final S3FileService s3FileService;
     private final FileUploadRepository fileUploadRepository;
 
-    public String uploadFile(MultipartFile multipartFile, FileFolder folder, Long userId) throws ImageException {
-        String fileKey = s3FileService.uploadFile(multipartFile, folder, true);
-        URL presignedUrl = s3FileService.getPresignedUrl(fileKey);
-        
+    public FileUpload uploadTempFile(MultipartFile file, Long userId) throws ImageException {
+        String tempKey = s3FileService.uploadFile(file, FileFolder.COMMUNITY, userId, true);
+        URL presignedUrl = s3FileService.getPresignedUrl(tempKey);
         FileUpload fileUpload = FileUpload.builder()
                 .userId(userId)
-                .originalName(multipartFile.getOriginalFilename())
-                .s3Key(fileKey)
-                .presignedUrl(presignedUrl.toString())
-                .folder(folder)
-                .size(multipartFile.getSize())
-                .contentType(multipartFile.getContentType())
+                .originalName(file.getOriginalFilename())
+                .s3Key(tempKey)
+                .folder(FileFolder.COMMUNITY)
+                .size(file.getSize())
+                .contentType(file.getContentType())
                 .isTemp(true)
                 .createdAt(LocalDateTime.now())
                 .build();
-
-        fileUploadRepository.save(fileUpload);
-        
-        return presignedUrl.toString();
-    }
-
-    /**
-     * 게시글 생성 후 파일 처리
-     */
-    @Transactional
-    public void handleImagesAfterPostCreate(List<String> usedUrls, Long userId) throws ImageException {
-        List<FileUpload> tempFiles = fileUploadRepository.findByUserIdAndIsTempTrue(userId);
-
-        for (FileUpload file : tempFiles) {
-            if (usedUrls.contains(file.getPresignedUrl())) {
-                // 사용된 파일은 영구화
-                file.markAsPermanent();
-            } else {
-                // 사용되지 않은 파일은 S3에서만 삭제, DB에는 그대로(isTemp=true) 남김
-                s3FileService.deleteFile(file.getS3Key());
-                // fileUploadRepository.delete(file); // 삭제하지 않음
-            }
-        }
+        return fileUploadRepository.save(fileUpload);
     }
 
     public URL getPresignedUrl(String fileKey, int expirationInMinutes) throws ImageException {
@@ -73,7 +49,7 @@ public class FileService {
         FileUpload fileUpload = fileUploadRepository.findByS3Key(fileKey)
                 .orElseThrow(() -> new ImageException(ErrorCode.FILE_NOT_FOUND));
         
-        if (fileUpload.isTemp()) {
+        if (fileUpload.getIsTemp()) {
             throw new ImageException(ErrorCode.FILE_NOT_PERMANENT);
         }
         

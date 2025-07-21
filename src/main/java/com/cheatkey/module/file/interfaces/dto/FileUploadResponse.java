@@ -1,6 +1,7 @@
 package com.cheatkey.module.file.interfaces.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -8,6 +9,7 @@ import java.time.LocalDateTime;
 
 @Getter
 @Builder
+@AllArgsConstructor
 @Schema(description = "파일 업로드 응답")
 public class FileUploadResponse {
 
@@ -20,9 +22,6 @@ public class FileUploadResponse {
     @Schema(description = "S3 파일 키", example = "images/2024/01/15/uuid-image.jpg")
     private String s3Key;
 
-    @Schema(description = "Presigned URL", example = "https://bucket.s3.amazonaws.com/images/2024/01/15/uuid-image.jpg?X-Amz-Algorithm=...")
-    private String presignedUrl;
-
     @Schema(description = "파일 크기 (bytes)", example = "1024000")
     private Long size;
 
@@ -30,8 +29,10 @@ public class FileUploadResponse {
     private String contentType;
 
     @Schema(description = "임시 파일 여부", example = "true")
-    private boolean isTemp;
+    private Boolean isTemp;
 
     @Schema(description = "업로드 시간", example = "2024-01-15T10:30:00")
     private LocalDateTime createdAt;
+
+    private Long fileUploadId;
 } 
