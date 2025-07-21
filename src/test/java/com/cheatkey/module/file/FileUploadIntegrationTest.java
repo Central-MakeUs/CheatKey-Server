@@ -67,7 +67,7 @@ class FileUploadIntegrationTest {
         // when & then
         String response = mockMvc.perform(multipart("/v1/api/files/upload")
                         .file(file)
-                        .param("folder", "test-images")
+                        .param("folder", FileFolder.TEST.name())
                         .param("userId", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
@@ -104,7 +104,7 @@ class FileUploadIntegrationTest {
         mockMvc.perform(multipart("/v1/api/files/upload")
                         .file(file1)
                         .file(file2)
-                        .param("folderType", "community")
+                        .param("folderType", FileFolder.TEST.name())
                         .param("userId", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
@@ -127,7 +127,7 @@ class FileUploadIntegrationTest {
         // when & then
         mockMvc.perform(multipart("/v1/api/files/upload")
                         .file(emptyFile)
-                        .param("folder", "test-images")
+                        .param("folder", FileFolder.TEST.name())
                         .param("userId", "1"))
                 .andExpect(status().isInternalServerError()); // 실제로는 500 에러 반환
     }
@@ -146,7 +146,7 @@ class FileUploadIntegrationTest {
         // when & then
         mockMvc.perform(multipart("/v1/api/files/upload")
                         .file(unsupportedFile)
-                        .param("folder", "test-images")
+                        .param("folder", FileFolder.TEST.name())
                         .param("userId", "1"))
                 .andExpect(status().isInternalServerError()); // 실제로는 500 에러 반환
     }
@@ -165,7 +165,7 @@ class FileUploadIntegrationTest {
         // 파일 업로드
         mockMvc.perform(multipart("/v1/api/files/upload")
                         .file(file)
-                        .param("folder", "test-images")
+                        .param("folder", FileFolder.TEST.name())
                         .param("userId", "1"))
                 .andExpect(status().isOk());
 
@@ -206,7 +206,7 @@ class FileUploadIntegrationTest {
         // 파일 업로드
         mockMvc.perform(multipart("/v1/api/files/upload")
                         .file(file)
-                        .param("folder", "test-images")
+                        .param("folder", FileFolder.TEST.name())
                         .param("userId", "1"))
                 .andExpect(status().isOk());
 
@@ -242,7 +242,7 @@ class FileUploadIntegrationTest {
         mockMvc.perform(multipart("/v1/api/files/upload")
                         .file(file1)
                         .file(file2)
-                        .param("folderType", FileFolder.COMMUNITY.name())
+                        .param("folderType", FileFolder.TEST.name())
                         .param("userId", "1"))
                 .andExpect(status().isOk());
 

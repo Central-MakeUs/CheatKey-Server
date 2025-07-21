@@ -58,7 +58,7 @@ class FileServiceTest {
                 .originalName("test-image.jpg")
                 .s3Key("test-images/2024/01/15/uuid-test-image.jpg")
                 .presignedUrl("https://bucket.s3.amazonaws.com/test-images/2024/01/15/uuid-test-image.jpg")
-                .folder("test-images")
+                .folder(FileFolder.TEST)
                 .size(1024L)
                 .contentType("image/jpeg")
                 .isTemp(true)
@@ -70,6 +70,7 @@ class FileServiceTest {
                 .userId(1L)
                 .originalName("permanent-image.jpg")
                 .s3Key("test-images/2024/01/15/uuid-permanent-image.jpg")
+                .folder(FileFolder.TEST)
                 .isTemp(false)
                 .build();
 
@@ -78,6 +79,7 @@ class FileServiceTest {
                 .userId(1L)
                 .originalName("temp-image.jpg")
                 .s3Key("test-images/2024/01/15/uuid-temp-image.jpg")
+                .folder(FileFolder.TEST)
                 .isTemp(true)
                 .build();
     }
@@ -97,11 +99,11 @@ class FileServiceTest {
                 .thenReturn(mockFileUpload);
 
         // when
-        String result = fileService.uploadFile(mockFile, FileFolder.COMMUNITY, 1L);
+        String result = fileService.uploadFile(mockFile, FileFolder.TEST, 1L);
 
         // then
         assertThat(result).isEqualTo(expectedPresignedUrl);
-        verify(s3FileService).uploadFile(mockFile, FileFolder.COMMUNITY, true);
+        verify(s3FileService).uploadFile(mockFile, FileFolder.TEST, true);
         verify(s3FileService).getPresignedUrl(expectedFileKey);
         verify(fileUploadRepository).save(any(FileUpload.class));
     }
@@ -172,6 +174,7 @@ class FileServiceTest {
                         .userId(userId)
                         .s3Key("file1-key")
                         .presignedUrl("url1")
+                        .folder(FileFolder.TEST)
                         .isTemp(true)
                         .build(),
                 FileUpload.builder()
@@ -179,6 +182,7 @@ class FileServiceTest {
                         .userId(userId)
                         .s3Key("file2-key")
                         .presignedUrl("url2")
+                        .folder(FileFolder.TEST)
                         .isTemp(true)
                         .build()
         );
@@ -202,6 +206,7 @@ class FileServiceTest {
                         .userId(userId)
                         .s3Key("file1-key")
                         .presignedUrl("url1")
+                        .folder(FileFolder.TEST)
                         .isTemp(true)
                         .build(),
                 FileUpload.builder()
@@ -209,6 +214,7 @@ class FileServiceTest {
                         .userId(userId)
                         .s3Key("file2-key")
                         .presignedUrl("url2")
+                        .folder(FileFolder.TEST)
                         .isTemp(true)
                         .build()
         );
@@ -228,6 +234,7 @@ class FileServiceTest {
                         .userId(userId)
                         .s3Key("file1-key")
                         .presignedUrl("url1")
+                        .folder(FileFolder.TEST)
                         .isTemp(true)
                         .build(),
                 FileUpload.builder()
@@ -235,6 +242,7 @@ class FileServiceTest {
                         .userId(userId)
                         .s3Key("file2-key")
                         .presignedUrl("url2")
+                        .folder(FileFolder.COMMUNITY)
                         .isTemp(true)
                         .build()
         );

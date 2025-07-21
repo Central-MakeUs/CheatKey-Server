@@ -33,7 +33,7 @@ public class FileService {
                 .originalName(multipartFile.getOriginalFilename())
                 .s3Key(fileKey)
                 .presignedUrl(presignedUrl.toString())
-                .folder(folder.getFolderName())
+                .folder(folder)
                 .size(multipartFile.getSize())
                 .contentType(multipartFile.getContentType())
                 .isTemp(true)

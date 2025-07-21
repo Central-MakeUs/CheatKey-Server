@@ -21,13 +21,13 @@ public class FileUpload {
 
     private String originalName;
 
-    @Column(name = "s3_key", length = 500)
+    @Column(name = "s3_key")
     private String s3Key;
 
-    @Column(name = "presigned_url", length = 1000)
     private String presignedUrl;
 
-    private String folder;
+    @Enumerated(EnumType.STRING)
+    private FileFolder folder;
 
     private Long size;
 
