@@ -27,7 +27,6 @@ public class SwaggerConfig {
                                 .scheme("bearer")
                                 .bearerFormat("JWT")
                                 .description("JWT 토큰을 입력하세요. (Bearer 제외)")))
-//                .addServersItem(new Server().url("https://cheatkey.kr").description("운영 환경 (도메인)"))
-                .addServersItem(new Server().url("https://mockzone.dev").description("운영 환경 (IP 접근)"));
+                .addServersItem(new Server().url("https://api.cheatskey.com").description("운영 환경 (IP 접근)"));
     }
 }

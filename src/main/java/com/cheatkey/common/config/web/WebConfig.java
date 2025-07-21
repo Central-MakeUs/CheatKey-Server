@@ -11,8 +11,7 @@ public class WebConfig implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
                 .allowedOrigins(
-                        "https://cheatkey.kr",
-                        "http://43.203.30.24",
+                        "https://cheatskey.com",
                         "http://localhost:3000",    // Front-End
                         "https://cheatcut.kro.kr"   // Front-End
                 )
