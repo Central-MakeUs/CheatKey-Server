@@ -1,5 +1,7 @@
 package com.cheatkey.module.community.domian.entity;
 
 public enum CommunityCategory {
-    REPORT, SHARE, TALK
+    REPORT,   // 신고합니다
+    TALK,     // 자유 TALK
+    SHARE     // 내 사례 공유
 }

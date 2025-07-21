@@ -11,8 +11,7 @@ public class CommunityService {
     private final CommunityPostRepository communityPostRepository;
 
     public Long createPost(CommunityPost communityPost) {
-        CommunityPost post = CommunityPost.createPost(communityPost);
-        communityPostRepository.save(post);
-        return post.getId();
+        communityPostRepository.save(communityPost);
+        return communityPost.getId();
     }
 }

@@ -1,22 +1,21 @@
 package com.cheatkey.module.community.domian.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
+
+
+@Table(name = "t_community_posts")
 @Entity
 @Getter
 @Builder
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 public class CommunityPost {
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String title;
@@ -29,21 +28,17 @@ public class CommunityPost {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    private String imageUrls; // 콤마(,)로 구분된 S3 URL 리스트 (최대 5개)
-
     @Enumerated(EnumType.STRING)
-    private PostStatus status; // ACTIVE, DELETED (soft delete)
+    private PostStatus status; // ACTIVE, DELETED, REPORTED (soft delete)
 
 
-    public static CommunityPost createPost(CommunityPost communityPost) {
+    public static CommunityPost createPost(String title, String content, CommunityCategory category, Long userId) {
         return CommunityPost.builder()
-                .title(communityPost.title)
-                .content(communityPost.content)
-                .category(communityPost.category)
-                .userId(communityPost.userId)
-                .imageUrls(String.join(",", communityPost.imageUrls))
+                .title(title)
+                .content(content)
+                .category(category)
+                .userId(userId)
                 .status(PostStatus.ACTIVE)
-                .createdAt(LocalDateTime.now())
                 .build();
     }
 }
