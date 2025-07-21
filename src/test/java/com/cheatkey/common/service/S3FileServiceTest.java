@@ -90,7 +90,7 @@ class S3FileServiceTest {
         when(amazonS3.putObject(any())).thenReturn(null);
 
         // when
-        String result = s3FileService.uploadFile(validImageFile, FileFolder.COMMUNITY, true);
+        String result = s3FileService.uploadFile(validImageFile, FileFolder.COMMUNITY, 1L, true);
 
         // then
         assertThat(result).isNotNull();
@@ -102,23 +102,23 @@ class S3FileServiceTest {
     @DisplayName("파일 검증 실패 테스트들")
     void uploadFile_ValidationFailures() {
         // null 파일
-        assertThatThrownBy(() -> s3FileService.uploadFile(null, FileFolder.COMMUNITY, true))
+        assertThatThrownBy(() -> s3FileService.uploadFile(null, FileFolder.COMMUNITY, 1L, true))
                 .isInstanceOf(ImageException.class);
 
         // 빈 파일
-        assertThatThrownBy(() -> s3FileService.uploadFile(emptyFile, FileFolder.COMMUNITY, true))
+        assertThatThrownBy(() -> s3FileService.uploadFile(emptyFile, FileFolder.COMMUNITY, 1L, true))
                 .isInstanceOf(ImageException.class);
 
         // 큰 파일
-        assertThatThrownBy(() -> s3FileService.uploadFile(largeFile, FileFolder.COMMUNITY, true))
+        assertThatThrownBy(() -> s3FileService.uploadFile(largeFile, FileFolder.COMMUNITY, 1L, true))
                 .isInstanceOf(ImageException.class);
 
         // 지원하지 않는 파일 형식
-        assertThatThrownBy(() -> s3FileService.uploadFile(unsupportedFile, FileFolder.COMMUNITY, true))
+        assertThatThrownBy(() -> s3FileService.uploadFile(unsupportedFile, FileFolder.COMMUNITY, 1L, true))
                 .isInstanceOf(ImageException.class);
 
         // 파일명이 null인 파일
-        assertThatThrownBy(() -> s3FileService.uploadFile(nullFilenameFile, FileFolder.COMMUNITY, true))
+        assertThatThrownBy(() -> s3FileService.uploadFile(nullFilenameFile, FileFolder.COMMUNITY, 1L, true))
                 .isInstanceOf(ImageException.class);
 
         // S3 호출이 없어야 함
@@ -144,7 +144,7 @@ class S3FileServiceTest {
             );
 
             // when
-            String result = s3FileService.uploadFile(imageFile, FileFolder.COMMUNITY, true);
+            String result = s3FileService.uploadFile(imageFile, FileFolder.COMMUNITY, 1L, true);
 
             // then
             assertThat(result).isNotNull();
@@ -159,7 +159,7 @@ class S3FileServiceTest {
                 "test pdf content".getBytes()
         );
 
-        String result = s3FileService.uploadFile(pdfFile, FileFolder.COMMUNITY, true);
+        String result = s3FileService.uploadFile(pdfFile, FileFolder.COMMUNITY, 1L, true);
         assertThat(result).isNotNull();
         assertThat(result).contains("community");
 

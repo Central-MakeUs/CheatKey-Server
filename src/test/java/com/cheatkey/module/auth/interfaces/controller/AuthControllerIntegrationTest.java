@@ -69,7 +69,7 @@ class AuthControllerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").value("mockAccessTokenJwt"))
                 .andExpect(jsonPath("$.refreshToken").value("mockRefreshTokenJwt"))
-                .andExpect(jsonPath("$.memberState").value("ACTIVE"));
+                .andExpect(jsonPath("$.userState").value("ACTIVE"));
     }
 
     @Test
@@ -146,7 +146,7 @@ class AuthControllerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").value("mockAppleAccessTokenJwt"))
                 .andExpect(jsonPath("$.refreshToken").value("mockAppleRefreshTokenJwt"))
-                .andExpect(jsonPath("$.memberState").value("PENDING"));
+                .andExpect(jsonPath("$.userState").value("PENDING"));
     }
 
     @Test

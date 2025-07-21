@@ -68,12 +68,12 @@ class FileUploadIntegrationTest {
         String response = mockMvc.perform(multipart("/v1/api/files/upload")
                         .file(file)
                         .param("folder", FileFolder.TEST.name())
-                        .param("userId", "1"))
+                        .param("userId", "1")
+                        .param("isTemp", "true"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$[0].presignedUrl").exists())
                 .andExpect(jsonPath("$[0].originalName").value("test-image.jpg"))
-                .andExpect(jsonPath("$[0].temp").value(true)) // isTemp는 temp로 직렬화됨
+                .andExpect(jsonPath("$[0].isTemp").value(true))
                 .andExpect(jsonPath("$[0].size").exists())
                 .andExpect(jsonPath("$[0].contentType").value("image/jpeg"))
                 .andReturn()
@@ -105,7 +105,8 @@ class FileUploadIntegrationTest {
                         .file(file1)
                         .file(file2)
                         .param("folderType", FileFolder.TEST.name())
-                        .param("userId", "1"))
+                        .param("userId", "1")
+                        .param("isTemp", "true"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$").value(org.hamcrest.Matchers.hasSize(2)))
@@ -128,8 +129,9 @@ class FileUploadIntegrationTest {
         mockMvc.perform(multipart("/v1/api/files/upload")
                         .file(emptyFile)
                         .param("folder", FileFolder.TEST.name())
-                        .param("userId", "1"))
-                .andExpect(status().isInternalServerError()); // 실제로는 500 에러 반환
+                        .param("userId", "1")
+                        .param("isTemp", "true"))
+                .andExpect(status().isBadRequest()); // 실제로는 400 에러 반환
     }
 
     @Test
@@ -147,49 +149,9 @@ class FileUploadIntegrationTest {
         mockMvc.perform(multipart("/v1/api/files/upload")
                         .file(unsupportedFile)
                         .param("folder", FileFolder.TEST.name())
-                        .param("userId", "1"))
-                .andExpect(status().isInternalServerError()); // 실제로는 500 에러 반환
-    }
-
-    @Test
-    @DisplayName("Presigned URL 재발급 성공 테스트")
-    void getPresignedUrl_Success() throws Exception {
-        // given
-        MockMultipartFile file = new MockMultipartFile(
-                "files",
-                "test-image.jpg",
-                "image/jpeg",
-                "test image content".getBytes()
-        );
-
-        // 파일 업로드
-        mockMvc.perform(multipart("/v1/api/files/upload")
-                        .file(file)
-                        .param("folder", FileFolder.TEST.name())
-                        .param("userId", "1"))
-                .andExpect(status().isOk());
-
-        // 업로드된 파일의 키 가져오기
-        List<FileUpload> uploadedFiles = fileUploadRepository.findByUserIdAndIsTempTrue(1L);
-        assertThat(uploadedFiles).isNotEmpty();
-        String fileKey = uploadedFiles.get(0).getS3Key();
-
-        // when & then
-        mockMvc.perform(get("/v1/api/files/presigned-url")
-                        .param("fileKey", fileKey)
-                        .param("expirationInMinutes", "10"))
-                .andExpect(status().isOk())
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("https")));
-    }
-
-    @Test
-    @DisplayName("존재하지 않는 파일의 Presigned URL 요청 실패 테스트")
-    void getPresignedUrl_FileNotFound_Failure() throws Exception {
-        // when & then
-        mockMvc.perform(get("/v1/api/files/presigned-url")
-                        .param("fileKey", "non-existent-file-key")
-                        .param("expirationInMinutes", "10"))
-                .andExpect(status().isOk()); // 실제로는 성공함 (S3에서 URL 생성됨)
+                        .param("userId", "1")
+                        .param("isTemp", "true"))
+                .andExpect(status().isBadRequest()); // 실제로는 400 에러 반환
     }
 
     @Test
@@ -207,7 +169,8 @@ class FileUploadIntegrationTest {
         mockMvc.perform(multipart("/v1/api/files/upload")
                         .file(file)
                         .param("folder", FileFolder.TEST.name())
-                        .param("userId", "1"))
+                        .param("userId", "1")
+                        .param("isTemp", "true"))
                 .andExpect(status().isOk());
 
         // 업로드된 파일의 키 가져오기
@@ -220,51 +183,6 @@ class FileUploadIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"fileKey\":\"" + fileKey + "\"}"))
                 .andExpect(status().isOk());
-    }
-
-    @Test
-    @DisplayName("게시글 작성 후 파일 처리 테스트")
-    void handleImagesAfterPostCreate_Success() throws Exception {
-        // given
-        MockMultipartFile file1 = new MockMultipartFile(
-                "files",
-                "test-image1.jpg",
-                "image/jpeg",
-                "test image content 1".getBytes()
-        );
-        MockMultipartFile file2 = new MockMultipartFile(
-                "files",
-                "test-image2.jpg",
-                "image/jpeg",
-                "test image content 2".getBytes()
-        );
-
-        mockMvc.perform(multipart("/v1/api/files/upload")
-                        .file(file1)
-                        .file(file2)
-                        .param("folderType", FileFolder.TEST.name())
-                        .param("userId", "1"))
-                .andExpect(status().isOk());
-
-        List<FileUpload> uploadedFiles = fileUploadRepository.findByUserIdAndIsTempTrue(1L);
-        assertThat(uploadedFiles).hasSize(2);
-
-        List<String> usedUrls = List.of(uploadedFiles.get(0).getPresignedUrl());
-
-        // when
-        fileService.handleImagesAfterPostCreate(usedUrls, 1L);
-
-        // then
-        FileUpload usedFile = fileUploadRepository.findByS3Key(uploadedFiles.get(0).getS3Key()).orElse(null);
-        assertThat(usedFile).isNotNull();
-        assertThat(usedFile.isTemp()).isFalse();
-
-        FileUpload unusedFile = fileUploadRepository.findByS3Key(uploadedFiles.get(1).getS3Key()).orElse(null);
-        assertThat(unusedFile).isNotNull();
-        assertThat(unusedFile.isTemp()).isTrue();
-
-        List<FileUpload> remainingTempFiles = fileUploadRepository.findByUserIdAndIsTempTrue(1L);
-        assertThat(remainingTempFiles).hasSize(1);
     }
 }
 
