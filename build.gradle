@@ -65,13 +65,10 @@ dependencies {
 	implementation 'commons-codec:commons-codec:1.15' // for sha256Hex
 
 	// AWS S3
-	implementation 'software.amazon.awssdk:s3:2.29.44'
-	implementation 'software.amazon.awssdk:s3-transfer-manager:2.29.44'
+	implementation 'com.amazonaws:aws-java-sdk-s3:1.12.261'
 
-	// webp 변환 라이브러리
-	implementation 'com.sksamuel.scrimage:scrimage-core:4.3.0'
-	implementation 'com.sksamuel.scrimage:scrimage-webp:4.3.0'
-	implementation 'com.twelvemonkeys.imageio:imageio-webp:3.10.1'
+	// 이미지 처리 라이브러리 (향후 리사이징용)
+	implementation 'net.coobird:thumbnailator:0.4.14'
 
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
