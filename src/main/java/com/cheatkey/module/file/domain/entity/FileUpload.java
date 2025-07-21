@@ -21,10 +21,11 @@ public class FileUpload {
 
     private String originalName;
 
-    private String storedName;
+    @Column(name = "s3_key", length = 500)
+    private String s3Key;
 
-    @Column(length = 1000)
-    private String url;
+    @Column(name = "presigned_url", length = 1000)
+    private String presignedUrl;
 
     private String folder;
 
