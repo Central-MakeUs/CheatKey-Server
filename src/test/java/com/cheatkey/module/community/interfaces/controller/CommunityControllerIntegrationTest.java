@@ -28,10 +28,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class CommunityControllerIntegrationTest {
     @Autowired
     private MockMvc mockMvc;
+
     @Autowired
     private ObjectMapper objectMapper;
+
     @Autowired
     private CommunityPostRepository communityPostRepository;
+
     @Autowired
     private JwtProvider jwtProvider;
 
