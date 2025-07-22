@@ -57,6 +57,15 @@ public enum ErrorCode {
     FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "파일을 찾을 수 없습니다."),
     FILE_NOT_PERMANENT(HttpStatus.BAD_REQUEST, "임시 파일은 영구 파일로만 접근할 수 있습니다."),
 
+    // Community Comment (댓글/대댓글)
+    COMMUNITY_POST_NOT_FOUND(HttpStatus.NOT_FOUND, "게시글이 존재하지 않습니다."),
+    COMMUNITY_COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "댓글이 존재하지 않습니다."),
+    COMMUNITY_COMMENT_PARENT_NOT_FOUND(HttpStatus.NOT_FOUND, "부모 댓글이 존재하지 않습니다."),
+    COMMUNITY_COMMENT_CANNOT_REPLY_TO_REPLY(HttpStatus.BAD_REQUEST, "대댓글에는 대댓글을 달 수 없습니다."),
+    COMMUNITY_COMMENT_DELETED_CANNOT_REPLY(HttpStatus.BAD_REQUEST, "삭제된 댓글에는 대댓글을 작성할 수 없습니다."),
+    COMMUNITY_COMMENT_ONLY_AUTHOR_CAN_DELETE(HttpStatus.UNAUTHORIZED, "본인만 댓글을 삭제할 수 있습니다."),
+    COMMUNITY_POST_DELETED_OR_REPORTED(HttpStatus.BAD_REQUEST, "삭제/신고된 게시글에는 댓글을 작성할 수 없습니다."),
+
 
     /**
      * 시스템 예외
