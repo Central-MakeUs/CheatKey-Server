@@ -7,6 +7,10 @@ import com.cheatkey.module.community.domian.entity.CommunityCategory;
 import com.cheatkey.module.community.domian.entity.CommunityPost;
 import com.cheatkey.module.community.domian.repository.CommunityPostRepository;
 import com.cheatkey.module.community.interfaces.dto.CommunityPostCreateRequest;
+import com.cheatkey.module.community.interfaces.dto.CommunityPostReportRequest;
+import com.cheatkey.module.community.interfaces.dto.CommunityPostBlockRequest;
+import com.cheatkey.module.community.domian.repository.CommunityReportedPostRepository;
+import com.cheatkey.module.community.domian.repository.CommunityPostBlockRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -16,6 +20,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -25,6 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@Transactional
 class CommunityControllerIntegrationTest {
     @Autowired
     private MockMvc mockMvc;
@@ -37,6 +43,11 @@ class CommunityControllerIntegrationTest {
 
     @Autowired
     private JwtProvider jwtProvider;
+
+    @Autowired
+    private CommunityReportedPostRepository communityReportedPostRepository;
+    @Autowired
+    private CommunityPostBlockRepository communityPostBlockRepository;
 
     @Test
     @DisplayName("커뮤니티 글 작성 통합 테스트 - 성공 및 DB 저장 검증")
@@ -139,5 +150,66 @@ class CommunityControllerIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("게시글 신고 통합 테스트 - 성공 및 중복 신고 예외")
+    void reportPost_success_and_duplicate() throws Exception {
+        // given
+        CommunityPost post = CommunityPost.builder()
+                .title("신고 테스트 제목")
+                .content("신고 테스트 내용")
+                .category(CommunityCategory.REPORT)
+                .userId(10L)
+                .status(com.cheatkey.module.community.domian.entity.PostStatus.ACTIVE)
+                .build();
+        communityPostRepository.save(post);
+        Long postId = post.getId();
+        CommunityPostReportRequest request = new CommunityPostReportRequest();
+        request.setReporterId(20L);
+        request.setReasonCode("FAKE");
+        String jwt = jwtProvider.createAccessToken(1L, Provider.KAKAO, AuthRole.USER);
+
+        // when & then (정상 신고)
+        mockMvc.perform(post("/v1/api/community/posts/" + postId + "/report")
+                        .header("Authorization", "Bearer " + jwt)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+
+        // when & then (중복 신고)
+        mockMvc.perform(post("/v1/api/community/posts/" + postId + "/report")
+                        .header("Authorization", "Bearer " + jwt)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("POST_ALREADY_REPORTED"));
+    }
+
+    @Test
+    @DisplayName("게시글 차단 통합 테스트 - 성공 및 중복 차단 예외")
+    void blockUser_success_and_duplicate() throws Exception {
+        // given
+        Long blockerId = 30L;
+        Long blockedId = 40L;
+        CommunityPostBlockRequest request = new CommunityPostBlockRequest();
+        request.setBlockerId(blockerId);
+        request.setReason("HATE");
+        String jwt = jwtProvider.createAccessToken(1L, Provider.KAKAO, AuthRole.USER);
+
+        // when & then (정상 차단)
+        mockMvc.perform(post("/v1/api/community/users/" + blockedId + "/block")
+                        .header("Authorization", "Bearer " + jwt)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+
+        // when & then (중복 차단)
+        mockMvc.perform(post("/v1/api/community/users/" + blockedId + "/block")
+                        .header("Authorization", "Bearer " + jwt)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("USER_ALREADY_BLOCKED"));
     }
 } 
