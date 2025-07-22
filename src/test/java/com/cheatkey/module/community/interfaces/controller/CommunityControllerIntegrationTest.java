@@ -58,6 +58,7 @@ class CommunityControllerIntegrationTest {
                 .title("통합테스트 제목12345")
                 .content("통합테스트 내용12345")
                 .category(CommunityCategory.REPORT)
+                .nickname("테스트유저1")
                 .build();
         String jwt = jwtProvider.createAccessToken(1L, Provider.KAKAO, AuthRole.USER);
 
@@ -161,6 +162,8 @@ class CommunityControllerIntegrationTest {
                 .content("신고 테스트 내용")
                 .category(CommunityCategory.REPORT)
                 .userId(10L)
+                .nickname("테스트유저1")
+                .viewCount(0L)
                 .status(com.cheatkey.module.community.domian.entity.PostStatus.ACTIVE)
                 .build();
         communityPostRepository.save(post);

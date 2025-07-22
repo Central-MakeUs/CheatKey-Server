@@ -48,6 +48,8 @@ class CommunityCommentControllerIntegrationTest {
                 .title("제목")
                 .content("내용")
                 .userId(1L)
+                .nickname("테스트유저1")
+                .viewCount(0L)
                 .category(CommunityCategory.TALK)
                 .status(PostStatus.ACTIVE)
                 .build();
@@ -101,6 +103,8 @@ class CommunityCommentControllerIntegrationTest {
                 .title("삭제된글")
                 .content("내용")
                 .userId(1L)
+                .nickname("테스트유저1")
+                .viewCount(0L)
                 .category(CommunityCategory.TALK)
                 .status(PostStatus.DELETED)
                 .build();
