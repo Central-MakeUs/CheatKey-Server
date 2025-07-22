@@ -66,6 +66,12 @@ public enum ErrorCode {
     COMMUNITY_COMMENT_ONLY_AUTHOR_CAN_DELETE(HttpStatus.UNAUTHORIZED, "본인만 댓글을 삭제할 수 있습니다."),
     COMMUNITY_POST_DELETED_OR_REPORTED(HttpStatus.BAD_REQUEST, "삭제/신고된 게시글에는 댓글을 작성할 수 없습니다."),
 
+    // Community Post 신고/차단/삭제
+    POST_ALREADY_REPORTED(HttpStatus.BAD_REQUEST, "이미 신고한 게시글입니다."),
+    POST_NOT_FOUND(HttpStatus.NOT_FOUND, "게시글이 존재하지 않습니다."),
+    POST_NOT_OWNER(HttpStatus.UNAUTHORIZED, "본인만 삭제할 수 있습니다."),
+    USER_ALREADY_BLOCKED(HttpStatus.BAD_REQUEST, "이미 차단한 유저입니다."),
+
 
     /**
      * 시스템 예외
