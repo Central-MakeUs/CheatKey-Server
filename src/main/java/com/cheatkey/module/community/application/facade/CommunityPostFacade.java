@@ -36,7 +36,8 @@ public class CommunityPostFacade {
             safeTitle,
             safeContent,
             request.getCategory(),
-            request.getUserId()
+            request.getUserId(),
+            request.getNickname()
         );
         Long postId = communityService.createPost(post);
 

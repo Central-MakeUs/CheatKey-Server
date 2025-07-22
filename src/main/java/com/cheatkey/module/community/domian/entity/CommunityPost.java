@@ -25,6 +25,8 @@ public class CommunityPost {
     private CommunityCategory category;
 
     private Long userId;
+    private String nickname;
+    private Long viewCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -32,13 +34,19 @@ public class CommunityPost {
     private PostStatus status; // ACTIVE, DELETED, REPORTED (soft delete)
 
 
-    public static CommunityPost createPost(String title, String content, CommunityCategory category, Long userId) {
+    public static CommunityPost createPost(String title, String content, CommunityCategory category, Long userId, String nickname) {
         return CommunityPost.builder()
                 .title(title)
                 .content(content)
                 .category(category)
                 .userId(userId)
+                .nickname(nickname)
+                .viewCount(0L)
                 .status(PostStatus.ACTIVE)
                 .build();
+    }
+
+    public void setViewCount(Long viewCount) {
+        this.viewCount = viewCount;
     }
 }
