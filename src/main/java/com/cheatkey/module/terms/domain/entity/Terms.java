@@ -22,10 +22,12 @@ public class Terms {
 
     private String title;
 
-    private boolean required;
+    private String subTitle;
 
     @Column(columnDefinition = "TEXT")
-    private String content;
+    private String contents;
+
+    private boolean required;
 
     private String version;
 
