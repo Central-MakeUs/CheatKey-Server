@@ -6,7 +6,7 @@ import lombok.*;
 
 import java.util.List;
 
-import static com.cheatkey.module.auth.interfaces.dto.AuthInfoOptionsResponse.*;
+import static com.cheatkey.common.code.interfaces.dto.OptionsResponse.*;
 
 @Getter
 @Builder

@@ -1,6 +1,8 @@
 package com.cheatkey.module.auth.interfaces.controller;
 
 import com.cheatkey.common.code.domain.entity.CodeType;
+import com.cheatkey.common.code.domain.service.CodeService;
+import com.cheatkey.common.code.interfaces.dto.OptionsResponse;
 import com.cheatkey.common.exception.CustomException;
 import com.cheatkey.common.exception.ErrorCode;
 import com.cheatkey.common.jwt.JwtProvider;
@@ -9,7 +11,6 @@ import com.cheatkey.module.auth.domain.entity.Provider;
 import com.cheatkey.module.auth.domain.mapper.AuthMapper;
 import com.cheatkey.module.auth.domain.service.AuthService;
 import com.cheatkey.module.auth.domain.service.AuthSignInService;
-import com.cheatkey.module.auth.interfaces.dto.AuthInfoOptionsResponse.Option;
 import com.cheatkey.module.auth.interfaces.dto.AuthRegisterInitResponse;
 import com.cheatkey.module.auth.interfaces.dto.AuthRegisterRequest;
 import com.cheatkey.module.auth.interfaces.dto.SignInResponse;
@@ -31,6 +32,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import static com.cheatkey.common.code.interfaces.dto.OptionsResponse.*;
 
 import java.util.List;
 
@@ -43,6 +45,7 @@ public class AuthController {
     private final AuthService authService;
     private final TermsService termsService;
     private final AuthSignInService authSignInService;
+    private final CodeService codeService;
 
     private final AuthMapper authMapper;
     private final TermsMapper termsMapper;
@@ -98,10 +101,10 @@ public class AuthController {
 //            throw new CustomException(ErrorCode.AUTH_ALREADY_REGISTERED);
 //        }
 
-        List<Option> ageCodeList = authService.getOptionsByType(CodeType.AGE_GROUP);
-        List<Option> genderCodeList = authService.getOptionsByType(CodeType.GENDER);
-        List<Option> tradeMethodCodeList = authService.getOptionsByType(CodeType.TRADE_METHOD);
-        List<Option> tradeItemCodeList = authService.getOptionsByType(CodeType.TRADE_ITEM);
+        List<Option> ageCodeList = codeService.getOptionsByType(CodeType.AGE_GROUP);
+        List<Option> genderCodeList = codeService.getOptionsByType(CodeType.GENDER);
+        List<Option> tradeMethodCodeList = codeService.getOptionsByType(CodeType.TRADE_METHOD);
+        List<Option> tradeItemCodeList = codeService.getOptionsByType(CodeType.TRADE_ITEM);
 
         List<Terms> terms = termsService.getTermsForRegistration();
         List<TermsDto> termsList = termsMapper.toDtoList(terms);

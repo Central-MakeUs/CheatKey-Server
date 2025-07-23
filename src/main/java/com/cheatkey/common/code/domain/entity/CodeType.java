@@ -7,5 +7,6 @@ public enum CodeType {
     AGE_GROUP,
     GENDER,
     TRADE_METHOD,
-    TRADE_ITEM
+    TRADE_ITEM,
+    REPORT
 }

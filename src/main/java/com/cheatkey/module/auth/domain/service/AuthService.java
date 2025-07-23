@@ -1,12 +1,8 @@
 package com.cheatkey.module.auth.domain.service;
 
-import com.cheatkey.common.code.domain.entity.CodeType;
 import com.cheatkey.common.exception.CustomException;
 import com.cheatkey.common.exception.ErrorCode;
 import com.cheatkey.module.auth.domain.entity.Auth;
-import com.cheatkey.module.auth.interfaces.dto.AuthInfoOptionsResponse;
-import com.cheatkey.module.auth.interfaces.dto.AuthInfoOptionsResponse.Option;
-import com.cheatkey.common.code.domain.repository.CodeRepository;
 import com.cheatkey.module.auth.domain.repository.AuthRepository;
 import com.cheatkey.module.auth.domain.validate.NicknameValidator;
 import com.cheatkey.module.terms.domain.service.TermsAgreementService;
@@ -25,7 +21,6 @@ public class AuthService {
     private final TermsAgreementService termsAgreementService;
 
     private final AuthRepository authRepository;
-    private final CodeRepository codeRepository;
     private final NicknameValidator nicknameValidator;
 
 
@@ -35,10 +30,6 @@ public class AuthService {
         if (authRepository.existsByNickname(nickname)) {
             throw new CustomException(ErrorCode.AUTH_DUPLICATE_NICKNAME);
         }
-    }
-
-    public List<Option> getOptionsByType(CodeType type) {
-        return AuthInfoOptionsResponse.from(codeRepository.findAllByType(type));
     }
 
     @Transactional
