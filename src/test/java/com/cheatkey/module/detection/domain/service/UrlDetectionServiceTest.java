@@ -1,5 +1,7 @@
 package com.cheatkey.module.detection.domain.service;
 
+import com.cheatkey.common.exception.CustomException;
+import com.cheatkey.common.exception.ErrorCode;
 import com.cheatkey.module.detection.domain.entity.DetectionInput;
 import com.cheatkey.module.detection.domain.entity.DetectionResult;
 import com.cheatkey.module.detection.domain.entity.DetectionStatus;
@@ -13,6 +15,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
@@ -33,10 +36,10 @@ class UrlDetectionServiceTest {
     public void 위험한_URL_감지시_DANGER_반환() {
         // given
         Long kakaoId = 99999L;
-        String url = "http://malicious.com";
-        DetectionInput input = new DetectionInput(url, DetectionType.URL);
+        String detectionUrl = "http://malicious.com";
+        DetectionInput input = new DetectionInput(detectionUrl, DetectionType.URL);
 
-        given(urlDetectionClient.checkUrl(url)).willReturn(true);
+        given(urlDetectionClient.checkUrl(detectionUrl)).willReturn(true);
 
         // when
         DetectionResult result = urlDetectionService.detect(input, kakaoId);
@@ -47,5 +50,41 @@ class UrlDetectionServiceTest {
 
         // 로그 이력 저장 여부 검증
         then(detectionHistoryRepository).should().save(any());
+    }
+
+    @Test
+    void 빈값_URL_입력시_예외발생() {
+        // given
+        Long userId = 1L;
+        DetectionInput input = new DetectionInput("", DetectionType.URL);
+
+        // when & then
+        CustomException ex = assertThrows(CustomException.class, () -> urlDetectionService.detect(input, userId));
+        assertEquals(ErrorCode.INVALID_INPUT_TYPE_URL, ex.getErrorCode());
+        assertEquals("URL을 입력하지 않았어요", ex.getErrorCode().getMessage());
+    }
+
+    @Test
+    void 잘못된_형식_URL_입력시_예외발생() {
+        // given
+        Long userId = 1L;
+        DetectionInput input = new DetectionInput("not_a_url", DetectionType.URL);
+
+        // when & then
+        CustomException ex = assertThrows(CustomException.class, () -> urlDetectionService.detect(input, userId));
+        assertEquals(ErrorCode.INVALID_INPUT_TYPE_URL, ex.getErrorCode());
+        assertEquals("URL을 입력하지 않았어요", ex.getErrorCode().getMessage());
+    }
+
+    @Test
+    void null_URL_입력시_예외발생() {
+        // given
+        Long userId = 1L;
+        DetectionInput input = new DetectionInput(null, DetectionType.URL);
+
+        // when & then
+        CustomException ex = assertThrows(CustomException.class, () -> urlDetectionService.detect(input, userId));
+        assertEquals(ErrorCode.INVALID_INPUT_TYPE_URL, ex.getErrorCode());
+        assertEquals("URL을 입력하지 않았어요", ex.getErrorCode().getMessage());
     }
 }
