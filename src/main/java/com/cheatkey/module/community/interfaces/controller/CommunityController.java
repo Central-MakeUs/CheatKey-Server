@@ -1,30 +1,30 @@
 package com.cheatkey.module.community.interfaces.controller;
 
+import com.cheatkey.common.code.domain.entity.CodeType;
+import com.cheatkey.common.code.domain.service.CodeService;
 import com.cheatkey.common.exception.ImageException;
 import com.cheatkey.module.community.application.facade.CommunityPostFacade;
-import com.cheatkey.module.community.domian.service.CommentService;
 import com.cheatkey.module.community.domian.service.CommunityService;
-import com.cheatkey.module.community.interfaces.dto.CommunityPostBlockRequest;
-import com.cheatkey.module.community.interfaces.dto.CommunityPostCreateRequest;
-import com.cheatkey.module.community.interfaces.dto.CommunityPostReportRequest;
-import com.cheatkey.module.community.interfaces.dto.CommunityPostListResponse;
-import com.cheatkey.module.community.interfaces.dto.CommunityPostDetailResponse;
-import com.cheatkey.module.community.interfaces.dto.CommunityPostListRequest;
+import com.cheatkey.module.community.interfaces.dto.*;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.PageRequest;
+
+import java.util.List;
+
+import static com.cheatkey.common.code.interfaces.dto.OptionsResponse.Option;
 
 @Tag(name = "Community", description = "커뮤니티 관련 API")
 @Slf4j
@@ -35,6 +35,47 @@ public class CommunityController {
 
     private final CommunityPostFacade communityPostFacade;
     private final CommunityService communityService;
+    private final CodeService codeService;
+
+    @Operation(summary = "커뮤니티 게시글 목록 조회", description = "정상(ACTIVE) 상태의 게시글 중 차단되지 않은 게시글만 페이징/검색/정렬 조건에 따라 조회합니다. 대표 이미지는 최대 5개 presignedUrl만 제공합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "게시글 목록 조회 성공", content = @Content(schema = @Schema(implementation = CommunityPostListResponse.class)))
+    })
+    @GetMapping("/posts")
+    public ResponseEntity<Page<CommunityPostListResponse>> getPosts(@ModelAttribute CommunityPostListRequest request,
+                                                                    @Parameter(description = "로그인 유저 ID", required = true, example = "1") @RequestParam Long userId // TODO: 인증 정보에서 추출
+    ) {
+        int page = Math.max(request.getPage() - 1, 0); // 1부터 시작
+        Pageable pageable = PageRequest.of(page, request.getSize());
+
+        Page<CommunityPostListResponse> posts = communityService.getPostList(userId, request.getKeyword(), request.getSort(), pageable);
+        return ResponseEntity.ok(posts);
+    }
+
+    @Operation(summary = "커뮤니티 게시글 상세 조회", description = "정상(ACTIVE) 상태의 게시글 상세 정보를 조회합니다. 첨부파일 전체, 댓글/대댓글, 차단/신고 정책, 삭제 가능 여부 등을 포함합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "게시글 상세 조회 성공", content = @Content(schema = @Schema(implementation = CommunityPostDetailResponse.class)))
+    })
+    @GetMapping("/posts/{postId}")
+    public ResponseEntity<CommunityPostDetailResponse> getPostDetail(@PathVariable Long postId,
+                                                                     @RequestParam Long userId // TODO: 인증 정보에서 추출
+    ) {
+        CommunityPostDetailResponse detail = communityService.getPostDetail(userId, postId);
+        return ResponseEntity.ok(detail);
+    }
+
+    @Operation(summary = "(★) 게시글 신고하기 목록", description = "게시글 신고하기 목록을 조회합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "게시글 신고하기 목록 조회 성공", content = @Content(schema = @Schema(implementation = CommunityReportInfoOptionsResponse.class)))
+    })
+    @GetMapping("/posts/report-reasons")
+    public ResponseEntity<CommunityReportInfoOptionsResponse> getReportPost() {
+        List<Option> repostCodeList = codeService.getOptionsByType(CodeType.REPORT);
+        CommunityReportInfoOptionsResponse response = CommunityReportInfoOptionsResponse.builder()
+                .reportCodeList(repostCodeList)
+                .build();
+        return ResponseEntity.ok(response);
+    }
 
     @Operation(summary = "(★) 커뮤니티 글 작성", description = "커뮤니티 글을 작성합니다. 파일 첨부 가능.")
     @ApiResponses({
@@ -84,32 +125,5 @@ public class CommunityController {
         // TODO: 인증 정보에서 userId 추출
         communityService.deletePost(postId, userId);
         return ResponseEntity.noContent().build();
-    }
-
-    @Operation(summary = "커뮤니티 게시글 목록 조회", description = "정상(ACTIVE) 상태의 게시글 중 차단되지 않은 게시글만 페이징/검색/정렬 조건에 따라 조회합니다. 대표 이미지는 최대 5개 presignedUrl만 제공합니다.")
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "게시글 목록 조회 성공", content = @Content(schema = @Schema(implementation = CommunityPostListResponse.class)))
-    })
-    @GetMapping("/posts")
-    public ResponseEntity<Page<CommunityPostListResponse>> getPosts(@ModelAttribute CommunityPostListRequest request,
-                                                                    @Parameter(description = "로그인 유저 ID", required = true, example = "1") @RequestParam Long userId // TODO: 인증 정보에서 추출
-    ) {
-        int page = Math.max(request.getPage() - 1, 0); // 1부터 시작
-        Pageable pageable = PageRequest.of(page, request.getSize());
-
-        Page<CommunityPostListResponse> posts = communityService.getPostList(userId, request.getKeyword(), request.getSort(), pageable);
-        return ResponseEntity.ok(posts);
-    }
-
-    @Operation(summary = "커뮤니티 게시글 상세 조회", description = "정상(ACTIVE) 상태의 게시글 상세 정보를 조회합니다. 첨부파일 전체, 댓글/대댓글, 차단/신고 정책, 삭제 가능 여부 등을 포함합니다.")
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "게시글 상세 조회 성공", content = @Content(schema = @Schema(implementation = CommunityPostDetailResponse.class)))
-    })
-    @GetMapping("/posts/{postId}")
-    public ResponseEntity<CommunityPostDetailResponse> getPostDetail(@PathVariable Long postId,
-                                                                     @RequestParam Long userId // TODO: 인증 정보에서 추출
-    ) {
-        CommunityPostDetailResponse detail = communityService.getPostDetail(userId, postId);
-        return ResponseEntity.ok(detail);
     }
 }
