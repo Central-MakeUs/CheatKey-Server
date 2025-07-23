@@ -16,7 +16,7 @@ public class UrlDetectionService {
     private final DetectionHistoryRepository detectionHistoryRepository;
 
     public DetectionResult detect(DetectionInput input, Long userId) {
-        if (input.type() != DetectionType.URL) {
+        if (input.type() != DetectionType.URL || input.content() == null || input.content().isBlank() || !input.content().matches("^(https?://)[\\w\\-\\.]+(\\.[\\w\\-]+)+(:\\d+)?(/[\\w\\-./?%&=]*)?$")) {
             throw new CustomException(ErrorCode.INVALID_INPUT_TYPE_URL);
         }
 

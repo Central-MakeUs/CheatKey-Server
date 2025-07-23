@@ -10,6 +10,7 @@ import com.cheatkey.module.detection.interfaces.dto.DetectionResponse;
 import com.cheatkey.module.detection.interfaces.dto.UrlDetectionRequest;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,9 +28,9 @@ public class DetectionController {
     private final CaseDetectionService caseDetectionService;
 
     @PostMapping("/url")
-    public ResponseEntity<DetectionResponse> detectUrl(@RequestBody UrlDetectionRequest urlDetectionRequest,
+    public ResponseEntity<DetectionResponse> detectUrl(@Valid @RequestBody UrlDetectionRequest urlDetectionRequest,
                                                        HttpServletRequest request) {
-        DetectionInput input = new DetectionInput(urlDetectionRequest.getUrl(), DetectionType.URL);
+        DetectionInput input = new DetectionInput(urlDetectionRequest.getDetectionUrl(), DetectionType.URL);
 
         // @TODO 로그인 유저 검색 방식 수정
         Long userId = 99999L;

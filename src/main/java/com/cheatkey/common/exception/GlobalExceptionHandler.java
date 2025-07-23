@@ -19,7 +19,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex) {
-        String message = ex.getBindingResult().getFieldError().getDefaultMessage(); // 첫 번째 필드 에러 메시지만 추출
+        String message = ex.getBindingResult().getFieldError().getDefaultMessage();
+
+        // detectionUrl 필드 validation 실패 시 메시지 통일
+        if ("detectionUrl".equals(ex.getBindingResult().getFieldError().getField())) {
+            message = "URL을 입력하지 않았어요";
+        }
 
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)

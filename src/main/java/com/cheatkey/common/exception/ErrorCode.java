@@ -29,7 +29,7 @@ public enum ErrorCode {
     AUTH_REQUIRED_TERMS_NOT_AGREED(HttpStatus.BAD_REQUEST, "필수 약관에 모두 동의해야 가입할 수 있습니다."),
 
     // Detection (피싱 검색)
-    INVALID_INPUT_TYPE_URL(HttpStatus.BAD_REQUEST, "검사 입력 타입은 URL이어야 합니다."),
+    INVALID_INPUT_TYPE_URL(HttpStatus.BAD_REQUEST, "URL을 입력하지 않았어요"),
     INVALID_INPUT_TYPE_CASE(HttpStatus.BAD_REQUEST, "검사 입력 타입은 CASE이어야 합니다."),
     DETECTION_FAILED(HttpStatus.BAD_REQUEST, "피싱 분석 중 오류가 발생 했습니다. 다시 시도해 주세요."),
     GOOGLE_API_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "Google Safe Browsing API 호출에 실패했습니다. 나중에 다시 시도해주세요."),
