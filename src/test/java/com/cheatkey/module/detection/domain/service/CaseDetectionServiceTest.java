@@ -39,14 +39,15 @@ class CaseDetectionServiceTest {
     @Test
     public void 입력_받으면_유사도_검색하고_결과를_반환한다() {
         // given
-        Long kakaoId = 99999L;
+        Long kakaoId = 1L;
 
         String inputText = "의심스러운 문자 내용입니다.";
         DetectionInput input = new DetectionInput(inputText, DetectionType.CASE);
 
         List<Float> dummyEmbedding = List.of(0.1f, 0.2f, 0.3f);
         List<VectorDbClient.SearchResult> mockResults = List.of(
-                new VectorDbClient.SearchResult("575aa23f-28bd-4673-ad9d-87e7921f8ee5", 0.47f, Map.of("category", "phishing"))
+                new VectorDbClient.SearchResult("575aa23f-28bd-4673-ad9d-87e7921f8ee5", 0.47f, 
+                    Map.of("CATEGORY", "피싱", "CONTENT", "의심스러운 피싱 사례", "data_version", "v2"))
         );
 
         given(vectorDbClient.embed(inputText)).willReturn(dummyEmbedding);
@@ -69,7 +70,7 @@ class CaseDetectionServiceTest {
         DetectionInput input = new DetectionInput("http://example.com", DetectionType.URL);
 
         // when + then
-        assertThatThrownBy(() -> caseDetectionService.detect(input, 99999L))
+        assertThatThrownBy(() -> caseDetectionService.detect(input, 1L))
                 .isInstanceOf(CustomException.class)
                 .hasMessage(ErrorCode.INVALID_INPUT_TYPE_CASE.getMessage());
     }

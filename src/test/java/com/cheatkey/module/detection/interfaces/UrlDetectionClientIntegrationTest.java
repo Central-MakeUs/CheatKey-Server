@@ -1,4 +1,4 @@
-package com.cheatkey.module.detection;
+package com.cheatkey.module.detection.interfaces;
 
 import com.cheatkey.module.detection.infra.client.UrlDetectionClient;
 import org.junit.jupiter.api.Disabled;
