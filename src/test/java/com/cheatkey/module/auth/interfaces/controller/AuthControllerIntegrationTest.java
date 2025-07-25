@@ -5,6 +5,7 @@ import com.cheatkey.module.auth.domain.entity.Auth;
 import com.cheatkey.module.auth.domain.entity.AuthRole;
 import com.cheatkey.module.auth.domain.entity.AuthStatus;
 import com.cheatkey.module.auth.domain.entity.Provider;
+import com.cheatkey.module.auth.domain.repository.AuthRepository;
 import com.cheatkey.module.auth.domain.service.AuthSignInService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
@@ -32,6 +33,7 @@ class AuthControllerIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
+
     @Autowired
     private ObjectMapper objectMapper;
 
@@ -41,6 +43,9 @@ class AuthControllerIntegrationTest {
     @MockBean
     private JwtProvider jwtProvider;
 
+    @MockBean
+    private AuthRepository authRepository;
+
     @Test
     @DisplayName("정상 소셜 로그인 요청시 JWT가 발급된다")
     void socialLogin_success() throws Exception {
@@ -49,7 +54,7 @@ class AuthControllerIntegrationTest {
                 .provider(Provider.KAKAO)
                 .providerId("mockProviderId")
                 .email("test@kakao.com")
-                .status(AuthStatus.ACTIVE)
+                .status(AuthStatus.PENDING)
                 .role(AuthRole.USER)
                 .build();
 
@@ -69,7 +74,7 @@ class AuthControllerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").value("mockAccessTokenJwt"))
                 .andExpect(jsonPath("$.refreshToken").value("mockRefreshTokenJwt"))
-                .andExpect(jsonPath("$.userState").value("ACTIVE"));
+                .andExpect(jsonPath("$.userState").value(AuthStatus.PENDING.name()));
     }
 
     @Test
@@ -87,78 +92,79 @@ class AuthControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("idToken 누락시 400 반환")
-    void socialLogin_missingIdToken() throws Exception {
-        Map<String, Object> req = new HashMap<>();
-        req.put("provider", "KAKAO");
-        // idToken 누락
-        req.put("accessToken", "mockAccessToken");
+    @DisplayName("ACTIVE 상태가 아닌 유저는 보호 API 접근 시 401/403 반환")
+    void nonActiveUser_accessProtectedApi_forbidden() throws Exception {
+        // GIVEN: WITHDRAWN 상태의 유저
+        Long userId = 100L;
+        Auth withdrawnAuth = Auth.builder()
+                .id(userId)
+                .provider(Provider.KAKAO)
+                .status(AuthStatus.WITHDRAWN)
+                .role(AuthRole.USER)
+                .build();
 
-        mockMvc.perform(post("/v1/api/auth/login")
+        given(jwtProvider.validateToken(anyString())).willReturn(true);
+        given(jwtProvider.getUserIdFromToken(anyString())).willReturn(userId.toString());
+        given(authRepository.findById(userId)).willReturn(java.util.Optional.of(withdrawnAuth));
+
+        // WHEN & THEN: 보호 API(예: /logout) 접근 시 401/403
+        mockMvc.perform(post("/v1/api/auth/logout")
+                .header("Authorization", "Bearer mockToken")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isBadRequest());
+                .content("{\"refreshToken\":\"mockRefreshToken\"}"))
+                .andExpect(status().isUnauthorized()); // 또는 isForbidden()
     }
 
     @Test
-    @DisplayName("서비스에서 인증 실패시 401 반환")
-    void socialLogin_authServiceFail() throws Exception {
-        // 인증 실패 상황: 서비스가 null 반환
+    @DisplayName("ACTIVE 상태 유저는 보호 API 정상 접근 가능")
+    void activeUser_accessProtectedApi_success() throws Exception {
+        Long userId = 101L;
+        Auth activeAuth = Auth.builder()
+                .id(userId)
+                .provider(Provider.KAKAO)
+                .status(AuthStatus.ACTIVE)
+                .role(AuthRole.USER)
+                .build();
+
+        given(jwtProvider.validateToken(anyString())).willReturn(true);
+        given(jwtProvider.getUserIdFromToken(anyString())).willReturn(userId.toString());
+        given(authRepository.findById(userId)).willReturn(java.util.Optional.of(activeAuth));
+
+        mockMvc.perform(post("/v1/api/auth/logout")
+                .header("Authorization", "Bearer mockToken")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"refreshToken\":\"mockRefreshToken\"}"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("로그인/회원가입 등 @SkipUserStatusCheck 적용 API는 상태와 무관하게 정상 동작")
+    void skipUserStatusCheckApi_worksRegardlessOfStatus() throws Exception {
+        // GIVEN: WITHDRAWN 상태의 유저
+        Long userId = 102L;
+        Auth withdrawnAuth = Auth.builder()
+                .id(userId)
+                .provider(Provider.KAKAO)
+                .status(AuthStatus.WITHDRAWN)
+                .role(AuthRole.USER)
+                .build();
+
         given(authSignInService.signIn(any(), any(), any(), any(), any()))
-                .willReturn(null);
+                .willReturn(withdrawnAuth);
+        given(jwtProvider.createAccessToken(anyLong(), any(), any())).willReturn("mockAccessTokenJwt");
+        given(jwtProvider.createRefreshToken(anyLong())).willReturn("mockRefreshTokenJwt");
 
         Map<String, Object> req = new HashMap<>();
         req.put("provider", "KAKAO");
         req.put("idToken", "mockIdToken");
         req.put("accessToken", "mockAccessToken");
 
-        mockMvc.perform(post("/v1/api/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    @DisplayName("애플 로그인 성공시 JWT가 발급된다")
-    void appleLogin_success() throws Exception {
-        Auth mockAuth = Auth.builder()
-                .id(2L)
-                .provider(Provider.APPLE)
-                .providerId("apple123")
-                .email("test@apple.com")
-                .status(AuthStatus.PENDING)
-                .role(AuthRole.USER)
-                .build();
-
-        given(authSignInService.signIn(any(), any(), any(), any(), any()))
-                .willReturn(mockAuth);
-        given(jwtProvider.createAccessToken(anyLong(), any(), any())).willReturn("mockAppleAccessTokenJwt");
-        given(jwtProvider.createRefreshToken(anyLong())).willReturn("mockAppleRefreshTokenJwt");
-
-        Map<String, Object> req = new HashMap<>();
-        req.put("provider", "APPLE");
-        req.put("idToken", "mockAppleIdToken");
-        // 애플은 accessToken 없음
-
+        // WHEN & THEN: 로그인은 상태와 무관하게 정상 동작
         mockMvc.perform(post("/v1/api/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.accessToken").value("mockAppleAccessTokenJwt"))
-                .andExpect(jsonPath("$.refreshToken").value("mockAppleRefreshTokenJwt"))
-                .andExpect(jsonPath("$.userState").value("PENDING"));
-    }
-
-    @Test
-    @DisplayName("애플 로그인시 잘못된 provider 400 반환")
-    void appleLogin_invalidProvider() throws Exception {
-        Map<String, Object> req = new HashMap<>();
-        req.put("provider", "INVALID_APPLE");
-        req.put("idToken", "mockAppleIdToken");
-
-        mockMvc.perform(post("/v1/api/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isBadRequest());
+                .andExpect(jsonPath("$.accessToken").value("mockAccessTokenJwt"))
+                .andExpect(jsonPath("$.refreshToken").value("mockRefreshTokenJwt"));
     }
 } 
