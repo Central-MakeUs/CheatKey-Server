@@ -1,3 +1,4 @@
+# 주요 패키지 의존성 목록
 fastapi
 uvicorn
 transformers

@@ -1,3 +1,4 @@
+# 모델 로딩 및 임베딩 서비스 구현
 from transformers import AutoTokenizer, AutoModel
 import torch
 

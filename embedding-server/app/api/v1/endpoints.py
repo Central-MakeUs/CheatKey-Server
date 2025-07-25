@@ -1,3 +1,4 @@
+# 백터 변환 API 엔드포인트 구현
 from fastapi import APIRouter
 from pydantic import BaseModel
 from app.services.embedder import KoSimCSEEmbedder
