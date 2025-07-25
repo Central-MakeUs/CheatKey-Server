@@ -38,6 +38,12 @@ public class CaseDetectionService {
             float topScore = results.isEmpty() ? 0.0f : results.get(0).score();
             DetectionStatus status = detectionMapper.mapToStatus(results);
 
+            DetectionCategory category = detectionMapper.mapToCategory(results);
+            DetectionGroup group = DetectionGroup.NORMAL;
+            if(category.isPhishingGroup()) {
+                group = DetectionGroup.PHISHING;
+            }
+
             DetectionHistory history = DetectionHistory.builder()
                     .inputText(input.content())
                     .topScore(topScore)
@@ -60,7 +66,8 @@ public class CaseDetectionService {
                 vectorDbClient.saveVector(uuid, embedding, payload);
             }
 
-            return new DetectionResult(status, "Vector DB API 응답 기반");
+            return new DetectionResult(status, group);
+
         } catch (Exception e) {
             log.error("피싱 사례 분석 중 예외 발생", e);
             throw new CustomException(ErrorCode.DETECTION_FAILED);

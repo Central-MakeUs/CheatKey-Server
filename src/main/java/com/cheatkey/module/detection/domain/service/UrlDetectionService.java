@@ -32,7 +32,7 @@ public class UrlDetectionService {
                     .build();
             detectionHistoryRepository.save(history);
 
-            return new DetectionResult(status, "Google Safe Browsing API 응답 기반");
+            return new DetectionResult(status, null);
 
         } catch (Exception e) {
             throw new CustomException(ErrorCode.DETECTION_FAILED);

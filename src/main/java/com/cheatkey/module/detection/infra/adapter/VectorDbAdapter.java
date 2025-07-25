@@ -54,7 +54,8 @@ public class VectorDbAdapter implements VectorDbClient {
     public List<SearchResult> searchSimilarCases(List<Float> embedding, int topK) {
         Map<String, Object> body = Map.of(
                 "vector", embedding,
-                "top", topK
+                "top", topK,
+                "with_payload", true
         );
 
         ResponseEntity<Map> response = restTemplate.postForEntity(
