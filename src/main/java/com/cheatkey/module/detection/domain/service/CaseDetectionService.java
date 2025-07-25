@@ -48,11 +48,10 @@ public class CaseDetectionService {
                     .build();
             detectionHistoryRepository.save(history);
 
-            //@TODO payload 값 재 확인 필요
             if (topScore >= 0.8f) {
                 Map<String, Object> payload = Map.of(
-                        "SBJECT", input.content(),
-                        "AUTO_EXTRC_KWRD", results.get(0).payload().get("AUTO_EXTRC_KWRD"),
+                        "content", input.content(),
+                        // @TODO 이후 카테고리 화 필요 시 추가
                         "source", "user-analyzed",
                         "userId", loginUserId
                 );

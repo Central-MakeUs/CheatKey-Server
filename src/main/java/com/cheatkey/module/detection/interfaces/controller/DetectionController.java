@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/api/detection")
+@RequestMapping("/v1/api/detection")
 @Tag(name = "Detection", description = "사기 검색 관련 API")
 public class DetectionController {
 
@@ -28,8 +28,7 @@ public class DetectionController {
     private final CaseDetectionService caseDetectionService;
 
     @PostMapping("/url")
-    public ResponseEntity<DetectionResponse> detectUrl(@Valid @RequestBody UrlDetectionRequest urlDetectionRequest,
-                                                       HttpServletRequest request) {
+    public ResponseEntity<DetectionResponse> detectUrl(@Valid @RequestBody UrlDetectionRequest urlDetectionRequest) {
         DetectionInput input = new DetectionInput(urlDetectionRequest.getDetectionUrl(), DetectionType.URL);
 
         // @TODO 로그인 유저 검색 방식 수정
@@ -40,12 +39,11 @@ public class DetectionController {
     }
 
     @PostMapping("/case")
-    public ResponseEntity<DetectionResponse> detect(@RequestBody CaseDetectionRequest caseDetectionRequest,
-                                                    HttpServletRequest request) {
+    public ResponseEntity<DetectionResponse> detect(@RequestBody CaseDetectionRequest caseDetectionRequest) {
         DetectionInput input = new DetectionInput(caseDetectionRequest.getText(), DetectionType.CASE);
 
         // @TODO 로그인 유저 검색 방식 수정
-        Long userId = 99999L;
+        Long userId = 1L;
 
         DetectionResult result = caseDetectionService.detect(input, userId);
         return ResponseEntity.ok(new DetectionResponse(result));

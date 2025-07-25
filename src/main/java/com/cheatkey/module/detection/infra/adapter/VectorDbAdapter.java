@@ -20,10 +20,10 @@ public class VectorDbAdapter implements VectorDbClient {
 
     @Value("${qdrant.host}")
     private String QDRANT_HOST;
+    private final String COLLECTION = "phishing_cases";
 
     @Value("${embedding.api.url}")
     private String EMBEDDING_API_URL;
-    private final String COLLECTION = "phishing_cases";
 
     @Override
     public List<Float> embed(String text) {
