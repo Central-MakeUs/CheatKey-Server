@@ -53,13 +53,14 @@ class CaseDetectionServiceTest {
         given(vectorDbClient.embed(inputText)).willReturn(dummyEmbedding);
         given(vectorDbClient.searchSimilarCases(dummyEmbedding, 5)).willReturn(mockResults);
         given(detectionMapper.mapToStatus(mockResults)).willReturn(DetectionStatus.WARNING);
+        given(detectionMapper.mapToCategory(mockResults)).willReturn(DetectionCategory.PHISHING);
 
         // when
         DetectionResult result = caseDetectionService.detect(input, kakaoId);
 
         // then
         assertThat(result.status()).isEqualTo(DetectionStatus.WARNING);
-        assertThat(result.reason()).isEqualTo("Vector DB API 응답 기반");
+        assertThat(result.group()).isEqualTo(DetectionGroup.PHISHING);
 
         then(historyRepository).should().save(any(DetectionHistory.class));
     }

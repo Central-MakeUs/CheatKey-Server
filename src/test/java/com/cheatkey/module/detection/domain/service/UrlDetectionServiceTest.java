@@ -46,7 +46,7 @@ class UrlDetectionServiceTest {
 
         // then
         assertEquals(DetectionStatus.DANGER, result.status());
-        assertEquals("Google Safe Browsing API 응답 기반", result.reason());
+        assertEquals(null, result.group());
 
         // 로그 이력 저장 여부 검증
         then(detectionHistoryRepository).should().save(any());

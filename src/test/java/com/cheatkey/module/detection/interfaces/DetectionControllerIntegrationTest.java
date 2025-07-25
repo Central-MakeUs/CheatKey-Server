@@ -3,6 +3,8 @@ package com.cheatkey.module.detection.interfaces;
 import com.cheatkey.common.jwt.JwtProvider;
 import com.cheatkey.module.auth.domain.entity.AuthRole;
 import com.cheatkey.module.auth.domain.entity.Provider;
+import com.cheatkey.module.detection.domain.entity.DetectionCategory;
+import com.cheatkey.module.detection.domain.entity.DetectionGroup;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -38,7 +40,7 @@ class DetectionControllerIntegrationTest {
     @Test
     void 검색시_유사_사례_내용이_포함된다() throws Exception {
         // given
-        String inputText = "카카오톡으로 받은 링크를 클릭했는데";
+        String inputText = "오픈채팅에서 ‘돈 버는 부업’이라며 소개받은 사이트에 가입했어요.";
         String requestJson = objectMapper.writeValueAsString(Map.of("text", inputText));
         String jwt = jwtProvider.createAccessToken(1L, Provider.KAKAO, AuthRole.USER);
 
@@ -49,6 +51,6 @@ class DetectionControllerIntegrationTest {
                         .content(requestJson))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.status").exists())
-            .andExpect(jsonPath("$.reason").value("Vector DB API 응답 기반"));
+            .andExpect(jsonPath("$.group").value(DetectionGroup.PHISHING.name()));
     }
 } 
