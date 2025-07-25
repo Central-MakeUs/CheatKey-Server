@@ -80,4 +80,18 @@ public class Auth {
     public void setTradeItemCodes(List<String> codes) {
         this.tradeItemCode = String.join(",", codes);
     }
+
+    public void setStatus(AuthStatus status) {
+        this.status = status;
+    }
+
+    public void setNickname(String nickname) {
+        this.nickname = nickname;
+    }
+    public void setAgeCode(String ageCode) {
+        this.ageCode = ageCode;
+    }
+    public void setGenderCode(String genderCode) {
+        this.genderCode = genderCode;
+    }
 }

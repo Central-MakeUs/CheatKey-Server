@@ -4,5 +4,6 @@ public enum AuthStatus {
     PENDING,
     ACTIVE,
     INACTIVE,
-    BANNED
+    BANNED,
+    WITHDRAWN
 }
