@@ -1,16 +1,21 @@
 package com.cheatkey.module.file;
 
+import com.cheatkey.common.jwt.JwtProvider;
 import com.cheatkey.common.service.S3FileService;
+import com.cheatkey.module.auth.domain.entity.AuthRole;
+import com.cheatkey.module.auth.domain.entity.Provider;
 import com.cheatkey.module.file.domain.entity.FileUpload;
 import com.cheatkey.module.file.domain.repository.FileUploadRepository;
 import com.cheatkey.module.file.domain.service.FileService;
 import com.cheatkey.module.file.domain.entity.FileFolder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
@@ -27,10 +32,17 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
+@Disabled("S3 파일 업로드 실 API 호출용 테스트 - 수동 실행 전용")
 class FileUploadIntegrationTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Autowired
     private WebApplicationContext webApplicationContext;
@@ -44,14 +56,8 @@ class FileUploadIntegrationTest {
     @Autowired
     private S3FileService s3FileService;
 
-    private MockMvc mockMvc;
-    private ObjectMapper objectMapper;
-
-    @BeforeEach
-    void setUp() {
-        mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
-        objectMapper = new ObjectMapper();
-    }
+    @Autowired
+    private JwtProvider jwtProvider;
 
     @Test
     @DisplayName("파일 업로드 성공 테스트")
@@ -63,13 +69,15 @@ class FileUploadIntegrationTest {
                 "image/jpeg",
                 "test image content".getBytes()
         );
+        String jwt = jwtProvider.createAccessToken(1L, Provider.KAKAO, AuthRole.USER);
 
         // when & then
         String response = mockMvc.perform(multipart("/v1/api/files/upload")
                         .file(file)
                         .param("folder", FileFolder.TEST.name())
                         .param("userId", "1")
-                        .param("isTemp", "true"))
+                        .param("isTemp", "true")
+                        .header("Authorization", "Bearer " + jwt))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$[0].originalName").value("test-image.jpg"))
@@ -99,6 +107,7 @@ class FileUploadIntegrationTest {
                 "image/png",
                 "test image content 2".getBytes()
         );
+        String jwt = jwtProvider.createAccessToken(1L, Provider.KAKAO, AuthRole.USER);
 
         // when & then
         mockMvc.perform(multipart("/v1/api/files/upload")
@@ -106,7 +115,8 @@ class FileUploadIntegrationTest {
                         .file(file2)
                         .param("folderType", FileFolder.TEST.name())
                         .param("userId", "1")
-                        .param("isTemp", "true"))
+                        .param("isTemp", "true")
+                        .header("Authorization", "Bearer " + jwt))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$").value(org.hamcrest.Matchers.hasSize(2)))
@@ -124,13 +134,15 @@ class FileUploadIntegrationTest {
                 "image/jpeg",
                 new byte[0]
         );
+        String jwt = jwtProvider.createAccessToken(1L, Provider.KAKAO, AuthRole.USER);
 
         // when & then
         mockMvc.perform(multipart("/v1/api/files/upload")
                         .file(emptyFile)
                         .param("folder", FileFolder.TEST.name())
                         .param("userId", "1")
-                        .param("isTemp", "true"))
+                        .param("isTemp", "true")
+                        .header("Authorization", "Bearer " + jwt))
                 .andExpect(status().isBadRequest()); // 실제로는 400 에러 반환
     }
 
@@ -144,13 +156,15 @@ class FileUploadIntegrationTest {
                 "text/plain",
                 "test content".getBytes()
         );
+        String jwt = jwtProvider.createAccessToken(1L, Provider.KAKAO, AuthRole.USER);
 
         // when & then
         mockMvc.perform(multipart("/v1/api/files/upload")
                         .file(unsupportedFile)
                         .param("folder", FileFolder.TEST.name())
                         .param("userId", "1")
-                        .param("isTemp", "true"))
+                        .param("isTemp", "true")
+                        .header("Authorization", "Bearer " + jwt))
                 .andExpect(status().isBadRequest()); // 실제로는 400 에러 반환
     }
 
@@ -164,13 +178,15 @@ class FileUploadIntegrationTest {
                 "image/jpeg",
                 "test image content".getBytes()
         );
+        String jwt = jwtProvider.createAccessToken(1L, Provider.KAKAO, AuthRole.USER);
 
         // 파일 업로드
         mockMvc.perform(multipart("/v1/api/files/upload")
                         .file(file)
                         .param("folder", FileFolder.TEST.name())
                         .param("userId", "1")
-                        .param("isTemp", "true"))
+                        .param("isTemp", "true")
+                        .header("Authorization", "Bearer " + jwt))
                 .andExpect(status().isOk());
 
         // 업로드된 파일의 키 가져오기
@@ -181,7 +197,8 @@ class FileUploadIntegrationTest {
         // when & then
         mockMvc.perform(delete("/v1/api/files/delete")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"fileKey\":\"" + fileKey + "\"}"))
+                        .content("{\"fileKey\":\"" + fileKey + "\"}")
+                        .header("Authorization", "Bearer " + jwt))
                 .andExpect(status().isOk());
     }
 }

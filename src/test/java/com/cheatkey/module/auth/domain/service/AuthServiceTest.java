@@ -8,6 +8,7 @@ import com.cheatkey.module.auth.domain.entity.AuthRole;
 import com.cheatkey.module.auth.domain.entity.AuthStatus;
 import com.cheatkey.module.auth.domain.entity.Provider;
 import com.cheatkey.module.auth.domain.repository.AuthRepository;
+import com.cheatkey.module.auth.domain.service.token.RefreshTokenService;
 import com.cheatkey.module.auth.interfaces.dto.SignInResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -21,6 +22,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doNothing;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
@@ -29,6 +31,8 @@ class AuthServiceTest {
     private JwtProvider jwtProvider;
     @Mock
     private AuthRepository authRepository;
+    @Mock
+    private RefreshTokenService refreshTokenService;
     @InjectMocks
     private AuthService authService;
 
@@ -45,18 +49,22 @@ class AuthServiceTest {
                 .role(AuthRole.USER)
                 .build();
         String newAccessToken = "newAccessToken";
+        String newRefreshToken = "newRefreshToken";
 
         when(jwtProvider.validateToken(refreshToken)).thenReturn(true);
         when(jwtProvider.getUserIdFromToken(refreshToken)).thenReturn(userId.toString());
         when(authRepository.findById(userId)).thenReturn(Optional.of(mockAuth));
         when(jwtProvider.createAccessToken(anyLong(), any(), any())).thenReturn(newAccessToken);
+        when(jwtProvider.createRefreshToken(anyLong())).thenReturn(newRefreshToken);
+        doNothing().when(refreshTokenService).invalidateToken(anyString(), anyLong());
+        doNothing().when(refreshTokenService).saveOrUpdate(anyLong(), anyString());
 
         // when
         SignInResponse response = authService.refreshAccessToken(refreshToken);
 
         // then
         assertEquals(newAccessToken, response.getAccessToken());
-        assertEquals(refreshToken, response.getRefreshToken());
+        assertEquals(newRefreshToken, response.getRefreshToken()); // 토큰 순환으로 새 토큰 반환
         assertEquals("ACTIVE", response.getUserState());
         assertEquals("Bearer", response.getGrantType());
     }
