@@ -1,5 +1,6 @@
 package com.cheatkey.module.detection.interfaces.controller;
 
+import com.cheatkey.common.config.security.SecurityUtil;
 import com.cheatkey.module.detection.domain.entity.DetectionInput;
 import com.cheatkey.module.detection.domain.entity.DetectionResult;
 import com.cheatkey.module.detection.domain.entity.DetectionType;
@@ -8,8 +9,8 @@ import com.cheatkey.module.detection.domain.service.UrlDetectionService;
 import com.cheatkey.module.detection.interfaces.dto.CaseDetectionRequest;
 import com.cheatkey.module.detection.interfaces.dto.DetectionResponse;
 import com.cheatkey.module.detection.interfaces.dto.UrlDetectionRequest;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -27,23 +28,21 @@ public class DetectionController {
     private final UrlDetectionService urlDetectionService;
     private final CaseDetectionService caseDetectionService;
 
+    @Operation(summary = "URL 피싱 검사", description = "입력된 URL이 피싱 사이트인지 검사합니다.")
     @PostMapping("/url")
     public ResponseEntity<DetectionResponse> detectUrl(@Valid @RequestBody UrlDetectionRequest urlDetectionRequest) {
         DetectionInput input = new DetectionInput(urlDetectionRequest.getDetectionUrl(), DetectionType.URL);
-
-        // @TODO 로그인 유저 검색 방식 수정
-        Long userId = 99999L;
+        Long userId = Long.valueOf(SecurityUtil.getCurrentUserId());
 
         DetectionResult result = urlDetectionService.detect(input, userId);
         return ResponseEntity.ok(new DetectionResponse(result));
     }
 
+    @Operation(summary = "사기 사례 유사도 검사", description = "입력된 텍스트와 유사한 사기 사례를 검색합니다.")
     @PostMapping("/case")
     public ResponseEntity<DetectionResponse> detect(@RequestBody CaseDetectionRequest caseDetectionRequest) {
         DetectionInput input = new DetectionInput(caseDetectionRequest.getText(), DetectionType.CASE);
-
-        // @TODO 로그인 유저 검색 방식 수정
-        Long userId = 1L;
+        Long userId = Long.valueOf(SecurityUtil.getCurrentUserId());
 
         DetectionResult result = caseDetectionService.detect(input, userId);
         return ResponseEntity.ok(new DetectionResponse(result));

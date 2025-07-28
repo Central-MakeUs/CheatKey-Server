@@ -39,7 +39,7 @@ import static com.cheatkey.common.code.interfaces.dto.OptionsResponse.Option;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/v1/api/auth")
-@Tag(name = "Auth", description = "로그인 및 회원가입 관련 API")
+@Tag(name = "(★) Auth", description = "로그인 및 회원가입 관련 API")
 public class AuthController {
 
     private final AuthService authService;
@@ -87,7 +87,7 @@ public class AuthController {
                 .build());
     }
 
-    @Operation(summary = "회원가입 초기 정보 조회", description = "로그인된 사용자만 접근할 수 있으며, 이미 가입된 사용자인 경우 예외를 반환합니다.")
+    @Operation(summary = "(★) 회원가입 초기 정보 조회", description = "로그인된 사용자만 접근할 수 있으며, 이미 가입된 사용자인 경우 예외를 반환합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "회원가입 정보 반환"),
             @ApiResponse(responseCode = "401", description = "로그인되지 않은 상태"),
@@ -132,7 +132,7 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
 
-    @Operation(summary = "회원가입", description = "로그인된 사용자만 접근 가능하며, 사용자 정보를 등록하고 회원가입을 완료합니다.")
+    @Operation(summary = "(★) 회원가입", description = "로그인된 사용자만 접근 가능하며, 사용자 정보를 등록하고 회원가입을 완료합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "회원가입 성공"),
             @ApiResponse(responseCode = "400", description = "잘못된 요청"),
@@ -164,7 +164,7 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "로그아웃", description = "로그인된 사용자의 로그아웃 처리. 리프레시 토큰 무효화")
+    @Operation(summary = "(★) 로그아웃", description = "로그인된 사용자의 로그아웃 처리. 리프레시 토큰 무효화")
     @ApiResponse(responseCode = "200", description = "로그아웃 성공")
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(@RequestBody RefreshTokenRequest request) {
@@ -173,7 +173,7 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
 
-    @Operation(summary = "회원 탈퇴", description = "로그인된 사용자의 회원 정보를 삭제하고, 리프레시 토큰을 무효화합니다.")
+    @Operation(summary = "(★) 회원 탈퇴", description = "로그인된 사용자의 회원 정보를 삭제하고, 리프레시 토큰을 무효화합니다.")
     @ApiResponse(responseCode = "200", description = "회원 탈퇴 성공")
     @DeleteMapping("/withdraw")
     public ResponseEntity<Void> withdraw() {
