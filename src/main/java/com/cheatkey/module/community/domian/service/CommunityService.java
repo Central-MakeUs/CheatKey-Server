@@ -23,11 +23,12 @@ import com.cheatkey.module.file.domain.entity.FileUpload;
 import com.cheatkey.module.file.domain.repository.FileUploadRepository;
 import com.cheatkey.module.file.domain.service.FileService;
 import org.springframework.data.domain.PageImpl;
+import com.cheatkey.module.mypage.interfaces.dto.UserPostResponse;
+import com.cheatkey.module.community.domian.entity.mapper.CommunityPostMapper;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import com.cheatkey.module.community.domian.entity.mapper.CommunityPostMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import java.util.Map;
 import com.cheatkey.module.community.domian.repository.CommunityCommentRepository;
@@ -121,14 +122,14 @@ public class CommunityService {
             throw new CustomException(ErrorCode.POST_NOT_FOUND);
         }
 
-        // 본인 글이 신고(REPORTED) 상태면 차단 메시지 반환
+        // 본인 글이 신고(REPORTED) 상태면 접근 권한 없음 메시지 반환
         if (post.getUserId().equals(userId) && post.getStatus() == PostStatus.REPORTED) {
-            return communityPostMapper.toDetailDto(post, 0, List.of(), List.of(), false, blocked, "차단된 글입니다.");
+            return communityPostMapper.toDetailDto(post, 0, List.of(), List.of(), false, blocked, "신고된 게시글에 대한 접근 권한이 없습니다.");
         }
 
-        // 비정상(삭제/신고 등) 상태는 본인 글이 아니면 차단 메시지 반환
+        // 비정상(삭제/신고 등) 상태는 본인 글이 아니면 접근 권한 없음 메시지 반환
         if (post.getStatus() != PostStatus.ACTIVE && !post.getUserId().equals(userId)) {
-            return communityPostMapper.toDetailDto(post, 0, List.of(), List.of(), false, blocked, "차단된 글입니다.");
+            return communityPostMapper.toDetailDto(post, 0, List.of(), List.of(), false, blocked, "신고된 게시글에 대한 접근 권한이 없습니다.");
         }
 
         // 차단된 유저의 글은 차단 메시지 반환 (viewCount 증가 X)
@@ -180,6 +181,57 @@ public class CommunityService {
         );
     }
 
+    /**
+     * 마이페이지 - 사용자 작성글 목록 조회
+     */
+    @Transactional(readOnly = true)
+    public Page<CommunityPost> getUserPosts(Long userId, Pageable pageable) {
+        return communityPostRepository.findByUserIdAndStatusOrderByCreatedAtDesc(userId, PostStatus.ACTIVE, pageable);
+    }
+
+    /**
+     * 댓글 수 맵 조회
+     */
+    @Transactional(readOnly = true)
+    public Map<Long, Integer> getCommentCountMap(List<Long> postIds) {
+        return communityCommentRepository.countCommentsByPostIds(postIds).stream()
+                .collect(Collectors.toMap(
+                        arr -> (Long) arr[0],
+                        arr -> ((Long) arr[1]).intValue()
+                ));
+    }
+
+    /**
+     * 게시글 이미지 URL 목록 조회
+     */
+    @Transactional(readOnly = true)
+    public Map<Long, List<String>> getPostImageUrlsMap(List<Long> postIds) {
+        List<CommunityPostFile> files = communityPostFileRepository.findByPostIdIn(postIds);
+        List<Long> fileUploadIds = files.stream()
+                .map(CommunityPostFile::getFileUploadId)
+                .distinct()
+                .toList();
+        
+        Map<Long, FileUpload> fileUploadMap = fileUploadRepository.findAllById(fileUploadIds).stream()
+                .collect(Collectors.toMap(FileUpload::getId, f -> f));
+
+        return files.stream()
+                .collect(Collectors.groupingBy(
+                        CommunityPostFile::getPostId,
+                        Collectors.mapping(f -> {
+                            FileUpload fileUpload = fileUploadMap.get(f.getFileUploadId());
+                            if (fileUpload != null) {
+                                try {
+                                    return fileService.getPermanentFilePresignedUrl(fileUpload.getS3Key(), 10).toString();
+                                } catch (Exception e) {
+                                    return null;
+                                }
+                            }
+                            return null;
+                        }, Collectors.toList())
+                ));
+    }
+
     public Long createPost(CommunityPost communityPost) {
         communityPostRepository.save(communityPost);
         return communityPost.getId();
@@ -223,6 +275,12 @@ public class CommunityService {
         if (!post.getUserId().equals(userId)) {
             throw new CustomException(ErrorCode.POST_NOT_OWNER);
         }
+        
+        // 신고된 게시글 삭제 불가
+        if (post.getStatus() == PostStatus.REPORTED) {
+            throw new CustomException(ErrorCode.POST_REPORTED_ACCESS_DENIED);
+        }
+        
         post = setPostStatus(post, PostStatus.DELETED);
         communityPostRepository.save(post);
     }

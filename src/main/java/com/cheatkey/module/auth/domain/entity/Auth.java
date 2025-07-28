@@ -33,7 +33,10 @@ public class Auth {
     private String tradeMethodCode;
     private String tradeItemCode;
 
+    private Long profileImageId; // 프로필 이미지 ID
+
     private Integer loginCount;
+    private Integer level; // 사용자 레벨
     private LocalDateTime lastLoginAt;
 
     @Enumerated(EnumType.STRING)
@@ -93,5 +96,9 @@ public class Auth {
     }
     public void setGenderCode(String genderCode) {
         this.genderCode = genderCode;
+    }
+
+    public void setProfileImageId(Long profileImageId) {
+        this.profileImageId = profileImageId;
     }
 }

@@ -5,10 +5,13 @@ import com.cheatkey.common.exception.ErrorCode;
 import com.cheatkey.common.jwt.JwtProvider;
 import com.cheatkey.module.auth.domain.entity.Auth;
 import com.cheatkey.module.auth.domain.entity.AuthStatus;
+import com.cheatkey.module.auth.domain.entity.ProfileImage;
 import com.cheatkey.module.auth.domain.repository.AuthRepository;
+import com.cheatkey.module.auth.domain.repository.ProfileImageRepository;
 import com.cheatkey.module.auth.domain.service.token.RefreshTokenService;
 import com.cheatkey.module.auth.domain.validate.NicknameValidator;
 import com.cheatkey.module.auth.interfaces.dto.SignInResponse;
+import com.cheatkey.module.mypage.interfaces.dto.UpdateUserInfoRequest;
 import com.cheatkey.module.terms.domain.service.TermsAgreementService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,6 +28,7 @@ public class AuthService {
     private final TermsAgreementService termsAgreementService;
 
     private final AuthRepository authRepository;
+    private final ProfileImageRepository profileImageRepository;
     private final NicknameValidator nicknameValidator;
     private final JwtProvider jwtProvider;
     private final RefreshTokenService refreshTokenService;
@@ -63,6 +67,38 @@ public class AuthService {
         }
         
         return nickname;
+    }
+
+    public Auth getUserInfo(Long userId) {
+        return authRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.AUTH_NOT_FOUND));
+    }
+
+    /**
+     * 마이페이지 - 사용자 정보 수정
+     */
+    @Transactional
+    public void updateUserInfo(Long userId, UpdateUserInfoRequest request) {
+        Auth auth = authRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.AUTH_NOT_FOUND));
+        
+        if (request.getNickname() != null) {
+            // 닉네임 중복 체크 (본인 닉네임은 허용)
+            if (!request.getNickname().equals(auth.getNickname()) &&
+                authRepository.existsByNickname(request.getNickname())) {
+                throw new CustomException(ErrorCode.AUTH_DUPLICATE_NICKNAME);
+            }
+            nicknameValidator.checkFormat(request.getNickname());
+            auth.setNickname(request.getNickname());
+        }
+        
+        if (request.getProfileImageId() != null) {
+            ProfileImage profileImage = profileImageRepository.findByIdAndActive(request.getProfileImageId());
+            if (profileImage == null) {
+                throw new CustomException(ErrorCode.PROFILE_IMAGE_INVALID);
+            }
+            auth.setProfileImageId(request.getProfileImageId());
+        }
     }
 
     @Transactional

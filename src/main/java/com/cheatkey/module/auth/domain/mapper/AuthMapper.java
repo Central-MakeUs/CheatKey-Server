@@ -2,7 +2,9 @@ package com.cheatkey.module.auth.domain.mapper;
 
 import com.cheatkey.common.config.mapper.MapStructMapperConfig;
 import com.cheatkey.module.auth.domain.entity.Auth;
+import com.cheatkey.module.auth.domain.entity.ProfileImage;
 import com.cheatkey.module.auth.interfaces.dto.AuthRegisterRequest;
+import com.cheatkey.module.mypage.interfaces.dto.ProfileImageResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -14,6 +16,8 @@ public interface AuthMapper {
     @Mapping(target = "tradeMethodCode", expression = "java(joinCodes(request.getTradeMethodCodeList()))")
     @Mapping(target = "tradeItemCode", expression = "java(joinCodes(request.getTradeItemCodeList()))")
     Auth toAuth(AuthRegisterRequest request);
+
+    ProfileImageResponse toProfileImageResponse(ProfileImage profileImage);
 
     default String joinCodes(List<String> codes) {
         return (codes == null || codes.isEmpty()) ? null : String.join(",", codes);

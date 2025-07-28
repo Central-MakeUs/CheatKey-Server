@@ -28,6 +28,13 @@ public enum ErrorCode {
 
     AUTH_REQUIRED_TERMS_NOT_AGREED(HttpStatus.BAD_REQUEST, "필수 약관에 모두 동의해야 가입할 수 있습니다."),
 
+    // MyPage (마이페이지)
+    PROFILE_IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "프로필 이미지를 찾을 수 없습니다."),
+    PROFILE_IMAGE_INVALID(HttpStatus.BAD_REQUEST, "유효하지 않은 프로필 이미지입니다."),
+    POST_DELETE_PERMISSION_DENIED(HttpStatus.UNAUTHORIZED, "삭제 권한이 없습니다."),
+    DETECTION_HISTORY_NOT_FOUND(HttpStatus.NOT_FOUND, "분석 내역을 찾을 수 없습니다."),
+    DETECTION_HISTORY_ACCESS_DENIED(HttpStatus.UNAUTHORIZED, "조회 권한이 없습니다."),
+
     // Detection (피싱 검색)
     INVALID_INPUT_TYPE_URL(HttpStatus.BAD_REQUEST, "URL을 입력하지 않았어요"),
     INVALID_INPUT_TYPE_CASE(HttpStatus.BAD_REQUEST, "검사 입력 타입은 CASE이어야 합니다."),
@@ -70,6 +77,7 @@ public enum ErrorCode {
     POST_ALREADY_REPORTED(HttpStatus.BAD_REQUEST, "이미 신고한 게시글입니다."),
     POST_NOT_FOUND(HttpStatus.NOT_FOUND, "게시글이 존재하지 않습니다."),
     POST_NOT_OWNER(HttpStatus.UNAUTHORIZED, "본인만 삭제할 수 있습니다."),
+    POST_REPORTED_ACCESS_DENIED(HttpStatus.FORBIDDEN, "신고된 게시글에 대한 접근 권한이 없습니다."),
     USER_ALREADY_BLOCKED(HttpStatus.BAD_REQUEST, "이미 차단한 유저입니다."),
 
 

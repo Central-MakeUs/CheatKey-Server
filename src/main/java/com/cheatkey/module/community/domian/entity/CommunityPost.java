@@ -49,4 +49,8 @@ public class CommunityPost {
     public void setViewCount(Long viewCount) {
         this.viewCount = viewCount;
     }
+
+    public void setStatus(PostStatus status) {
+        this.status = status;
+    }
 }

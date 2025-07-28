@@ -1,11 +1,16 @@
 package com.cheatkey.module.detection.domain.mapper;
 
 import com.cheatkey.module.detection.domain.entity.DetectionCategory;
+import com.cheatkey.module.detection.domain.entity.DetectionHistory;
 import com.cheatkey.module.detection.domain.entity.DetectionStatus;
+import com.cheatkey.module.detection.domain.entity.DetectionType;
 import com.cheatkey.module.detection.infra.client.VectorDbClient;
+import com.cheatkey.module.mypage.interfaces.dto.DetectionDetailResponse;
+import com.cheatkey.module.mypage.interfaces.dto.DetectionHistoryResponse;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 public class DetectionMapper {
@@ -34,7 +39,36 @@ public class DetectionMapper {
         } else {
             return DetectionCategory.PHISHING;
         }
+    }
 
+    public DetectionHistoryResponse toDetectionHistoryResponse(DetectionHistory history) {
+        return DetectionHistoryResponse.builder()
+                .id(history.getId())
+                .status(history.getStatus())
+                .detectionType(DetectionType.valueOf(history.getDetectionType()))
+                .inputText(history.getInputText())
+                .detectedAt(history.getDetectedAt())
+                .topScore(history.getTopScore())
+                .matchedCaseId(history.getMatchedCaseId())
+                .build();
+    }
+
+    public List<DetectionHistoryResponse> toDetectionHistoryResponseList(List<DetectionHistory> histories) {
+        return histories.stream()
+                .map(this::toDetectionHistoryResponse)
+                .collect(Collectors.toList());
+    }
+
+    public DetectionDetailResponse toDetectionDetailResponse(DetectionHistory history) {
+        return DetectionDetailResponse.builder()
+                .id(history.getId())
+                .status(history.getStatus())
+                .detectionType(DetectionType.valueOf(history.getDetectionType()))
+                .inputText(history.getInputText())
+                .topScore(history.getTopScore())
+                .matchedCaseId(history.getMatchedCaseId())
+                .detectedAt(history.getDetectedAt())
+                .build();
     }
 }
 
