@@ -29,7 +29,6 @@ public class SecurityConfig {
     private static final String API_ROOT_URL = "/v1/api/**";
     private static final String[] WHITE_LIST = {
             LOGIN_URL,
-            "/v1/api/files/upload",
             "/swagger-ui/**",
             "/v3/api-docs/**",
     };

@@ -1,20 +1,18 @@
 package com.cheatkey.module.file.domain.service;
 
+import com.cheatkey.common.exception.ErrorCode;
 import com.cheatkey.common.exception.ImageException;
 import com.cheatkey.common.service.S3FileService;
+import com.cheatkey.module.file.domain.entity.FileFolder;
 import com.cheatkey.module.file.domain.entity.FileUpload;
 import com.cheatkey.module.file.domain.repository.FileUploadRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.net.URL;
 import java.time.LocalDateTime;
-import java.util.List;
-import com.cheatkey.common.exception.ErrorCode;
-import com.cheatkey.module.file.domain.entity.FileFolder;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -26,7 +24,6 @@ public class FileService {
 
     public FileUpload uploadTempFile(MultipartFile file, Long userId) throws ImageException {
         String tempKey = s3FileService.uploadFile(file, FileFolder.COMMUNITY, userId, true);
-        URL presignedUrl = s3FileService.getPresignedUrl(tempKey);
         FileUpload fileUpload = FileUpload.builder()
                 .userId(userId)
                 .originalName(file.getOriginalFilename())

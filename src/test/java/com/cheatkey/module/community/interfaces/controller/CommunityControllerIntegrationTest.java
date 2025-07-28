@@ -169,7 +169,6 @@ class CommunityControllerIntegrationTest {
         communityPostRepository.save(post);
         Long postId = post.getId();
         CommunityPostReportRequest request = new CommunityPostReportRequest();
-        request.setReporterId(20L);
         request.setReasonCode("FAKE");
         String jwt = jwtProvider.createAccessToken(1L, Provider.KAKAO, AuthRole.USER);
 
@@ -196,7 +195,6 @@ class CommunityControllerIntegrationTest {
         Long blockerId = 30L;
         Long blockedId = 40L;
         CommunityPostBlockRequest request = new CommunityPostBlockRequest();
-        request.setBlockerId(blockerId);
         request.setReason("HATE");
         String jwt = jwtProvider.createAccessToken(1L, Provider.KAKAO, AuthRole.USER);
 

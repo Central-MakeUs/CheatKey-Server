@@ -30,7 +30,6 @@ public class CommunityComment {
     @Column(nullable = false, length = 50)
     private String userNickname;
 
-    // @TODO 정책 확인 후 수정
     @Column(nullable = false, length = 200)
     private String content;
 

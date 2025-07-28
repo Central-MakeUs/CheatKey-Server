@@ -52,8 +52,6 @@ class FileServiceTest {
         String expectedFileKey = "uploads/temp/2024/01/15/uuid-test-image.jpg";
         when(s3FileService.uploadFile(any(MockMultipartFile.class), any(FileFolder.class), anyLong(), anyBoolean()))
                 .thenReturn(expectedFileKey);
-        when(s3FileService.getPresignedUrl(anyString()))
-                .thenReturn(new URL("https://bucket.s3.amazonaws.com/" + expectedFileKey));
         when(fileUploadRepository.save(any(FileUpload.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 

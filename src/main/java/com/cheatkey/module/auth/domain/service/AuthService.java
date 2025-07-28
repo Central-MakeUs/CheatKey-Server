@@ -2,23 +2,20 @@ package com.cheatkey.module.auth.domain.service;
 
 import com.cheatkey.common.exception.CustomException;
 import com.cheatkey.common.exception.ErrorCode;
+import com.cheatkey.common.jwt.JwtProvider;
 import com.cheatkey.module.auth.domain.entity.Auth;
 import com.cheatkey.module.auth.domain.entity.AuthStatus;
 import com.cheatkey.module.auth.domain.repository.AuthRepository;
+import com.cheatkey.module.auth.domain.service.token.RefreshTokenService;
 import com.cheatkey.module.auth.domain.validate.NicknameValidator;
+import com.cheatkey.module.auth.interfaces.dto.SignInResponse;
 import com.cheatkey.module.terms.domain.service.TermsAgreementService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-
-import com.cheatkey.module.auth.interfaces.dto.SignInResponse;
-import com.cheatkey.common.jwt.JwtProvider;
-import com.cheatkey.module.auth.domain.service.token.RefreshTokenService;
-import lombok.Setter;
 
 
 @Service
