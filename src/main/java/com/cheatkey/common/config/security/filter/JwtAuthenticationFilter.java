@@ -3,6 +3,7 @@ package com.cheatkey.common.config.security.filter;
 import com.cheatkey.common.exception.ErrorCode;
 import com.cheatkey.common.exception.JwtAuthenticationException;
 import com.cheatkey.common.jwt.JwtProvider;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -72,6 +73,11 @@ public class JwtAuthenticationFilter extends AbstractAuthenticationProcessingFil
                                               AuthenticationException authenticationException) throws IOException {
         SecurityContextHolder.clearContext();
         log.error("Authentication not successful: {}", authenticationException.getMessage());
-        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, authenticationException.getMessage());
+        
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json; charset=UTF-8");
+        
+        String errorResponse = "{\"error\":\"INVALID_TOKEN\",\"message\":\"유효하지 않은 토큰입니다.\"}";
+        response.getWriter().write(errorResponse);
     }
 }

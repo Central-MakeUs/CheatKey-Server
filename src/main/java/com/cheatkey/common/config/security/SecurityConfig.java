@@ -2,6 +2,7 @@ package com.cheatkey.common.config.security;
 
 import com.cheatkey.common.jwt.JwtProvider;
 import com.cheatkey.common.config.security.filter.JwtAuthenticationFilter;
+import com.cheatkey.common.config.security.filter.JwtExceptionFilter;
 import com.cheatkey.common.config.security.matcher.SkipPathRequestMatcher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,7 +51,8 @@ public class SecurityConfig {
                         .requestMatchers("/v1/api/**").hasRole("USER")
                         .anyRequest().denyAll()
                 )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new JwtExceptionFilter(), jwtAuthenticationFilter.getClass());
 
         return http.build();
     }
