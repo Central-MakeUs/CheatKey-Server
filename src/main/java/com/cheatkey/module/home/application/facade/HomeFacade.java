@@ -36,7 +36,6 @@ public class HomeFacade {
             authActivityService.recordDashboardVisit(userId, AuthActivity.ActivityType.HOME_VISIT);
             
             Auth userInfo = authService.getUserInfo(userId);
-            // TODO: 페이징 처리로 변경 검토 중 (현재는 성능상 limit 처리 유지)
             List<CommunityPost> popularPosts = communityService.getPopularPosts(10);
             
             HomeDashboardResponse.UserInfo userInfoDto = homeMapper.toUserInfo(userInfo);

@@ -79,7 +79,24 @@ public class CommunityService {
         // 4. 인기순 정렬(댓글수 기준)
         if ("popular".equals(sort)) {
             filteredPosts = filteredPosts.stream()
-                    .sorted((a, b) -> commentCountMap.getOrDefault(b.getId(), 0) - commentCountMap.getOrDefault(a.getId(), 0))
+                    .sorted((a, b) -> {
+                        // 1차 정렬: 댓글 수 비교
+                        int commentCountA = commentCountMap.getOrDefault(a.getId(), 0);
+                        int commentCountB = commentCountMap.getOrDefault(b.getId(), 0);
+                        if (commentCountA != commentCountB) {
+                            return commentCountB - commentCountA; // 내림차순
+                        }
+                        
+                        // 2차 정렬: 조회수 비교
+                        Long viewCountA = a.getViewCount() != null ? a.getViewCount() : 0L;
+                        Long viewCountB = b.getViewCount() != null ? b.getViewCount() : 0L;
+                        if (!viewCountA.equals(viewCountB)) {
+                            return viewCountB.compareTo(viewCountA); // 내림차순
+                        }
+                        
+                        // 3차 정렬: 작성일시 비교
+                        return b.getCreatedAt().compareTo(a.getCreatedAt()); // 내림차순
+                    })
                     .toList();
         }
 
@@ -302,7 +319,7 @@ public class CommunityService {
 
     /**
      * 인기글 조회 (댓글 수 기준, 최대 limit개)
-     * TODO: 페이징 처리로 변경 검토 중 (현재는 성능상 limit 처리 유지)
+     * 정렬 기준: 1차-댓글수(내림차순), 2차-조회수(내림차순), 3차-작성일시(내림차순)
      */
     @Transactional(readOnly = true)
     public List<CommunityPost> getPopularPosts(int limit) {
@@ -319,9 +336,27 @@ public class CommunityService {
                         arr -> ((Long) arr[1]).intValue()
                 ));
 
-        // 3. 댓글 수 기준으로 정렬 후 limit
+        // 3. 다중 정렬 기준으로 정렬 후 limit
+        // 1차: 댓글 수 (내림차순), 2차: 조회수 (내림차순), 3차: 작성일시 (내림차순)
         return allPosts.stream()
-                .sorted((a, b) -> commentCountMap.getOrDefault(b.getId(), 0) - commentCountMap.getOrDefault(a.getId(), 0))
+                .sorted((a, b) -> {
+                    // 1차 정렬: 댓글 수 비교
+                    int commentCountA = commentCountMap.getOrDefault(a.getId(), 0);
+                    int commentCountB = commentCountMap.getOrDefault(b.getId(), 0);
+                    if (commentCountA != commentCountB) {
+                        return commentCountB - commentCountA; // 내림차순
+                    }
+                    
+                    // 2차 정렬: 조회수 비교
+                    Long viewCountA = a.getViewCount() != null ? a.getViewCount() : 0L;
+                    Long viewCountB = b.getViewCount() != null ? b.getViewCount() : 0L;
+                    if (!viewCountA.equals(viewCountB)) {
+                        return viewCountB.compareTo(viewCountA); // 내림차순
+                    }
+                    
+                    // 3차 정렬: 작성일시 비교
+                    return b.getCreatedAt().compareTo(a.getCreatedAt()); // 내림차순
+                })
                 .limit(limit)
                 .toList();
     }

@@ -29,6 +29,8 @@ import java.util.Optional;
 import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+import java.time.LocalDateTime;
+import java.util.stream.Collectors;
 
 class CommunityServiceTest {
     @Mock
@@ -182,5 +184,154 @@ class CommunityServiceTest {
         assertEquals(expectedResponse, result);
         verify(commentService).getCommentsForPost(postId);
         verify(communityPostMapper).toCommentDtoList(comments);
+    }
+
+    @Test
+    void getPopularPosts_댓글수_기준_정렬() {
+        // given
+        LocalDateTime now = LocalDateTime.now();
+        List<CommunityPost> posts = List.of(
+            CommunityPost.builder().id(1L).title("글1").viewCount(10L).createdAt(now.minusDays(1)).status(PostStatus.ACTIVE).build(),
+            CommunityPost.builder().id(2L).title("글2").viewCount(20L).createdAt(now).status(PostStatus.ACTIVE).build(),
+            CommunityPost.builder().id(3L).title("글3").viewCount(5L).createdAt(now.minusHours(1)).status(PostStatus.ACTIVE).build()
+        );
+        
+        // 댓글 수: 글2(5개) > 글1(3개) > 글3(0개)
+        List<Object[]> commentCounts = List.of(
+            new Object[]{1L, 3L},
+            new Object[]{2L, 5L}
+        );
+        
+        when(communityPostRepository.findAll()).thenReturn(posts);
+        when(communityCommentRepository.countCommentsByPostIds(List.of(1L, 2L, 3L))).thenReturn(commentCounts);
+
+        // when
+        List<CommunityPost> result = communityService.getPopularPosts(3);
+
+        // then
+        assertEquals(3, result.size());
+        // 댓글 수 기준 정렬: 글2(5개) > 글1(3개) > 글3(0개)
+        assertEquals(2L, result.get(0).getId());
+        assertEquals(1L, result.get(1).getId());
+        assertEquals(3L, result.get(2).getId());
+    }
+
+    @Test
+    void getPopularPosts_동일한_댓글수_조회수_기준_정렬() {
+        // given
+        LocalDateTime now = LocalDateTime.now();
+        List<CommunityPost> posts = List.of(
+            CommunityPost.builder().id(1L).title("글1").viewCount(10L).createdAt(now.minusDays(1)).status(PostStatus.ACTIVE).build(),
+            CommunityPost.builder().id(2L).title("글2").viewCount(20L).createdAt(now).status(PostStatus.ACTIVE).build(),
+            CommunityPost.builder().id(3L).title("글3").viewCount(5L).createdAt(now.minusHours(1)).status(PostStatus.ACTIVE).build()
+        );
+        
+        // 댓글 수가 모두 동일 (3개씩)
+        List<Object[]> commentCounts = List.of(
+            new Object[]{1L, 3L},
+            new Object[]{2L, 3L},
+            new Object[]{3L, 3L}
+        );
+        
+        when(communityPostRepository.findAll()).thenReturn(posts);
+        when(communityCommentRepository.countCommentsByPostIds(List.of(1L, 2L, 3L))).thenReturn(commentCounts);
+
+        // when
+        List<CommunityPost> result = communityService.getPopularPosts(3);
+
+        // then
+        assertEquals(3, result.size());
+        // 댓글 수 동일하므로 조회수 기준 정렬: 글2(20) > 글1(10) > 글3(5)
+        assertEquals(2L, result.get(0).getId());
+        assertEquals(1L, result.get(1).getId());
+        assertEquals(3L, result.get(2).getId());
+    }
+
+    @Test
+    void getPopularPosts_동일한_댓글수_조회수_작성일시_기준_정렬() {
+        // given
+        LocalDateTime now = LocalDateTime.now();
+        List<CommunityPost> posts = List.of(
+            CommunityPost.builder().id(1L).title("글1").viewCount(10L).createdAt(now.minusDays(1)).status(PostStatus.ACTIVE).build(),
+            CommunityPost.builder().id(2L).title("글2").viewCount(10L).createdAt(now).status(PostStatus.ACTIVE).build(),
+            CommunityPost.builder().id(3L).title("글3").viewCount(10L).createdAt(now.minusHours(1)).status(PostStatus.ACTIVE).build()
+        );
+        
+        // 댓글 수와 조회수가 모두 동일
+        List<Object[]> commentCounts = List.of(
+            new Object[]{1L, 3L},
+            new Object[]{2L, 3L},
+            new Object[]{3L, 3L}
+        );
+        
+        when(communityPostRepository.findAll()).thenReturn(posts);
+        when(communityCommentRepository.countCommentsByPostIds(List.of(1L, 2L, 3L))).thenReturn(commentCounts);
+
+        // when
+        List<CommunityPost> result = communityService.getPopularPosts(3);
+
+        // then
+        assertEquals(3, result.size());
+        // 댓글 수, 조회수 동일하므로 작성일시 기준 정렬: 글2(최신) > 글3 > 글1(오래됨)
+        assertEquals(2L, result.get(0).getId());
+        assertEquals(3L, result.get(1).getId());
+        assertEquals(1L, result.get(2).getId());
+    }
+
+    @Test
+    void getPopularPosts_댓글없는_게시글_조회수_기준_정렬() {
+        // given
+        LocalDateTime now = LocalDateTime.now();
+        List<CommunityPost> posts = List.of(
+            CommunityPost.builder().id(1L).title("글1").viewCount(10L).createdAt(now.minusDays(1)).status(PostStatus.ACTIVE).build(),
+            CommunityPost.builder().id(2L).title("글2").viewCount(20L).createdAt(now).status(PostStatus.ACTIVE).build(),
+            CommunityPost.builder().id(3L).title("글3").viewCount(5L).createdAt(now.minusHours(1)).status(PostStatus.ACTIVE).build()
+        );
+        
+        // 댓글이 없는 게시글들
+        List<Object[]> commentCounts = List.of();
+        
+        when(communityPostRepository.findAll()).thenReturn(posts);
+        when(communityCommentRepository.countCommentsByPostIds(List.of(1L, 2L, 3L))).thenReturn(commentCounts);
+
+        // when
+        List<CommunityPost> result = communityService.getPopularPosts(3);
+
+        // then
+        assertEquals(3, result.size());
+        // 댓글 수가 모두 0이므로 조회수 기준 정렬: 글2(20) > 글1(10) > 글3(5)
+        assertEquals(2L, result.get(0).getId());
+        assertEquals(1L, result.get(1).getId());
+        assertEquals(3L, result.get(2).getId());
+    }
+
+    @Test
+    void getPopularPosts_ACTIVE_상태만_필터링() {
+        // given
+        LocalDateTime now = LocalDateTime.now();
+        List<CommunityPost> posts = List.of(
+            CommunityPost.builder().id(1L).title("글1").viewCount(10L).createdAt(now).status(PostStatus.ACTIVE).build(),
+            CommunityPost.builder().id(2L).title("글2").viewCount(20L).createdAt(now).status(PostStatus.DELETED).build(),
+            CommunityPost.builder().id(3L).title("글3").viewCount(5L).createdAt(now).status(PostStatus.ACTIVE).build()
+        );
+        
+        List<Object[]> commentCounts = List.of(
+            new Object[]{1L, 3L},
+            new Object[]{3L, 1L}
+        );
+        
+        when(communityPostRepository.findAll()).thenReturn(posts);
+        when(communityCommentRepository.countCommentsByPostIds(List.of(1L, 3L))).thenReturn(commentCounts);
+
+        // when
+        List<CommunityPost> result = communityService.getPopularPosts(3);
+
+        // then
+        assertEquals(2, result.size());
+        // ACTIVE 상태만 필터링되어 글1, 글3만 포함
+        assertTrue(result.stream().allMatch(post -> post.getStatus() == PostStatus.ACTIVE));
+        // 댓글 수 기준 정렬: 글1(3개) > 글3(1개)
+        assertEquals(1L, result.get(0).getId());
+        assertEquals(3L, result.get(1).getId());
     }
 } 
