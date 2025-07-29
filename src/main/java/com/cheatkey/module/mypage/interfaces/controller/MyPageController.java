@@ -18,21 +18,21 @@ import java.util.List;
 @RestController
 @RequestMapping("/v1/api/mypage")
 @RequiredArgsConstructor
-@Tag(name = "(★) My Page", description = "마이페이지 관련 API")
+@Tag(name = "My Page", description = "마이페이지 관련 API")
 public class MyPageController {
 
     private final MyPageFacade myPageFacade;
 
     @GetMapping("/dashboard")
-    @Operation(summary = "(★) 마이페이지 대시보드 조회", description = "사용자 정보와 프로필 이미지 목록을 조회합니다.")
+    @Operation(summary = "마이페이지 대시보드 조회", description = "사용자 정보와 프로필 이미지 목록을 조회합니다.")
     public ResponseEntity<MyPageDashboardResponse> getMyPageDashboard() {
         Long userId = Long.parseLong(SecurityUtil.getCurrentUserId());
         MyPageDashboardResponse response = myPageFacade.getMyPageDashboard(userId);
         return ResponseEntity.ok(response);
     }
 
-    @PutMapping("/userInfo")
-    @Operation(summary = "사용자 정보 수정", description = "닉네임과 프로필 이미지를 수정합니다.")
+    @PostMapping("/userInfo")
+    @Operation(summary = "(★) 사용자 정보 수정", description = "닉네임과 프로필 이미지를 수정합니다.")
     public ResponseEntity<Void> updateUserInfo(@Valid @RequestBody UpdateUserInfoRequest request) {
         Long userId = Long.parseLong(SecurityUtil.getCurrentUserId());
         myPageFacade.updateUserInfo(userId, request);
