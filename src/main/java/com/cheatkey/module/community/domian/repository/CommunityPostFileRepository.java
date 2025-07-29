@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface CommunityPostFileRepository extends JpaRepository<CommunityPostFile, Long> {
     List<CommunityPostFile> findByPostIdIn(List<Long> postIds);
+    List<CommunityPostFile> findByPostId(Long postId);
 } 

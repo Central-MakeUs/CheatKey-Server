@@ -37,7 +37,7 @@ public class CommunityController {
     private final CommunityService communityService;
     private final CodeService codeService;
 
-    @Operation(summary = "(★) 커뮤니티 게시글 목록 조회", description = "정상(ACTIVE) 상태의 게시글 중 차단되지 않은 게시글만 페이징/검색/정렬 조건에 따라 조회합니다. 대표 이미지는 최대 5개 presignedUrl만 제공합니다.")
+    @Operation(summary = "(★) 커뮤니티 게시글 목록 조회 & 메인 검색", description = "정상(ACTIVE) 상태의 게시글 중 차단되지 않은 게시글만 페이징/검색/정렬 조건에 따라 조회합니다. 대표 이미지는 최대 5개 presignedUrl만 제공합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "게시글 목록 조회 성공", content = @Content(schema = @Schema(implementation = CommunityPostListResponse.class)))
     })

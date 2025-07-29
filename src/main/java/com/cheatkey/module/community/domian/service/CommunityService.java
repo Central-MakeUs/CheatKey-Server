@@ -297,4 +297,30 @@ public class CommunityService {
                 .status(status)
                 .build();
     }
+
+    /**
+     * 인기글 조회 (댓글 수 기준, 최대 limit개)
+     * TODO: 페이징 처리로 변경 검토 중 (현재는 성능상 limit 처리 유지)
+     */
+    @Transactional(readOnly = true)
+    public List<CommunityPost> getPopularPosts(int limit) {
+        // 1. 모든 ACTIVE 게시글 조회
+        List<CommunityPost> allPosts = communityPostRepository.findAll().stream()
+                .filter(post -> post.getStatus() == PostStatus.ACTIVE)
+                .toList();
+        
+        // 2. 댓글 수 조회
+        List<Long> postIds = allPosts.stream().map(CommunityPost::getId).toList();
+        Map<Long, Integer> commentCountMap = communityCommentRepository.countCommentsByPostIds(postIds).stream()
+                .collect(Collectors.toMap(
+                        arr -> (Long) arr[0],
+                        arr -> ((Long) arr[1]).intValue()
+                ));
+
+        // 3. 댓글 수 기준으로 정렬 후 limit
+        return allPosts.stream()
+                .sorted((a, b) -> commentCountMap.getOrDefault(b.getId(), 0) - commentCountMap.getOrDefault(a.getId(), 0))
+                .limit(limit)
+                .toList();
+    }
 }
