@@ -11,9 +11,14 @@ import java.util.List;
 @Builder
 public class OptionsResponse {
     @Schema(description = "선택지 응답 옵션")
-    public record Option(String code, String name) {
+    public record Option(String code, String name, String imageUrl, String disabledImageUrl) {
         public static Option from(Code code) {
-            return new Option(code.getCode(), code.getCodeName());
+            return new Option(
+                code.getCode(), 
+                code.getCodeName(),
+                code.getImageUrl(),
+                code.getDisabledImageUrl()
+            );
         }
     }
 

@@ -31,6 +31,12 @@ public class Code {
 
     private Boolean isActive;
 
+    @Column(length = 500)
+    private String imageUrl;
+
+    @Column(length = 500)
+    private String disabledImageUrl;
+
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
