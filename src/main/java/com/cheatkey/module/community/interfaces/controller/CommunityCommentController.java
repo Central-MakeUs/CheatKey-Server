@@ -2,9 +2,11 @@ package com.cheatkey.module.community.interfaces.controller;
 
 import com.cheatkey.common.config.security.SecurityUtil;
 import com.cheatkey.module.auth.domain.service.AuthService;
+import com.cheatkey.module.community.domian.entity.comment.CommunityComment;
 import com.cheatkey.module.community.domian.service.CommentService;
 import com.cheatkey.module.community.interfaces.dto.comment.CommunityCommentRequest;
 import com.cheatkey.module.community.interfaces.dto.comment.CommunityCommentResponse;
+import com.cheatkey.module.community.domian.entity.mapper.CommunityPostMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -24,6 +26,7 @@ import java.util.List;
 public class CommunityCommentController {
     private final CommentService commentService;
     private final AuthService authService;
+    private final CommunityPostMapper communityPostMapper;
 
     @Operation(summary = "(★) 댓글/대댓글 작성", description = "커뮤니티 게시글에 댓글 또는 대댓글을 작성합니다. parentId가 있으면 대댓글입니다.")
     @ApiResponses({
@@ -59,7 +62,8 @@ public class CommunityCommentController {
     })
     @GetMapping("/posts/{postId}/comments")
     public ResponseEntity<List<CommunityCommentResponse>> getCommentsForPost(@PathVariable Long postId) {
-        List<CommunityCommentResponse> comments = commentService.getCommentsForPost(postId);
-        return ResponseEntity.ok(comments);
+        List<CommunityComment> comments = commentService.getCommentsForPost(postId);
+        List<CommunityCommentResponse> commentResponses = communityPostMapper.toCommentDtoList(comments);
+        return ResponseEntity.ok(commentResponses);
     }
 } 

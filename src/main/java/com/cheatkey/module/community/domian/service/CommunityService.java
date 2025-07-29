@@ -4,6 +4,7 @@ import com.cheatkey.module.community.domian.entity.CommunityPost;
 import com.cheatkey.module.community.domian.entity.CommunityReportedPost;
 import com.cheatkey.module.community.domian.entity.CommunityPostBlock;
 import com.cheatkey.module.community.domian.entity.PostStatus;
+import com.cheatkey.module.community.domian.entity.comment.CommunityComment;
 import com.cheatkey.module.community.domian.repository.CommunityPostRepository;
 import com.cheatkey.module.community.domian.repository.CommunityReportedPostRepository;
 import com.cheatkey.module.community.domian.repository.CommunityPostBlockRepository;
@@ -167,14 +168,15 @@ public class CommunityService {
                         .build()
         ).collect(Collectors.toList());
 
-        List<CommunityCommentResponse> comments = commentService.getCommentsForPost(postId);
+        List<CommunityComment> comments = commentService.getCommentsForPost(postId);
+        List<CommunityCommentResponse> commentResponses = communityPostMapper.toCommentDtoList(comments);
         boolean canDelete = post.getUserId().equals(userId);
 
         return communityPostMapper.toDetailDto(
                 post,
-                comments.size(),
+                commentResponses.size(),
                 fileResponses,
-                comments,
+                commentResponses,
                 canDelete,
                 blocked,
                 blocked ? "차단된 글입니다." : null

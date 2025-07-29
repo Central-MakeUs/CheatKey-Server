@@ -8,14 +8,11 @@ import com.cheatkey.module.community.domian.entity.comment.CommentStatus;
 import com.cheatkey.module.community.domian.repository.CommunityCommentRepository;
 import com.cheatkey.module.community.domian.repository.CommunityPostRepository;
 import com.cheatkey.module.community.interfaces.dto.comment.CommunityCommentRequest;
-import com.cheatkey.module.community.interfaces.dto.comment.CommunityCommentResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -68,44 +65,17 @@ public class CommentService {
         commentRepository.save(comment);
     }
 
-    // @TODO CommunityCommentResponse DTO 객체 서비스에서 미사용 구현으로 수정
     @Transactional(readOnly = true)
-    public List<CommunityCommentResponse> getCommentsForPost(Long postId) {
+    public List<CommunityComment> getCommentsForPost(Long postId) {
         CommunityPost post = postRepository.findById(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.COMMUNITY_POST_NOT_FOUND));
         if (post.getStatus() != null && !post.getStatus().name().equals("ACTIVE")) {
             throw new CustomException(ErrorCode.COMMUNITY_POST_DELETED_OR_REPORTED);
         }
-        List<CommunityComment> allComments = commentRepository.findAll().stream()
+        
+        return commentRepository.findAll().stream()
                 .filter(c -> c.getPost().getId().equals(postId))
                 .filter(c -> c.getStatus() == CommentStatus.ACTIVE)
                 .toList();
-
-        // 댓글/대댓글 트리 구성
-        Map<Long, List<CommunityComment>> childrenMap = allComments.stream()
-                .filter(c -> c.getParent() != null)
-                .collect(Collectors.groupingBy(c -> c.getParent().getId()));
-        List<CommunityCommentResponse> result = allComments.stream()
-                .filter(c -> c.getParent() == null)
-                .map(c -> toResponseWithChildren(c, childrenMap))
-                .collect(Collectors.toList());
-        return result;
-    }
-
-    private CommunityCommentResponse toResponseWithChildren(CommunityComment comment, Map<Long, List<CommunityComment>> childrenMap) {
-        List<CommunityCommentResponse> children = childrenMap.getOrDefault(comment.getId(), List.of()).stream()
-                .map(child -> toResponseWithChildren(child, childrenMap))
-                .collect(Collectors.toList());
-        return CommunityCommentResponse.builder()
-                .id(comment.getId())
-                .postId(comment.getPost().getId())
-                .parentId(comment.getParent() != null ? comment.getParent().getId() : null)
-                .userId(comment.getUserId())
-                .userNickname(comment.getUserNickname())
-                .content(comment.getContent())
-                .status(comment.getStatus().name())
-                .createdAt(comment.getCreatedAt())
-                .children(children)
-                .build();
     }
 }

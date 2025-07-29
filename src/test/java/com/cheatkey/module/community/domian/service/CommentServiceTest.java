@@ -155,4 +155,63 @@ class CommentServiceTest {
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.COMMUNITY_COMMENT_NOT_FOUND);
     }
+
+    @Test
+    @DisplayName("게시글 댓글 조회 성공")
+    void getCommentsForPost_success() {
+        // given
+        CommunityPost post = CommunityPost.builder().id(1L).status(null).build();
+        when(postRepository.findById(1L)).thenReturn(Optional.of(post));
+        
+        CommunityComment comment1 = CommunityComment.builder()
+                .id(1L)
+                .post(post)
+                .parent(null)
+                .userId(2L)
+                .userNickname("유저1")
+                .content("댓글1")
+                .status(CommentStatus.ACTIVE)
+                .build();
+        
+        CommunityComment comment2 = CommunityComment.builder()
+                .id(2L)
+                .post(post)
+                .parent(null)
+                .userId(3L)
+                .userNickname("유저2")
+                .content("댓글2")
+                .status(CommentStatus.ACTIVE)
+                .build();
+        
+        when(commentRepository.findAll()).thenReturn(List.of(comment1, comment2));
+
+        // when
+        List<CommunityComment> result = commentService.getCommentsForPost(1L);
+
+        // then
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).getContent()).isEqualTo("댓글1");
+        assertThat(result.get(1).getContent()).isEqualTo("댓글2");
+    }
+
+    @Test
+    @DisplayName("게시글 댓글 조회 실패 - 게시글 없음")
+    void getCommentsForPost_fail_postNotFound() {
+        when(postRepository.findById(1L)).thenReturn(Optional.empty());
+        
+        assertThatThrownBy(() -> commentService.getCommentsForPost(1L))
+                .isInstanceOf(CustomException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.COMMUNITY_POST_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("게시글 댓글 조회 실패 - 삭제/신고된 게시글")
+    void getCommentsForPost_fail_deletedOrReportedPost() {
+        CommunityPost post = CommunityPost.builder().id(1L).status(PostStatus.DELETED).build();
+        when(postRepository.findById(1L)).thenReturn(Optional.of(post));
+        
+        assertThatThrownBy(() -> commentService.getCommentsForPost(1L))
+                .isInstanceOf(CustomException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.COMMUNITY_POST_DELETED_OR_REPORTED);
+    }
 } 
