@@ -55,12 +55,4 @@ public class DetectionController {
         DetectionDetailResponse response = detectionService.getDetectionDetail(userId, detectionId);
         return ResponseEntity.ok(response);
     }
-
-    @Operation(summary = "분석 내역 상세 조회", description = "특정 AI 분석 결과의 상세 정보를 조회합니다.")
-    @GetMapping("/history/{detectionId}/detail")
-    public ResponseEntity<DetectionDetailResponse> getDetectionHistoryDetail(@PathVariable Long detectionId) {
-        Long userId = Long.valueOf(SecurityUtil.getCurrentUserId());
-        DetectionDetailResponse response = detectionService.getDetectionDetail(userId, detectionId);
-        return ResponseEntity.ok(response);
-    }
 }

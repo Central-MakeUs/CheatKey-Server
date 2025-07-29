@@ -3,20 +3,26 @@ package com.cheatkey.module.community.application.facade;
 import com.cheatkey.common.exception.ImageException;
 import com.cheatkey.common.service.S3FileService;
 import com.cheatkey.module.community.domian.entity.CommunityPost;
+import com.cheatkey.module.community.domian.entity.CommunityCategory;
 import com.cheatkey.module.community.domian.entity.CommunityPostFile;
 import com.cheatkey.module.community.domian.repository.CommunityPostFileRepository;
 import com.cheatkey.module.community.domian.service.CommunityService;
 import com.cheatkey.module.community.interfaces.dto.CommunityPostCreateRequest;
+import com.cheatkey.module.detection.domain.entity.DetectionCategory;
+import com.cheatkey.module.detection.infra.client.VectorDbClient;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import org.jsoup.Jsoup;
 import org.jsoup.safety.Safelist;
 import com.cheatkey.module.file.domain.entity.FileUpload;
 import com.cheatkey.module.file.domain.repository.FileUploadRepository;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CommunityPostFacade {
@@ -24,8 +30,8 @@ public class CommunityPostFacade {
     private final S3FileService s3FileService;
     private final CommunityService communityService;
     private final FileUploadRepository fileUploadRepository;
-
     private final CommunityPostFileRepository communityPostFileRepository;
+    private final VectorDbClient vectorDbClient;
 
     @Transactional
     public Long createPostWithFiles(CommunityPostCreateRequest request) throws ImageException {
@@ -66,6 +72,32 @@ public class CommunityPostFacade {
                 communityPostFileRepository.save(fileEntity);
             }
         }
+
+        // 3. Vector DB 저장 (REPORT, SHARE 카테고리만)
+        if (request.getCategory() == CommunityCategory.REPORT || 
+            request.getCategory() == CommunityCategory.SHARE) {
+            try {
+                String content = safeTitle + " " + safeContent;
+                List<Float> embedding = vectorDbClient.embed(content);
+                
+                Map<String, Object> payload = Map.of(
+                    "postId", postId,
+                    "category", DetectionCategory.INVESTMENT,
+                    "title", safeTitle,
+                    "content", safeContent,
+                    "userId", request.getUserId(),
+                    "nickname", request.getNickname(),
+                    "source", "community"
+                );
+                
+                vectorDbClient.saveVector(postId.toString(), embedding, payload);
+                log.info("Vector DB 저장 완료: postId={}, category={}", postId, "거래 사기");
+            } catch (Exception e) {
+                log.warn("Vector DB 저장 실패: postId={}, error={}", postId, e.getMessage());
+                // Vector DB 저장 실패해도 게시글 작성은 성공으로 처리
+            }
+        }
+        
         return postId;
     }
 } 

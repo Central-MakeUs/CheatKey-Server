@@ -65,7 +65,9 @@ public class UrlDetectionClient {
             throw new CustomException(ErrorCode.GOOGLE_API_UNAVAILABLE);
         }
 
-        // @TODO : ThreatType, PlatformType, ThreatEntryType 정의 필요 한지 확인
+        // NOTE: Google Safe Browsing API에서 제공하는 세부 위협 정보(threatType, platformType, threatEntryType)는
+        // 현재 서비스에서는 단순 위험/안전 구분만 사용하므로 Enum 정의 없이 String으로 처리
+        // 향후 정책 변경 시 위협 타입별 세분화 고려 가능
         return Optional.ofNullable(response)
                 .map(SafeBrowsingResponse::getMatches)
                 .map(matches -> !matches.isEmpty())

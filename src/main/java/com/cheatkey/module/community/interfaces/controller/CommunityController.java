@@ -85,7 +85,6 @@ public class CommunityController {
     })
     @PostMapping("/posts")
     public ResponseEntity<Long> createPost(@Valid @RequestBody CommunityPostCreateRequest request) throws ImageException {
-        // @TODO 작성된 글 Vector DB 에 저장 (REPORT, SHARE 카테고리만 포함)
         Long postId = communityPostFacade.createPostWithFiles(request);
         return ResponseEntity.ok(postId);
     }

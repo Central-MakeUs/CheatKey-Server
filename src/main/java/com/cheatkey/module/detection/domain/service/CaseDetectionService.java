@@ -57,7 +57,7 @@ public class CaseDetectionService {
             if (topScore >= 0.8f) {
                 Map<String, Object> payload = Map.of(
                         "content", input.content(),
-                        // @TODO 이후 카테고리 화 필요 시 추가
+                        "category", category,  // 분석된 카테고리 저장
                         "source", "user-analyzed",
                         "userId", loginUserId
                 );

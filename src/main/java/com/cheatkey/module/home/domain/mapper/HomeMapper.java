@@ -5,7 +5,6 @@ import com.cheatkey.module.community.domian.entity.CommunityPost;
 import com.cheatkey.module.home.interfaces.dto.HomeDashboardResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.Named;
 
 import java.util.List;
 
@@ -18,20 +17,9 @@ public interface HomeMapper {
     HomeDashboardResponse.UserInfo toUserInfo(Auth auth);
 
     @Mapping(target = "id", source = "id")
-    @Mapping(target = "content", source = "content", qualifiedByName = "truncateContent") // TODO: 프론트엔드에서 처리하는지 확인 필요
+    @Mapping(target = "content", source = "content") // NOTE: 프론트엔드에서 자동으로 텍스트 자르기 처리
     @Mapping(target = "authorNickname", source = "nickname")
     HomeDashboardResponse.PopularPost toPopularPost(CommunityPost post);
 
     List<HomeDashboardResponse.PopularPost> toPopularPosts(List<CommunityPost> posts);
-
-
-    @Named("truncateContent")
-    default String truncateContent(String content) {
-        // TODO: 프론트엔드에서 텍스트 자르기 처리하는지 확인 필요
-        // 현재는 백엔드에서 100자로 제한하고 "..." 추가
-        if (content == null || content.length() <= 100) {
-            return content;
-        }
-        return content.substring(0, 100) + "...";
-    }
 } 
