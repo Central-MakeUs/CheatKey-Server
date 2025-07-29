@@ -38,11 +38,6 @@ class AppleSignInServiceIntegrationTest {
     @Autowired
     private JwtProvider jwtProvider;
 
-    @BeforeEach
-    void setUp() {
-        authRepository.deleteAll();
-    }
-
     @Test
     void 신규회원_애플로그인_성공시_PENDING상태로_생성() {
         // given

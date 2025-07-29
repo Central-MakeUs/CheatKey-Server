@@ -7,6 +7,7 @@ import com.cheatkey.module.auth.domain.entity.Auth;
 import com.cheatkey.module.auth.domain.entity.AuthRole;
 import com.cheatkey.module.auth.domain.entity.AuthStatus;
 import com.cheatkey.module.auth.domain.entity.Provider;
+import com.cheatkey.module.auth.domain.entity.UserActivity;
 import com.cheatkey.module.auth.domain.repository.AuthRepository;
 import com.cheatkey.module.auth.domain.service.token.RefreshTokenService;
 import com.cheatkey.module.auth.interfaces.dto.SignInResponse;
@@ -23,6 +24,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.isNull;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
@@ -33,6 +37,8 @@ class AuthServiceTest {
     private AuthRepository authRepository;
     @Mock
     private RefreshTokenService refreshTokenService;
+    @Mock
+    private UserActivityService userActivityService;
     @InjectMocks
     private AuthService authService;
 
@@ -58,6 +64,7 @@ class AuthServiceTest {
         when(jwtProvider.createRefreshToken(anyLong())).thenReturn(newRefreshToken);
         doNothing().when(refreshTokenService).invalidateToken(anyString(), anyLong());
         doNothing().when(refreshTokenService).saveOrUpdate(anyLong(), anyString());
+        doNothing().when(userActivityService).recordActivity(anyLong(), any(), any(), any(), anyBoolean(), any());
 
         // when
         SignInResponse response = authService.refreshAccessToken(refreshToken);
@@ -67,6 +74,10 @@ class AuthServiceTest {
         assertEquals(newRefreshToken, response.getRefreshToken()); // 토큰 순환으로 새 토큰 반환
         assertEquals("ACTIVE", response.getUserState());
         assertEquals("Bearer", response.getGrantType());
+        
+        // UserActivityService 호출 확인
+        verify(userActivityService, times(1))
+                .recordActivity(eq(userId), eq(UserActivity.ActivityType.TOKEN_REFRESH), isNull(), isNull(), eq(true), isNull());
     }
 
     @Test

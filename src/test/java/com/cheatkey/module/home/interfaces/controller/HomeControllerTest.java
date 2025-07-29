@@ -5,7 +5,6 @@ import com.cheatkey.module.auth.domain.entity.AuthRole;
 import com.cheatkey.module.auth.domain.entity.Provider;
 import com.cheatkey.module.home.application.facade.HomeFacade;
 import com.cheatkey.module.home.interfaces.dto.HomeDashboardResponse;
-// import com.fasterxml.jackson.databind.ObjectMapper; // 미사용
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

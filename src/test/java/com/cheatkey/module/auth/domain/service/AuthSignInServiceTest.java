@@ -4,6 +4,7 @@ import com.cheatkey.module.auth.domain.entity.Auth;
 import com.cheatkey.module.auth.domain.entity.AuthRole;
 import com.cheatkey.module.auth.domain.entity.AuthStatus;
 import com.cheatkey.module.auth.domain.entity.Provider;
+import com.cheatkey.module.auth.domain.entity.UserActivity;
 import com.cheatkey.module.auth.domain.service.kakao.KakaoSignInService;
 import com.cheatkey.module.auth.domain.service.apple.AppleSignInService;
 import com.cheatkey.module.auth.domain.service.dto.AuthTokenRequest;
@@ -19,7 +20,7 @@ import static org.mockito.Mockito.*;
 class AuthSignInServiceTest {
     @Mock private KakaoSignInService kakaoSignInService;
     @Mock private AppleSignInService appleSignInService;
-    @Mock private AuthLoginHistoryService authLoginHistoryService;
+    @Mock private UserActivityService userActivityService;
 
     @InjectMocks
     private AuthSignInService authSignInService;
@@ -33,6 +34,7 @@ class AuthSignInServiceTest {
     void 카카오로그인_정식회원_로그인히스토리_기록() {
         // given
         Auth auth = Auth.builder()
+                .id(1L)
                 .provider(Provider.KAKAO)
                 .providerId("kakaoId123")
                 .email("test@kakao.com")
@@ -47,14 +49,15 @@ class AuthSignInServiceTest {
 
         // then
         assertNotNull(result);
-        verify(authLoginHistoryService, times(1))
-                .recordLogin(eq(auth), eq("127.0.0.1"), eq("UA"), eq(true), isNull());
+        verify(userActivityService, times(1))
+                .recordActivity(eq(1L), eq(UserActivity.ActivityType.SOCIAL_LOGIN), eq("127.0.0.1"), eq("UA"), eq(true), isNull());
     }
 
     @Test
     void 카카오로그인_신규회원_로그인히스토리_기록안함() {
         // given
         Auth auth = Auth.builder()
+                .id(1L)
                 .provider(Provider.KAKAO)
                 .providerId("kakaoId123")
                 .email("test@kakao.com")
@@ -69,14 +72,15 @@ class AuthSignInServiceTest {
 
         // then
         assertNotNull(result);
-        verify(authLoginHistoryService, never())
-                .recordLogin(any(), any(), any(), anyBoolean(), any());
+        verify(userActivityService, never())
+                .recordActivity(any(), any(), any(), any(), anyBoolean(), any());
     }
 
     @Test
     void 애플로그인_정식회원_로그인히스토리_기록() {
         // given
         Auth auth = Auth.builder()
+                .id(1L)
                 .provider(Provider.APPLE)
                 .providerId("appleId123")
                 .email("test@apple.com")
@@ -91,14 +95,15 @@ class AuthSignInServiceTest {
 
         // then
         assertNotNull(result);
-        verify(authLoginHistoryService, times(1))
-                .recordLogin(eq(auth), eq("127.0.0.1"), eq("UA"), eq(true), isNull());
+        verify(userActivityService, times(1))
+                .recordActivity(eq(1L), eq(UserActivity.ActivityType.SOCIAL_LOGIN), eq("127.0.0.1"), eq("UA"), eq(true), isNull());
     }
 
     @Test
     void 애플로그인_신규회원_로그인히스토리_기록안함() {
         // given
         Auth auth = Auth.builder()
+                .id(1L)
                 .provider(Provider.APPLE)
                 .providerId("appleId123")
                 .email("test@apple.com")
@@ -113,8 +118,8 @@ class AuthSignInServiceTest {
 
         // then
         assertNotNull(result);
-        verify(authLoginHistoryService, never())
-                .recordLogin(any(), any(), any(), anyBoolean(), any());
+        verify(userActivityService, never())
+                .recordActivity(any(), any(), any(), any(), anyBoolean(), any());
     }
 
     @Test
