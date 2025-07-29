@@ -4,6 +4,8 @@ import com.cheatkey.module.auth.domain.entity.Auth;
 import com.cheatkey.module.auth.domain.entity.ProfileImage;
 import com.cheatkey.module.auth.domain.service.AuthService;
 import com.cheatkey.module.auth.domain.service.ProfileImageService;
+import com.cheatkey.module.auth.domain.service.UserActivityService;
+import com.cheatkey.module.auth.domain.entity.UserActivity;
 import com.cheatkey.module.community.domian.entity.CommunityPost;
 import com.cheatkey.module.community.domian.service.CommunityService;
 import com.cheatkey.module.detection.domain.entity.DetectionPeriod;
@@ -19,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 @Service
@@ -30,14 +31,22 @@ public class MyPageFacade {
 
     private final AuthService authService;
     private final ProfileImageService profileImageService;
+    private final UserActivityService userActivityService;
     private final CommunityService communityService;
     private final DetectionService detectionService;
     private final MyPageMapper myPageMapper;
 
 
+    @Transactional
     public MyPageDashboardResponse getMyPageDashboard(Long userId) {
+        // 방문 기록 저장
+        userActivityService.recordDashboardVisit(userId, UserActivity.ActivityType.MYPAGE_VISIT);
+        
         Auth auth = authService.getUserInfo(userId);
         List<ProfileImage> profileImages = profileImageService.getProfileImages();
+        
+        // 실제 방문 횟수 조회
+        Integer totalVisitCount = auth.getTotalVisitCount();
         
         // 프로필 이미지 조회
         ProfileImage userProfileImage = null;
@@ -48,7 +57,7 @@ public class MyPageFacade {
                     .orElse(null);
         }
         
-        UserInfoResponse userInfo = myPageMapper.toUserInfoResponse(auth, userProfileImage);
+        UserInfoResponse userInfo = myPageMapper.toUserInfoResponse(auth, userProfileImage, totalVisitCount != null ? totalVisitCount : 0);
         List<ProfileImageResponse> profileImageResponses = myPageMapper.toProfileImageResponseList(profileImages);
         
         return MyPageDashboardResponse.builder()

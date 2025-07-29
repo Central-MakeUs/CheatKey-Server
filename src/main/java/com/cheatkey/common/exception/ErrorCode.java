@@ -34,6 +34,9 @@ public enum ErrorCode {
     POST_DELETE_PERMISSION_DENIED(HttpStatus.UNAUTHORIZED, "삭제 권한이 없습니다."),
     DETECTION_HISTORY_NOT_FOUND(HttpStatus.NOT_FOUND, "분석 내역을 찾을 수 없습니다."),
     DETECTION_HISTORY_ACCESS_DENIED(HttpStatus.UNAUTHORIZED, "조회 권한이 없습니다."),
+    
+    // Visit (방문)
+    VISIT_RECORD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "방문 기록 저장에 실패했습니다."),
 
     // Detection (피싱 검색)
     INVALID_INPUT_TYPE_URL(HttpStatus.BAD_REQUEST, "URL을 입력하지 않았어요"),

@@ -13,7 +13,7 @@ import java.util.List;
 public interface HomeMapper {
 
     @Mapping(target = "level", constant = "1") // 레벨은 1로 고정
-    @Mapping(target = "totalVisitCount", constant = "10") // @TODO: 해당 구현은 아직 안되어 있음으로 나중에 추가 되어야 한다
+    @Mapping(target = "totalVisitCount", ignore = true) // 파사드에서 실제 방문 횟수 설정
     @Mapping(target = "profileImageUrl", ignore = true) // 파사드에서 실제 URL 설정
     HomeDashboardResponse.UserInfo toUserInfo(Auth auth);
 

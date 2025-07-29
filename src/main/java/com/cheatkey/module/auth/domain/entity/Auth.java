@@ -38,6 +38,10 @@ public class Auth {
     private Integer loginCount;
     private Integer level; // 사용자 레벨
     private LocalDateTime lastLoginAt;
+    
+    // 방문 횟수 관련 필드
+    private Integer totalVisitCount;
+    private LocalDateTime lastVisitDate;
 
     @Enumerated(EnumType.STRING)
     private AuthStatus status;
@@ -62,6 +66,14 @@ public class Auth {
 
     public void updateLastLoginTime(LocalDateTime now) {
         this.lastLoginAt = now;
+    }
+
+    public void updateLastVisitDate(LocalDateTime now) {
+        this.lastVisitDate = now;
+    }
+
+    public void increaseVisitCount() {
+        this.totalVisitCount = (this.totalVisitCount == null) ? 1 : this.totalVisitCount + 1;
     }
 
     public List<String> getTradeMethodCodes() {

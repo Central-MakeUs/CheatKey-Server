@@ -14,10 +14,10 @@ import java.util.stream.Collectors;
 @Component
 public class MyPageMapper {
 
-    public UserInfoResponse toUserInfoResponse(Auth auth, ProfileImage profileImage) {
+    public UserInfoResponse toUserInfoResponse(Auth auth, ProfileImage profileImage, Integer totalVisitCount) {
         return UserInfoResponse.builder()
                 .nickname(auth.getNickname())
-                .totalVisitCount(0) // @TODO: 해당 구현은 아직 안되어 있음으로 나중에 추가 되어야 한다
+                .totalVisitCount(totalVisitCount)
                 .level(1) // 고정 레벨 1
                 .profileImageId(auth.getProfileImageId())
                 .profileImageUrl(profileImage != null ? profileImage.getImageUrl() : null)

@@ -73,7 +73,12 @@ public abstract class AbstractAuthSignInService {
     
     private void updateExistingAuth(Auth auth) {
         if (auth.getStatus() == AuthStatus.ACTIVE) {
-            auth.increaseLoginCount();
+            // 하루에 한 번만 로그인 카운트 증가
+            LocalDateTime today = LocalDateTime.now().toLocalDate().atStartOfDay();
+            if (auth.getLastLoginAt() == null || 
+                auth.getLastLoginAt().toLocalDate().isBefore(today.toLocalDate())) {
+                auth.increaseLoginCount();
+            }
             auth.updateLastLoginTime(LocalDateTime.now());
             authRepository.save(auth);
         }

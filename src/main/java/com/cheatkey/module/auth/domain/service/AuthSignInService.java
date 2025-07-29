@@ -3,6 +3,7 @@ package com.cheatkey.module.auth.domain.service;
 import com.cheatkey.module.auth.domain.entity.AuthStatus;
 import com.cheatkey.module.auth.domain.entity.Provider;
 import com.cheatkey.module.auth.domain.entity.Auth;
+import com.cheatkey.module.auth.domain.entity.UserActivity;
 import com.cheatkey.module.auth.domain.service.apple.AppleSignInService;
 import com.cheatkey.module.auth.domain.service.dto.AuthTokenRequest;
 import com.cheatkey.module.auth.domain.service.kakao.KakaoSignInService;
@@ -17,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthSignInService {
     private final KakaoSignInService kakaoSignInService;
     private final AppleSignInService appleSignInService;
-    private final AuthLoginHistoryService authLoginHistoryService;
+    private final UserActivityService userActivityService;
 
     @Transactional
     public Auth signIn(Provider provider, String idToken, String accessToken, String ip, String userAgent) {
@@ -49,7 +50,7 @@ public class AuthSignInService {
         } finally {
             try {
                 if (auth != null && (success || auth.getStatus() == AuthStatus.ACTIVE)) {
-                    authLoginHistoryService.recordLogin(auth, ip, userAgent, success, failReason);
+                    userActivityService.recordActivity(auth.getId(), UserActivity.ActivityType.SOCIAL_LOGIN, ip, userAgent, success, failReason);
                 }
             } catch (Exception logEx) {
                 log.error("로그인 이력 기록 실패", logEx);
