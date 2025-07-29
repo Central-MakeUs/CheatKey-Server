@@ -4,7 +4,7 @@ import com.cheatkey.module.auth.domain.entity.Auth;
 import com.cheatkey.module.auth.domain.entity.AuthRole;
 import com.cheatkey.module.auth.domain.entity.AuthStatus;
 import com.cheatkey.module.auth.domain.entity.Provider;
-import com.cheatkey.module.auth.domain.entity.UserActivity;
+import com.cheatkey.module.auth.domain.entity.AuthActivity;
 import com.cheatkey.module.auth.domain.service.kakao.KakaoSignInService;
 import com.cheatkey.module.auth.domain.service.apple.AppleSignInService;
 import com.cheatkey.module.auth.domain.service.dto.AuthTokenRequest;
@@ -20,7 +20,7 @@ import static org.mockito.Mockito.*;
 class AuthSignInServiceTest {
     @Mock private KakaoSignInService kakaoSignInService;
     @Mock private AppleSignInService appleSignInService;
-    @Mock private UserActivityService userActivityService;
+    @Mock private AuthActivityService authActivityService;
 
     @InjectMocks
     private AuthSignInService authSignInService;
@@ -49,8 +49,8 @@ class AuthSignInServiceTest {
 
         // then
         assertNotNull(result);
-        verify(userActivityService, times(1))
-                .recordActivity(eq(1L), eq(UserActivity.ActivityType.SOCIAL_LOGIN), eq("127.0.0.1"), eq("UA"), eq(true), isNull());
+        verify(authActivityService, times(1))
+                .recordActivity(eq(1L), eq(AuthActivity.ActivityType.SOCIAL_LOGIN), eq("127.0.0.1"), eq("UA"), eq(true), isNull());
     }
 
     @Test
@@ -72,7 +72,7 @@ class AuthSignInServiceTest {
 
         // then
         assertNotNull(result);
-        verify(userActivityService, never())
+        verify(authActivityService, never())
                 .recordActivity(any(), any(), any(), any(), anyBoolean(), any());
     }
 
@@ -95,8 +95,8 @@ class AuthSignInServiceTest {
 
         // then
         assertNotNull(result);
-        verify(userActivityService, times(1))
-                .recordActivity(eq(1L), eq(UserActivity.ActivityType.SOCIAL_LOGIN), eq("127.0.0.1"), eq("UA"), eq(true), isNull());
+        verify(authActivityService, times(1))
+                .recordActivity(eq(1L), eq(AuthActivity.ActivityType.SOCIAL_LOGIN), eq("127.0.0.1"), eq("UA"), eq(true), isNull());
     }
 
     @Test
@@ -118,7 +118,7 @@ class AuthSignInServiceTest {
 
         // then
         assertNotNull(result);
-        verify(userActivityService, never())
+        verify(authActivityService, never())
                 .recordActivity(any(), any(), any(), any(), anyBoolean(), any());
     }
 

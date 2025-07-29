@@ -3,10 +3,10 @@ package com.cheatkey.module.home.application.facade;
 import com.cheatkey.common.exception.CustomException;
 import com.cheatkey.common.exception.ErrorCode;
 import com.cheatkey.module.auth.domain.entity.Auth;
+import com.cheatkey.module.auth.domain.entity.AuthActivity;
 import com.cheatkey.module.auth.domain.service.AuthService;
 import com.cheatkey.module.auth.domain.service.ProfileImageService;
-import com.cheatkey.module.auth.domain.service.UserActivityService;
-import com.cheatkey.module.auth.domain.entity.UserActivity;
+import com.cheatkey.module.auth.domain.service.AuthActivityService;
 import com.cheatkey.module.community.domian.entity.CommunityPost;
 import com.cheatkey.module.community.domian.service.CommunityService;
 import com.cheatkey.module.home.domain.mapper.HomeMapper;
@@ -26,14 +26,14 @@ public class HomeFacade {
     private final AuthService authService;
     private final CommunityService communityService;
     private final ProfileImageService profileImageService;
-    private final UserActivityService userActivityService;
+    private final AuthActivityService authActivityService;
     private final HomeMapper homeMapper;
 
     @Transactional
     public HomeDashboardResponse getDashboard(Long userId) {
         try {
             // 방문 기록 저장
-            userActivityService.recordDashboardVisit(userId, UserActivity.ActivityType.HOME_VISIT);
+            authActivityService.recordDashboardVisit(userId, AuthActivity.ActivityType.HOME_VISIT);
             
             Auth userInfo = authService.getUserInfo(userId);
             // TODO: 페이징 처리로 변경 검토 중 (현재는 성능상 limit 처리 유지)

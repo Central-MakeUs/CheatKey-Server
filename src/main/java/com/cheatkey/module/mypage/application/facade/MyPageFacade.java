@@ -4,8 +4,8 @@ import com.cheatkey.module.auth.domain.entity.Auth;
 import com.cheatkey.module.auth.domain.entity.ProfileImage;
 import com.cheatkey.module.auth.domain.service.AuthService;
 import com.cheatkey.module.auth.domain.service.ProfileImageService;
-import com.cheatkey.module.auth.domain.service.UserActivityService;
-import com.cheatkey.module.auth.domain.entity.UserActivity;
+import com.cheatkey.module.auth.domain.service.AuthActivityService;
+import com.cheatkey.module.auth.domain.entity.AuthActivity;
 import com.cheatkey.module.community.domian.entity.CommunityPost;
 import com.cheatkey.module.community.domian.service.CommunityService;
 import com.cheatkey.module.detection.domain.entity.DetectionPeriod;
@@ -31,7 +31,7 @@ public class MyPageFacade {
 
     private final AuthService authService;
     private final ProfileImageService profileImageService;
-    private final UserActivityService userActivityService;
+    private final AuthActivityService authActivityService;
     private final CommunityService communityService;
     private final DetectionService detectionService;
     private final MyPageMapper myPageMapper;
@@ -40,7 +40,7 @@ public class MyPageFacade {
     @Transactional
     public MyPageDashboardResponse getMyPageDashboard(Long userId) {
         // 방문 기록 저장
-        userActivityService.recordDashboardVisit(userId, UserActivity.ActivityType.MYPAGE_VISIT);
+        authActivityService.recordDashboardVisit(userId, AuthActivity.ActivityType.MYPAGE_VISIT);
         
         Auth auth = authService.getUserInfo(userId);
         List<ProfileImage> profileImages = profileImageService.getProfileImages();

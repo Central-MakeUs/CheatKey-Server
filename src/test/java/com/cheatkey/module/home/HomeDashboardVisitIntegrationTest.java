@@ -6,7 +6,7 @@ import com.cheatkey.module.auth.domain.entity.AuthRole;
 import com.cheatkey.module.auth.domain.entity.AuthStatus;
 import com.cheatkey.module.auth.domain.entity.Provider;
 import com.cheatkey.module.auth.domain.repository.AuthRepository;
-import com.cheatkey.module.auth.domain.repository.UserActivityRepository;
+import com.cheatkey.module.auth.domain.repository.AuthActivityRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,7 +40,7 @@ class HomeDashboardVisitIntegrationTest {
     private AuthRepository authRepository;
 
     @Autowired
-    private UserActivityRepository userActivityRepository;
+    private AuthActivityRepository authActivityRepository;
 
     @Autowired
     private JwtProvider jwtProvider;
@@ -76,7 +76,7 @@ class HomeDashboardVisitIntegrationTest {
     @Test
     void 메인대시보드_방문시_방문횟수_증가() throws Exception {
         // given
-        Long initialActivityCount = userActivityRepository.countByUserId(testUserId);
+        Long initialActivityCount = authActivityRepository.countByUserId(testUserId);
         assertEquals(0L, initialActivityCount);
 
         // when - 첫 번째 방문
@@ -87,7 +87,7 @@ class HomeDashboardVisitIntegrationTest {
                 .andExpect(jsonPath("$.userInfo.totalVisitCount").value(1));
 
         // then
-        Long firstActivityCount = userActivityRepository.countByUserId(testUserId);
+        Long firstActivityCount = authActivityRepository.countByUserId(testUserId);
         assertEquals(1L, firstActivityCount);
 
         // when - 두 번째 방문
@@ -98,7 +98,7 @@ class HomeDashboardVisitIntegrationTest {
                 .andExpect(jsonPath("$.userInfo.totalVisitCount").value(1)); // 하루에 한 번만 카운팅
 
         // then
-        Long secondActivityCount = userActivityRepository.countByUserId(testUserId);
+        Long secondActivityCount = authActivityRepository.countByUserId(testUserId);
         assertEquals(2L, secondActivityCount); // 활동 기록은 계속 증가
     }
 } 

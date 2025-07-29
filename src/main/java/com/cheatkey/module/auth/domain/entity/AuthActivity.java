@@ -7,12 +7,12 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "t_user_activity")
+@Table(name = "t_auth_activity")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-public class UserActivity {
+public class AuthActivity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

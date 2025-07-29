@@ -1,9 +1,9 @@
 package com.cheatkey.module.auth.domain.service;
 
 import com.cheatkey.module.auth.domain.entity.Auth;
-import com.cheatkey.module.auth.domain.entity.UserActivity;
+import com.cheatkey.module.auth.domain.entity.AuthActivity;
 import com.cheatkey.module.auth.domain.repository.AuthRepository;
-import com.cheatkey.module.auth.domain.repository.UserActivityRepository;
+import com.cheatkey.module.auth.domain.repository.AuthActivityRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -11,7 +11,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -19,16 +18,16 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class UserActivityServiceTest {
+class AuthActivityServiceTest {
 
     @Mock
-    private UserActivityRepository userActivityRepository;
+    private AuthActivityRepository authActivityRepository;
 
     @Mock
     private AuthRepository authRepository;
 
     @InjectMocks
-    private UserActivityService userActivityService;
+    private AuthActivityService authActivityService;
 
     private Auth mockAuth;
 
@@ -48,14 +47,14 @@ class UserActivityServiceTest {
         String ipAddress = "127.0.0.1";
         String userAgent = "Mozilla/5.0";
         when(authRepository.findById(userId)).thenReturn(Optional.of(mockAuth));
-        when(userActivityRepository.save(any(UserActivity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(authActivityRepository.save(any(AuthActivity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // when
-        userActivityService.recordActivity(userId, UserActivity.ActivityType.SOCIAL_LOGIN, ipAddress, userAgent, true, null);
+        authActivityService.recordActivity(userId, AuthActivity.ActivityType.SOCIAL_LOGIN, ipAddress, userAgent, true, null);
 
         // then
         verify(authRepository).findById(userId);
-        verify(userActivityRepository).save(any(UserActivity.class));
+        verify(authActivityRepository).save(any(AuthActivity.class));
     }
 
     @Test
@@ -63,14 +62,14 @@ class UserActivityServiceTest {
         // given
         Long userId = 1L;
         when(authRepository.findById(userId)).thenReturn(Optional.of(mockAuth));
-        when(userActivityRepository.save(any(UserActivity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(authActivityRepository.save(any(AuthActivity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // when
-        userActivityService.recordActivity(userId, UserActivity.ActivityType.TOKEN_REFRESH, null, null, true, null);
+        authActivityService.recordActivity(userId, AuthActivity.ActivityType.TOKEN_REFRESH, null, null, true, null);
 
         // then
         verify(authRepository).findById(userId);
-        verify(userActivityRepository).save(any(UserActivity.class));
+        verify(authActivityRepository).save(any(AuthActivity.class));
     }
 
     @Test
@@ -78,21 +77,21 @@ class UserActivityServiceTest {
         // given
         Long userId = 1L;
         when(authRepository.findById(userId)).thenReturn(Optional.of(mockAuth));
-        when(userActivityRepository.save(any(UserActivity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(authActivityRepository.save(any(AuthActivity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // when - 첫 번째 방문
-        userActivityService.recordDashboardVisit(userId, UserActivity.ActivityType.HOME_VISIT);
+        authActivityService.recordDashboardVisit(userId, AuthActivity.ActivityType.HOME_VISIT);
 
         // then
         verify(authRepository, times(1)).save(any(Auth.class));
-        verify(userActivityRepository).save(any(UserActivity.class));
+        verify(authActivityRepository).save(any(AuthActivity.class));
 
         // when - 두 번째 방문 (같은 날)
-        userActivityService.recordDashboardVisit(userId, UserActivity.ActivityType.HOME_VISIT);
+        authActivityService.recordDashboardVisit(userId, AuthActivity.ActivityType.HOME_VISIT);
 
         // then - 방문 횟수는 증가하지 않음
         verify(authRepository, times(1)).save(any(Auth.class));
-        verify(userActivityRepository, times(2)).save(any(UserActivity.class));
+        verify(authActivityRepository, times(2)).save(any(AuthActivity.class));
     }
 
     @Test
@@ -100,21 +99,21 @@ class UserActivityServiceTest {
         // given
         Long userId = 1L;
         when(authRepository.findById(userId)).thenReturn(Optional.of(mockAuth));
-        when(userActivityRepository.save(any(UserActivity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(authActivityRepository.save(any(AuthActivity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // when - 첫 번째 방문
-        userActivityService.recordDashboardVisit(userId, UserActivity.ActivityType.MYPAGE_VISIT);
+        authActivityService.recordDashboardVisit(userId, AuthActivity.ActivityType.MYPAGE_VISIT);
 
         // then
         verify(authRepository, times(1)).save(any(Auth.class));
-        verify(userActivityRepository).save(any(UserActivity.class));
+        verify(authActivityRepository).save(any(AuthActivity.class));
 
         // when - 두 번째 방문 (같은 날)
-        userActivityService.recordDashboardVisit(userId, UserActivity.ActivityType.MYPAGE_VISIT);
+        authActivityService.recordDashboardVisit(userId, AuthActivity.ActivityType.MYPAGE_VISIT);
 
         // then - 방문 횟수는 증가하지 않음
         verify(authRepository, times(1)).save(any(Auth.class));
-        verify(userActivityRepository, times(2)).save(any(UserActivity.class));
+        verify(authActivityRepository, times(2)).save(any(AuthActivity.class));
     }
 
     @Test
@@ -125,7 +124,7 @@ class UserActivityServiceTest {
 
         // when & then
         assertThrows(RuntimeException.class, () -> {
-            userActivityService.recordActivity(userId, UserActivity.ActivityType.SOCIAL_LOGIN, null, null, true, null);
+            authActivityService.recordActivity(userId, AuthActivity.ActivityType.SOCIAL_LOGIN, null, null, true, null);
         });
     }
 } 

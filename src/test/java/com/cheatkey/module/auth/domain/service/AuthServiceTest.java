@@ -3,11 +3,8 @@ package com.cheatkey.module.auth.domain.service;
 import com.cheatkey.common.exception.CustomException;
 import com.cheatkey.common.exception.ErrorCode;
 import com.cheatkey.common.jwt.JwtProvider;
-import com.cheatkey.module.auth.domain.entity.Auth;
-import com.cheatkey.module.auth.domain.entity.AuthRole;
-import com.cheatkey.module.auth.domain.entity.AuthStatus;
-import com.cheatkey.module.auth.domain.entity.Provider;
-import com.cheatkey.module.auth.domain.entity.UserActivity;
+import com.cheatkey.module.auth.domain.entity.*;
+import com.cheatkey.module.auth.domain.entity.AuthActivity;
 import com.cheatkey.module.auth.domain.repository.AuthRepository;
 import com.cheatkey.module.auth.domain.service.token.RefreshTokenService;
 import com.cheatkey.module.auth.interfaces.dto.SignInResponse;
@@ -38,7 +35,7 @@ class AuthServiceTest {
     @Mock
     private RefreshTokenService refreshTokenService;
     @Mock
-    private UserActivityService userActivityService;
+    private AuthActivityService authActivityService;
     @InjectMocks
     private AuthService authService;
 
@@ -64,7 +61,7 @@ class AuthServiceTest {
         when(jwtProvider.createRefreshToken(anyLong())).thenReturn(newRefreshToken);
         doNothing().when(refreshTokenService).invalidateToken(anyString(), anyLong());
         doNothing().when(refreshTokenService).saveOrUpdate(anyLong(), anyString());
-        doNothing().when(userActivityService).recordActivity(anyLong(), any(), any(), any(), anyBoolean(), any());
+        doNothing().when(authActivityService).recordActivity(anyLong(), any(), any(), any(), anyBoolean(), any());
 
         // when
         SignInResponse response = authService.refreshAccessToken(refreshToken);
@@ -75,9 +72,8 @@ class AuthServiceTest {
         assertEquals("ACTIVE", response.getUserState());
         assertEquals("Bearer", response.getGrantType());
         
-        // UserActivityService 호출 확인
-        verify(userActivityService, times(1))
-                .recordActivity(eq(userId), eq(UserActivity.ActivityType.TOKEN_REFRESH), isNull(), isNull(), eq(true), isNull());
+        verify(authActivityService, times(1))
+                .recordActivity(eq(userId), eq(AuthActivity.ActivityType.TOKEN_REFRESH), isNull(), isNull(), eq(true), isNull());
     }
 
     @Test

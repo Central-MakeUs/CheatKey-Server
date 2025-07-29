@@ -13,7 +13,7 @@ import com.cheatkey.module.auth.domain.validate.NicknameValidator;
 import com.cheatkey.module.auth.interfaces.dto.SignInResponse;
 import com.cheatkey.module.mypage.interfaces.dto.UpdateUserInfoRequest;
 import com.cheatkey.module.terms.domain.service.TermsAgreementService;
-import com.cheatkey.module.auth.domain.entity.UserActivity;
+import com.cheatkey.module.auth.domain.entity.AuthActivity;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,7 +33,7 @@ public class AuthService {
     private final NicknameValidator nicknameValidator;
     private final JwtProvider jwtProvider;
     private final RefreshTokenService refreshTokenService;
-    private final UserActivityService userActivityService;
+    private final AuthActivityService authActivityService;
 
 
     public void validateNickname(String nickname) {
@@ -150,7 +150,7 @@ public class AuthService {
                 .orElseThrow(() -> new CustomException(ErrorCode.AUTH_UNAUTHORIZED));
 
         // 토큰 갱신 활동 기록
-        userActivityService.recordActivity(userId, UserActivity.ActivityType.TOKEN_REFRESH, null, null, true, null);
+        authActivityService.recordActivity(userId, AuthActivity.ActivityType.TOKEN_REFRESH, null, null, true, null);
 
         // 새로운 액세스 토큰과 리프레시 토큰 생성
         String accessJwt = jwtProvider.createAccessToken(auth.getId(), auth.getProvider(), auth.getRole());
