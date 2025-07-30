@@ -147,18 +147,13 @@ public class AuthController {
         Long loginId = Long.valueOf(userId);
 
         Auth requestAuth = authMapper.toAuth(registerRequest);
-        authService.register(requestAuth, loginId, registerRequest.getAgreedRequiredTerms(), registerRequest.getAgreedOptionalTerms());
-
-        // 회원가입 후 바로 토큰 발급 및 저장 (자동 로그인)
-        String accessJwt = jwtProvider.createAccessToken(loginId, requestAuth.getProvider(), requestAuth.getRole());
-        String refreshJwt = jwtProvider.createRefreshToken(loginId);
-        refreshTokenService.saveOrUpdate(loginId, refreshJwt);
+        Auth registeredAuth = authService.register(requestAuth, loginId, registerRequest.getAgreedRequiredTerms(), registerRequest.getAgreedOptionalTerms());
 
         SignInResponse response = SignInResponse.builder()
-                .userState(requestAuth.getStatus().name())
+                .userState(registeredAuth.getStatus().name())
                 .grantType("Bearer")
-                .accessToken(accessJwt)
-                .refreshToken(refreshJwt)
+                .accessToken(null)
+                .refreshToken(null)
                 .build();
 
         return ResponseEntity.ok(response);

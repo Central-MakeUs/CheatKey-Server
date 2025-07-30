@@ -104,7 +104,7 @@ public class AuthService {
     }
 
     @Transactional
-    public void register(Auth updateInfo, Long userId, List<Long> requiredIds, List<Long> optionalIds) {
+    public Auth register(Auth updateInfo, Long userId, List<Long> requiredIds, List<Long> optionalIds) {
         Auth auth = authRepository.findById(userId)
             .orElseThrow(() -> new CustomException(ErrorCode.AUTH_UNAUTHORIZED));
 
@@ -134,10 +134,12 @@ public class AuthService {
         auth.setTradeItemCodes(updateInfo.getTradeItemCodes());
         auth.setStatus(AuthStatus.ACTIVE); // 가입 완료로 상태 변경
 
-        authRepository.save(auth);
+        Auth savedAuth = authRepository.save(auth);
 
         // 약관 동의 처리
         termsAgreementService.processAgreement(auth, requiredIds, optionalIds);
+
+        return savedAuth;
     }
 
     public SignInResponse refreshAccessToken(String refreshToken) {

@@ -429,10 +429,8 @@ class AuthControllerIntegrationTest {
         given(jwtProvider.getRoleFromToken(anyString())).willReturn("ROLE_USER");
         given(authRepository.findById(userId)).willReturn(java.util.Optional.of(pendingAuth));
         given(authMapper.toAuth(any())).willReturn(mappedAuth);
-        given(jwtProvider.createAccessToken(anyLong(), any(), any())).willReturn("newAccessToken");
-        given(jwtProvider.createRefreshToken(anyLong())).willReturn("newRefreshToken");
         doNothing().when(refreshTokenService).saveOrUpdate(anyLong(), anyString());
-        doNothing().when(authService).register(any(), anyLong(), any(), any());
+        given(authService.register(any(), anyLong(), any(), any())).willReturn(mappedAuth);
 
         Map<String, Object> req = new HashMap<>();
         req.put("nickname", "테스트12");
@@ -449,8 +447,6 @@ class AuthControllerIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.accessToken").value("newAccessToken"))
-                .andExpect(jsonPath("$.refreshToken").value("newRefreshToken"))
                 .andExpect(jsonPath("$.userState").value("ACTIVE"));
     }
 
