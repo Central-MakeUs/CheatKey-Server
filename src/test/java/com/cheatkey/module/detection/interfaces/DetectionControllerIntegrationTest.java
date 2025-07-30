@@ -31,7 +31,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Transactional
 @ActiveProfiles("test")
-@Disabled("Vector DB 실 API 호출용 테스트 - Vector DB 로컬 세팅 후 수동 실행 전용")
 class DetectionControllerIntegrationTest {
 
     @Autowired
@@ -79,9 +78,10 @@ class DetectionControllerIntegrationTest {
                         .header("Authorization", "Bearer " + jwt)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.status").exists())
-            .andExpect(jsonPath("$.group").value(DetectionGroup.PHISHING.name()));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").exists())
+                .andExpect(jsonPath("$.group").value(DetectionGroup.PHISHING.name()))
+                .andExpect(jsonPath("$.detectionId").isNumber());
     }
 
     @Test

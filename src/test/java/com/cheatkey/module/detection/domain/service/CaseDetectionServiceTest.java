@@ -37,7 +37,7 @@ class CaseDetectionServiceTest {
     private DetectionHistoryRepository historyRepository;
 
     @Test
-    public void 입력_받으면_유사도_검색하고_결과를_반환한다() {
+    public void 입력_받으면_유사도_검색하고_결과를_반환한다() throws Exception {
         // given
         Long kakaoId = 1L;
 
@@ -54,6 +54,13 @@ class CaseDetectionServiceTest {
         given(vectorDbClient.searchSimilarCases(dummyEmbedding, 5)).willReturn(mockResults);
         given(detectionMapper.mapToStatus(mockResults)).willReturn(DetectionStatus.WARNING);
         given(detectionMapper.mapToCategory(mockResults)).willReturn(DetectionCategory.PHISHING);
+        given(historyRepository.save(any())).willAnswer(invocation -> {
+            DetectionHistory h = invocation.getArgument(0);
+            java.lang.reflect.Field idField = h.getClass().getDeclaredField("id");
+            idField.setAccessible(true);
+            idField.set(h, 1L);
+            return h;
+        });
 
         // when
         DetectionResult result = caseDetectionService.detect(input, kakaoId);
@@ -61,7 +68,7 @@ class CaseDetectionServiceTest {
         // then
         assertThat(result.status()).isEqualTo(DetectionStatus.WARNING);
         assertThat(result.group()).isEqualTo(DetectionGroup.PHISHING);
-
+        assertThat(result.detectionId()).isEqualTo(1L);
         then(historyRepository).should().save(any(DetectionHistory.class));
     }
 

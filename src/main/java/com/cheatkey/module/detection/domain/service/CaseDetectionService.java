@@ -52,7 +52,7 @@ public class CaseDetectionService {
                     .userId(loginUserId)
                     .matchedCaseId(results.isEmpty() ? null : results.get(0).id())
                     .build();
-            detectionHistoryRepository.save(history);
+            DetectionHistory detectionHistory = detectionHistoryRepository.save(history);
 
             if (topScore >= 0.8f) {
                 Map<String, Object> payload = Map.of(
@@ -66,7 +66,7 @@ public class CaseDetectionService {
                 vectorDbClient.saveVector(uuid, embedding, payload);
             }
 
-            return new DetectionResult(status, group);
+            return new DetectionResult(detectionHistory.getId(), status, group);
 
         } catch (Exception e) {
             log.error("피싱 사례 분석 중 예외 발생", e);

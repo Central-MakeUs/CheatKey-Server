@@ -1,6 +1,5 @@
 package com.cheatkey.module.detection.interfaces.dto;
 
-import com.cheatkey.module.detection.domain.entity.DetectionCategory;
 import com.cheatkey.module.detection.domain.entity.DetectionGroup;
 import com.cheatkey.module.detection.domain.entity.DetectionResult;
 import com.cheatkey.module.detection.domain.entity.DetectionStatus;
@@ -10,6 +9,8 @@ import lombok.Getter;
 @Getter
 @Schema(description = "피싱 유사도 분석 결과")
 public class DetectionResponse {
+
+    private Long detectionId;
 
     @Schema(example = "SAFE")
     private final DetectionStatus status;
@@ -21,6 +22,7 @@ public class DetectionResponse {
     private final DetectionGroup group;
 
     public DetectionResponse(DetectionResult result) {
+        this.detectionId = result.detectionId();
         this.status = result.status();
         this.group = result.group();
     }

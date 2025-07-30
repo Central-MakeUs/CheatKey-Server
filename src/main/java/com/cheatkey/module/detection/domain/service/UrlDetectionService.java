@@ -30,9 +30,9 @@ public class UrlDetectionService {
                     .detectionType(DetectionType.URL.name())
                     .userId(userId)
                     .build();
-            detectionHistoryRepository.save(history);
+            DetectionHistory detectionHistory = detectionHistoryRepository.save(history);
 
-            return new DetectionResult(status, null);
+            return new DetectionResult(detectionHistory.getId(),status, null);
 
         } catch (Exception e) {
             throw new CustomException(ErrorCode.DETECTION_FAILED);
