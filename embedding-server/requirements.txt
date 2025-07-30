@@ -1,8 +1,12 @@
-# 주요 패키지 의존성 목록
+# FastAPI 서버 실행
 fastapi
 uvicorn
+
+# 모델 임베딩
 transformers
-torch
+torch==2.3.1+cpu  # GPU 미사용 환경에 최적화
+
+# 모델 입출력 및 API 데이터 처리
 pydantic
 pandas
 requests
