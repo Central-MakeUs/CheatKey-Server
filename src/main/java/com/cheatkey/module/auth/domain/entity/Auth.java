@@ -24,7 +24,7 @@ public class Auth {
 
     @Enumerated(EnumType.STRING)
     private Provider provider;
-    private String providerId; // 카카오ID, 애플ID 등
+    private String providerId;      // 카카오ID, 애플ID 등
 
     private String email;
     private String nickname;
@@ -33,10 +33,10 @@ public class Auth {
     private String tradeMethodCode;
     private String tradeItemCode;
 
-    private Long profileImageId; // 프로필 이미지 ID
+    private Long profileImageId;    // 프로필 이미지 ID
 
     private Integer loginCount;
-    private Integer level; // 사용자 레벨
+    private Integer level;          // 사용자 레벨
     private LocalDateTime lastLoginAt;
     
     // 방문 횟수 관련 필드
@@ -54,11 +54,6 @@ public class Auth {
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
-
-    public void assignProviderId(Provider provider, String providerId) {
-        this.provider = provider;
-        this.providerId = providerId;
-    }
 
     public void increaseLoginCount() {
         this.loginCount = (this.loginCount == null) ? 1 : this.loginCount + 1;
@@ -91,15 +86,12 @@ public class Auth {
     public void setTradeMethodCodes(List<String> codes) {
         this.tradeMethodCode = String.join(",", codes);
     }
-
     public void setTradeItemCodes(List<String> codes) {
         this.tradeItemCode = String.join(",", codes);
     }
-
     public void setStatus(AuthStatus status) {
         this.status = status;
     }
-
     public void setNickname(String nickname) {
         this.nickname = nickname;
     }
@@ -109,8 +101,6 @@ public class Auth {
     public void setGenderCode(String genderCode) {
         this.genderCode = genderCode;
     }
-
-    public void setProfileImageId(Long profileImageId) {
-        this.profileImageId = profileImageId;
-    }
+    public void setProfileImageId(Long profileImageId) {this.profileImageId = profileImageId;}
+    public void setLevel(Integer level) {this.level = level;}
 }

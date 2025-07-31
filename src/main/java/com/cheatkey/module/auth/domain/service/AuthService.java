@@ -132,7 +132,9 @@ public class AuthService {
         auth.setGenderCode(updateInfo.getGenderCode());
         auth.setTradeMethodCodes(updateInfo.getTradeMethodCodes());
         auth.setTradeItemCodes(updateInfo.getTradeItemCodes());
-        auth.setStatus(AuthStatus.ACTIVE); // 가입 완료로 상태 변경
+        auth.setLevel(1);                   // 최초 등록은 레벨 1 고정
+        auth.setProfileImageId(1L);         // 최초 등록은 ID = 1 고정
+        auth.setStatus(AuthStatus.ACTIVE);  // 가입 완료로 상태 변경
 
         Auth savedAuth = authRepository.save(auth);
 
