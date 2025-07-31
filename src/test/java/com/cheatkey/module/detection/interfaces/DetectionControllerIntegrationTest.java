@@ -31,6 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Transactional
 @ActiveProfiles("test")
+@Disabled("Vector DB 실 API 호출용 테스트 - Vector DB 로컬 세팅 후 수동 실행 전용")
 class DetectionControllerIntegrationTest {
 
     @Autowired
