@@ -36,10 +36,10 @@ public class HomeFacade {
             authActivityService.recordDashboardVisit(userId, AuthActivity.ActivityType.HOME_VISIT);
             
             Auth userInfo = authService.getUserInfo(userId);
-            List<CommunityPost> popularPosts = communityService.getPopularPosts(10);
+            List<CommunityService.CommunityPostWithAuthorInfo> popularPostsWithAuthorInfo = communityService.getPopularPostsWithAuthorInfo(10);
             
             HomeDashboardResponse.UserInfo userInfoDto = homeMapper.toUserInfo(userInfo);
-            List<HomeDashboardResponse.PopularPost> popularPostDtos = homeMapper.toPopularPosts(popularPosts);
+            List<HomeDashboardResponse.PopularPost> popularPostDtos = homeMapper.toPopularPostsWithAuthorInfo(popularPostsWithAuthorInfo);
 
             // 실제 방문 횟수 조회
             Integer totalVisitCount = userInfo.getTotalVisitCount();
@@ -52,6 +52,24 @@ public class HomeFacade {
                     .nickname(userInfoDto.getNickname())
                     .totalVisitCount(totalVisitCount != null ? totalVisitCount : 0)
                     .build();
+
+            // 작성자 프로필 이미지 URL 설정
+            for (int i = 0; i < popularPostDtos.size(); i++) {
+                HomeDashboardResponse.PopularPost postDto = popularPostDtos.get(i);
+                CommunityService.CommunityPostWithAuthorInfo postWithAuthorInfo = popularPostsWithAuthorInfo.get(i);
+                
+                String authorProfileImageUrl = profileImageService.getAuthorProfileImageUrl(
+                    postWithAuthorInfo.getAuthor() != null ? postWithAuthorInfo.getAuthor().getProfileImageId() : null
+                );
+                
+                popularPostDtos.set(i, HomeDashboardResponse.PopularPost.builder()
+                        .id(postDto.getId())
+                        .title(postDto.getTitle())
+                        .content(postDto.getContent())
+                        .authorNickname(postDto.getAuthorNickname())
+                        .authorProfileImageUrl(authorProfileImageUrl)
+                        .build());
+            }
 
             return HomeDashboardResponse.builder()
                     .userInfo(userInfoDto)

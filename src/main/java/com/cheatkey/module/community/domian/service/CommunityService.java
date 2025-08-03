@@ -10,6 +10,8 @@ import com.cheatkey.module.community.domian.repository.CommunityReportedPostRepo
 import com.cheatkey.module.community.domian.repository.CommunityPostBlockRepository;
 import com.cheatkey.common.exception.CustomException;
 import com.cheatkey.common.exception.ErrorCode;
+import com.cheatkey.module.auth.domain.entity.Auth;
+import com.cheatkey.module.auth.domain.repository.AuthRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,6 +45,7 @@ public class CommunityService {
     private final CommunityPostFileRepository communityPostFileRepository;
     private final FileUploadRepository fileUploadRepository;
     private final CommunityCommentRepository communityCommentRepository;
+    private final AuthRepository authRepository;
 
     private final FileService fileService;
     private final CommentService commentService;
@@ -359,5 +362,79 @@ public class CommunityService {
                 })
                 .limit(limit)
                 .toList();
+    }
+
+    /**
+     * 인기글 조회 (작성자 프로필 이미지 정보 포함)
+     * 정렬 기준: 1차-댓글수(내림차순), 2차-조회수(내림차순), 3차-작성일시(내림차순)
+     */
+    @Transactional(readOnly = true)
+    public List<CommunityPostWithAuthorInfo> getPopularPostsWithAuthorInfo(int limit) {
+        // 1. 모든 ACTIVE 게시글 조회
+        List<CommunityPost> allPosts = communityPostRepository.findAll().stream()
+                .filter(post -> post.getStatus() == PostStatus.ACTIVE)
+                .toList();
+        
+        // 2. 댓글 수 조회
+        List<Long> postIds = allPosts.stream().map(CommunityPost::getId).toList();
+        Map<Long, Integer> commentCountMap = communityCommentRepository.countCommentsByPostIds(postIds).stream()
+                .collect(Collectors.toMap(
+                        arr -> (Long) arr[0],
+                        arr -> ((Long) arr[1]).intValue()
+                ));
+
+        // 3. 작성자 정보 조회
+        List<Long> authorIds = allPosts.stream().map(CommunityPost::getUserId).distinct().toList();
+        Map<Long, Auth> authorMap = authRepository.findAllById(authorIds).stream()
+                .collect(Collectors.toMap(Auth::getId, auth -> auth));
+
+        // 4. 다중 정렬 기준으로 정렬 후 limit
+        // 1차: 댓글 수 (내림차순), 2차: 조회수 (내림차순), 3차: 작성일시 (내림차순)
+        return allPosts.stream()
+                .sorted((a, b) -> {
+                    // 1차 정렬: 댓글 수 비교
+                    int commentCountA = commentCountMap.getOrDefault(a.getId(), 0);
+                    int commentCountB = commentCountMap.getOrDefault(b.getId(), 0);
+                    if (commentCountA != commentCountB) {
+                        return commentCountB - commentCountA; // 내림차순
+                    }
+                    
+                    // 2차 정렬: 조회수 비교
+                    Long viewCountA = a.getViewCount() != null ? a.getViewCount() : 0L;
+                    Long viewCountB = b.getViewCount() != null ? b.getViewCount() : 0L;
+                    if (!viewCountA.equals(viewCountB)) {
+                        return viewCountB.compareTo(viewCountA); // 내림차순
+                    }
+                    
+                    // 3차 정렬: 작성일시 비교
+                    return b.getCreatedAt().compareTo(a.getCreatedAt()); // 내림차순
+                })
+                .limit(limit)
+                .map(post -> {
+                    Auth author = authorMap.get(post.getUserId());
+                    return new CommunityPostWithAuthorInfo(post, author);
+                })
+                .toList();
+    }
+
+    /**
+     * 게시글과 작성자 정보를 함께 담는 내부 클래스
+     */
+    public static class CommunityPostWithAuthorInfo {
+        private final CommunityPost post;
+        private final Auth author;
+
+        public CommunityPostWithAuthorInfo(CommunityPost post, Auth author) {
+            this.post = post;
+            this.author = author;
+        }
+
+        public CommunityPost getPost() {
+            return post;
+        }
+
+        public Auth getAuthor() {
+            return author;
+        }
     }
 }

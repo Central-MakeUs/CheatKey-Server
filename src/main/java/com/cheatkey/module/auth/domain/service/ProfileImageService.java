@@ -33,4 +33,24 @@ public class ProfileImageService {
         ProfileImage profileImage = profileImageRepository.findByIdAndActive(profileImageId);
         return profileImage != null ? profileImage.getImageUrl() : null;
     }
+
+    /**
+     * 기본 프로필 이미지 URL 조회
+     */
+    public String getDefaultProfileImageUrl() {
+        ProfileImage defaultImage = profileImageRepository.findByIdAndActive(1L);
+        return defaultImage != null ? defaultImage.getImageUrl() : null;
+    }
+
+    /**
+     * 작성자 프로필 이미지 URL 조회 (NULL인 경우 기본 이미지 사용)
+     */
+    public String getAuthorProfileImageUrl(Long authorProfileImageId) {
+        if (authorProfileImageId == null) {
+            return getDefaultProfileImageUrl();
+        }
+        
+        ProfileImage profileImage = profileImageRepository.findByIdAndActive(authorProfileImageId);
+        return profileImage != null ? profileImage.getImageUrl() : getDefaultProfileImageUrl();
+    }
 } 

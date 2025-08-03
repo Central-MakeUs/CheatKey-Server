@@ -54,5 +54,8 @@ public class HomeDashboardResponse {
 
         @Schema(description = "작성자 닉네임", example = "사기꾼")
         private String authorNickname;
+
+        @Schema(description = "작성자 프로필 이미지 URL", example = "https://cdn.../profile.jpg")
+        private String authorProfileImageUrl;
     }
 } 
