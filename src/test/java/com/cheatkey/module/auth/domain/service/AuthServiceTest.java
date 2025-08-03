@@ -58,7 +58,7 @@ class AuthServiceTest {
         when(jwtProvider.getUserIdFromToken(refreshToken)).thenReturn(userId.toString());
         when(authRepository.findById(userId)).thenReturn(Optional.of(mockAuth));
         when(jwtProvider.createAccessToken(anyLong(), any(), any())).thenReturn(newAccessToken);
-        when(jwtProvider.createRefreshToken(anyLong())).thenReturn(newRefreshToken);
+        when(jwtProvider.createRefreshToken(anyLong(), any())).thenReturn(newRefreshToken);
         doNothing().when(refreshTokenService).invalidateToken(anyString(), anyLong());
         doNothing().when(refreshTokenService).saveOrUpdate(anyLong(), anyString());
         doNothing().when(authActivityService).recordActivity(anyLong(), any(), any(), any(), anyBoolean(), any());

@@ -76,7 +76,7 @@ public class AuthController {
         }
 
         String accessJwt = jwtProvider.createAccessToken(auth.getId(), auth.getProvider(), auth.getRole());
-        String refreshJwt = jwtProvider.createRefreshToken(auth.getId());
+        String refreshJwt = jwtProvider.createRefreshToken(auth.getId(), auth.getRole());
 
         refreshTokenService.saveOrUpdate(auth.getId(), refreshJwt);
         return ResponseEntity.ok(SignInResponse.builder()
@@ -162,9 +162,14 @@ public class AuthController {
     @Operation(summary = "(★) 로그아웃", description = "로그인된 사용자의 로그아웃 처리. 리프레시 토큰 무효화")
     @ApiResponse(responseCode = "200", description = "로그아웃 성공")
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@RequestBody RefreshTokenRequest request) {
+    public ResponseEntity<Void> logout(@RequestHeader("Authorization") String authorization) {
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
+        }
+        
+        String refreshToken = authorization.substring(7).trim();
         String userId = SecurityUtil.getCurrentUserId();
-        refreshTokenService.invalidateToken(request.getRefreshToken(), Long.valueOf(userId));
+        refreshTokenService.invalidateToken(refreshToken, Long.valueOf(userId));
         return ResponseEntity.ok().build();
     }
 
@@ -187,11 +192,17 @@ public class AuthController {
             @ApiResponse(responseCode = "400", description = "잘못된 요청/토큰 오류")
     })
     @PostMapping("/refresh")
-    public ResponseEntity<SignInResponse> refresh(@RequestBody RefreshTokenRequest request) {
-        if (!refreshTokenService.existsByToken(request.getRefreshToken())) {
+    public ResponseEntity<SignInResponse> refresh(@RequestHeader("Authorization") String authorization) {
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
+        }
+        
+        String refreshToken = authorization.substring(7).trim();
+        
+        if (!refreshTokenService.existsByToken(refreshToken)) {
             throw new CustomException(ErrorCode.REFRESH_TOKEN_NOT_FOUND);
         }
-        SignInResponse response = authService.refreshAccessToken(request.getRefreshToken());
+        SignInResponse response = authService.refreshAccessToken(refreshToken);
         return ResponseEntity.ok(response);
     }
 }

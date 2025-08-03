@@ -43,7 +43,7 @@ public abstract class AbstractAuthSignInService {
     
     public SignInResponse toSignInResponse(Auth auth) {
         String accessJwt = jwtProvider.createAccessToken(auth.getId(), auth.getProvider(), auth.getRole());
-        String refreshJwt = jwtProvider.createRefreshToken(auth.getId());
+        String refreshJwt = jwtProvider.createRefreshToken(auth.getId(), auth.getRole());
         return SignInResponse.builder()
                 .userState(auth.getStatus().name())
                 .grantType("Bearer")

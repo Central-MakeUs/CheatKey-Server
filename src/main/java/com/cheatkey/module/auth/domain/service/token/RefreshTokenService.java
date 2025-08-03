@@ -6,8 +6,10 @@ import com.cheatkey.module.auth.domain.entity.token.RefreshToken;
 import com.cheatkey.module.auth.domain.repository.token.RefreshTokenRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class RefreshTokenService {
     private final RefreshTokenRepository refreshTokenRepository;

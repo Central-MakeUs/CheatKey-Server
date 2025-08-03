@@ -33,13 +33,15 @@ class JwtProviderTest {
 
     @Test
     void refreshToken_정상발급_및_파싱() {
-        String token = jwtProvider.createRefreshToken(456L);
+        String token = jwtProvider.createRefreshToken(456L, AuthRole.USER);
         assertNotNull(token);
         assertTrue(jwtProvider.validateToken(token));
         Claims claims = jwtProvider.getClaimsFromToken(token);
         assertEquals("456", claims.getSubject());
         // provider claim 없음
         assertNull(claims.get("provider"));
+        // role claim 있음
+        assertEquals("ROLE_USER", claims.get("role"));
     }
 
     @Test

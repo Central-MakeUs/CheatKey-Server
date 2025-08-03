@@ -144,6 +144,7 @@ public class AuthService {
         return savedAuth;
     }
 
+    @Transactional
     public SignInResponse refreshAccessToken(String refreshToken) {
         if (!jwtProvider.validateToken(refreshToken)) {
             throw new CustomException(ErrorCode.REFRESH_TOKEN_NOT_FOUND);
@@ -158,7 +159,7 @@ public class AuthService {
 
         // 새로운 액세스 토큰과 리프레시 토큰 생성
         String accessJwt = jwtProvider.createAccessToken(auth.getId(), auth.getProvider(), auth.getRole());
-        String newRefreshJwt = jwtProvider.createRefreshToken(auth.getId());
+        String newRefreshJwt = jwtProvider.createRefreshToken(auth.getId(), auth.getRole());
 
         // 기존 리프레시 토큰 무효화하고 새로운 토큰 저장
         refreshTokenService.invalidateToken(refreshToken, userId);

@@ -43,11 +43,12 @@ public class JwtProvider {
                 .compact();
     }
 
-    public String createRefreshToken(Long userId) {
+    public String createRefreshToken(Long userId, AuthRole role) {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + refreshTokenExpirationMs);
         return Jwts.builder()
                 .setSubject(String.valueOf(userId))
+                .claim("role", "ROLE_" + role)
                 .setIssuedAt(now)
                 .setExpiration(expiry)
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
@@ -73,10 +74,6 @@ public class JwtProvider {
 
     public String getUserIdFromToken(String token) {
         return getClaimsFromToken(token).getSubject();
-    }
-
-    public String getProviderFromToken(String token) {
-        return getClaimsFromToken(token).get("provider", String.class);
     }
 
     public String getRoleFromToken(String token) {

@@ -89,7 +89,7 @@ class AuthControllerIntegrationTest {
         given(authSignInService.signIn(any(), any(), any(), any(), any()))
                 .willReturn(mockAuth);
         given(jwtProvider.createAccessToken(anyLong(), any(), any())).willReturn("mockAccessTokenJwt");
-        given(jwtProvider.createRefreshToken(anyLong())).willReturn("mockRefreshTokenJwt");
+        given(jwtProvider.createRefreshToken(anyLong(), any())).willReturn("mockRefreshTokenJwt");
 
         Map<String, Object> req = new HashMap<>();
         req.put("provider", "KAKAO");
@@ -134,7 +134,7 @@ class AuthControllerIntegrationTest {
         given(authSignInService.signIn(any(), any(), any(), any(), any()))
                 .willReturn(withdrawnAuth);
         given(jwtProvider.createAccessToken(anyLong(), any(), any())).willReturn("mockAccessTokenJwt");
-        given(jwtProvider.createRefreshToken(anyLong())).willReturn("mockRefreshTokenJwt");
+        given(jwtProvider.createRefreshToken(anyLong(), any())).willReturn("mockRefreshTokenJwt");
 
         Map<String, Object> req = new HashMap<>();
         req.put("provider", "KAKAO");
@@ -170,7 +170,7 @@ class AuthControllerIntegrationTest {
         given(jwtProvider.getRoleFromToken(anyString())).willReturn("ROLE_USER");
         given(authRepository.findById(userId)).willReturn(java.util.Optional.of(activeAuth));
         given(jwtProvider.createAccessToken(anyLong(), any(), any())).willReturn("newAccessToken");
-        given(jwtProvider.createRefreshToken(anyLong())).willReturn("newRefreshToken");
+        given(jwtProvider.createRefreshToken(anyLong(), any())).willReturn("newRefreshToken");
         doNothing().when(refreshTokenService).invalidateToken(anyString(), anyLong());
         doNothing().when(refreshTokenService).saveOrUpdate(anyLong(), anyString());
 
@@ -184,14 +184,9 @@ class AuthControllerIntegrationTest {
                 .build();
         given(authService.refreshAccessToken(anyString())).willReturn(mockResponse);
 
-        Map<String, Object> req = new HashMap<>();
-        req.put("refreshToken", refreshToken);
-
         // WHEN & THEN - 토큰 순환 패턴: 새로운 액세스 토큰과 리프레시 토큰 모두 생성
         mockMvc.perform(post("/v1/api/auth/refresh")
-                .header("Authorization", "Bearer mockToken")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(req)))
+                .header("Authorization", "Bearer " + refreshToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").value("newAccessToken"))
                 .andExpect(jsonPath("$.refreshToken").value("newRefreshToken")); // 새로운 리프레시 토큰
@@ -218,14 +213,9 @@ class AuthControllerIntegrationTest {
         given(jwtProvider.getRoleFromToken(anyString())).willReturn("ROLE_USER");
         given(authRepository.findById(userId)).willReturn(java.util.Optional.of(activeAuth));
 
-        Map<String, Object> req = new HashMap<>();
-        req.put("refreshToken", refreshToken);
-
         // WHEN & THEN - refreshTokenService.existsByToken이 false를 반환하면 404 반환
         mockMvc.perform(post("/v1/api/auth/refresh")
-                .header("Authorization", "Bearer mockToken")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(req)))
+                .header("Authorization", "Bearer " + refreshToken))
                 .andExpect(status().isNotFound()); // 404 Not Found
     }
 
@@ -273,14 +263,9 @@ class AuthControllerIntegrationTest {
         given(authRepository.findById(userId)).willReturn(java.util.Optional.of(activeAuth));
         doNothing().when(refreshTokenService).invalidateToken(anyString(), anyLong());
 
-        Map<String, Object> req = new HashMap<>();
-        req.put("refreshToken", "mockRefreshToken");
-
         // WHEN & THEN
         mockMvc.perform(post("/v1/api/auth/logout")
-                .header("Authorization", "Bearer mockToken")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(req)))
+                .header("Authorization", "Bearer mockRefreshToken"))
                 .andExpect(status().isOk());
     }
 
