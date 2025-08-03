@@ -16,7 +16,7 @@ public class UrlDetectionService {
     private final DetectionHistoryRepository detectionHistoryRepository;
 
     public DetectionResult detect(DetectionInput input, Long userId) {
-        if (input.type() != DetectionType.URL || input.content() == null || input.content().isBlank() || !input.content().matches("^(https?://)[\\w\\-\\.]+(\\.[\\w\\-]+)+(:\\d+)?(/[\\w\\-./?%&=]*)?$")) {
+        if (input.type() != DetectionType.URL || input.content() == null || input.content().isBlank() || !input.content().matches("(?i)^(https?://)?(localhost|\\d{1,3}(\\.\\d{1,3}){3}|[\\p{L}\\p{N}\\-\\.]+(\\.[\\p{L}\\p{N}\\-]+)+)(:\\d+)?(/[^\\s]*)?$")) {
             throw new CustomException(ErrorCode.INVALID_INPUT_TYPE_URL);
         }
 
@@ -32,7 +32,7 @@ public class UrlDetectionService {
                     .build();
             DetectionHistory detectionHistory = detectionHistoryRepository.save(history);
 
-            return new DetectionResult(detectionHistory.getId(),status, null);
+            return new DetectionResult(detectionHistory.getId(),status, DetectionGroup.PHISHING);
 
         } catch (Exception e) {
             throw new CustomException(ErrorCode.DETECTION_FAILED);

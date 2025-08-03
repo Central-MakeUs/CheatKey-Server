@@ -58,4 +58,18 @@ class UrlDetectionRequestValidationTest {
         Set<ConstraintViolation<UrlDetectionRequest>> violations = validator.validate(req);
         assertFalse(violations.isEmpty());
     }
+
+    @Test
+    void 대문자가_포함된_URL_정상처리() {
+        UrlDetectionRequest req = new UrlDetectionRequest("Https://Naver.COM");
+        Set<ConstraintViolation<UrlDetectionRequest>> violations = validator.validate(req);
+        assertTrue(violations.isEmpty());
+    }
+
+    @Test
+    void 대문자_프로토콜_URL_정상처리() {
+        UrlDetectionRequest req = new UrlDetectionRequest("HTTPS://google.com");
+        Set<ConstraintViolation<UrlDetectionRequest>> violations = validator.validate(req);
+        assertTrue(violations.isEmpty());
+    }
 } 

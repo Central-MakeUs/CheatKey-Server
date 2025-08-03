@@ -6,6 +6,7 @@ import com.cheatkey.module.detection.domain.entity.DetectionInput;
 import com.cheatkey.module.detection.domain.entity.DetectionResult;
 import com.cheatkey.module.detection.domain.entity.DetectionStatus;
 import com.cheatkey.module.detection.domain.entity.DetectionType;
+import com.cheatkey.module.detection.domain.entity.DetectionGroup;
 import com.cheatkey.module.detection.domain.repository.DetectionHistoryRepository;
 import com.cheatkey.module.detection.infra.client.UrlDetectionClient;
 import org.junit.jupiter.api.Test;
@@ -55,7 +56,7 @@ class UrlDetectionServiceTest {
 
         // then
         assertEquals(DetectionStatus.DANGER, result.status());
-        assertEquals(null, result.group());
+        assertEquals(DetectionGroup.PHISHING, result.group());
         assertEquals(1L, result.detectionId());
         // 로그 이력 저장 여부 검증
         then(detectionHistoryRepository).should().save(any());
@@ -95,5 +96,31 @@ class UrlDetectionServiceTest {
         CustomException ex = assertThrows(CustomException.class, () -> urlDetectionService.detect(input, userId));
         assertEquals(ErrorCode.INVALID_INPUT_TYPE_URL, ex.getErrorCode());
         assertEquals("URL을 입력하지 않았어요", ex.getErrorCode().getMessage());
+    }
+
+    @Test
+    void 대문자가_포함된_URL_정상처리() throws Exception {
+        // given
+        Long userId = 99999L;
+        String detectionUrl = "Https://Naver.COM";
+        DetectionInput input = new DetectionInput(detectionUrl, DetectionType.URL);
+
+        given(urlDetectionClient.checkUrl(detectionUrl)).willReturn(false);
+        given(detectionHistoryRepository.save(any())).willAnswer(invocation -> {
+            DetectionHistory h = invocation.getArgument(0);
+            java.lang.reflect.Field idField = h.getClass().getDeclaredField("id");
+            idField.setAccessible(true);
+            idField.set(h, 2L);
+            return h;
+        });
+
+        // when
+        DetectionResult result = urlDetectionService.detect(input, userId);
+
+        // then
+        assertEquals(DetectionStatus.SAFE, result.status());
+        assertEquals(DetectionGroup.PHISHING, result.group());
+        assertEquals(2L, result.detectionId());
+        then(detectionHistoryRepository).should().save(any());
     }
 }
