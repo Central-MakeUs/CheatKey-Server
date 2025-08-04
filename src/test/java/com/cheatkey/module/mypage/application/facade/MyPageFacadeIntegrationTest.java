@@ -124,7 +124,7 @@ class MyPageFacadeIntegrationTest {
 
         // when
         Pageable pageable = PageRequest.of(0, 20);
-        Page<DetectionHistoryResponse> response = myPageFacade.getDetectionHistory(TEST_USER_ID, "all", pageable);
+        Page<DetectionHistoryResponse> response = myPageFacade.getDetectionHistory(TEST_USER_ID, "today", pageable);
 
         // then
         // 기존 데이터가 있을 수 있으므로 최소 1개 이상으로 검증
@@ -163,7 +163,7 @@ class MyPageFacadeIntegrationTest {
         // when
         Pageable pageable = PageRequest.of(0, 20);
         Page<DetectionHistoryResponse> todayResponse = myPageFacade.getDetectionHistory(TEST_USER_ID, "today", pageable);
-        Page<DetectionHistoryResponse> allResponse = myPageFacade.getDetectionHistory(TEST_USER_ID, "all", pageable);
+        Page<DetectionHistoryResponse> weekResponse = myPageFacade.getDetectionHistory(TEST_USER_ID, "week", pageable);
 
         // then
         // todayResponse에는 오늘 생성한 데이터가 포함되어 있어야 함
@@ -171,13 +171,13 @@ class MyPageFacadeIntegrationTest {
                 .anyMatch(r -> r.getInputText().equals(uniqueTodayText));
         assertThat(hasTodayData).isTrue();
         
-        // allResponse에는 두 데이터 모두 포함되어 있어야 함
-        boolean hasTodayDataInAll = allResponse.getContent().stream()
+        // weekResponse에는 오늘과 10일 전 데이터 모두 포함되어 있어야 함 (1주일 내)
+        boolean hasTodayDataInWeek = weekResponse.getContent().stream()
                 .anyMatch(r -> r.getInputText().equals(uniqueTodayText));
-        boolean hasOldDataInAll = allResponse.getContent().stream()
+        boolean hasOldDataInWeek = weekResponse.getContent().stream()
                 .anyMatch(r -> r.getInputText().equals(uniqueOldText));
-        assertThat(hasTodayDataInAll).isTrue();
-        assertThat(hasOldDataInAll).isTrue();
+        assertThat(hasTodayDataInWeek).isTrue();
+        assertThat(hasOldDataInWeek).isTrue();
     }
 
     @Test

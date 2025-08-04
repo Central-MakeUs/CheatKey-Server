@@ -90,7 +90,7 @@ class MyPageControllerTest {
         // when & then
         mockMvc.perform(get("/v1/api/mypage/detection/history")
                         .header("Authorization", "Bearer " + jwtToken)
-                        .param("period", "all")
+                        .param("period", "today")
                         .param("page", "0")
                         .param("size", "20"))
                 .andExpect(status().isOk())
