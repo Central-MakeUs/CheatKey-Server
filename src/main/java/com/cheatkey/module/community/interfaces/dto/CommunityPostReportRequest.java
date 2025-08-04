@@ -6,6 +6,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
+@Schema(description = "커뮤니티 게시글 신고 요청")
 public class CommunityPostReportRequest {
     @Schema(description = "신고 사유 코드", example = "AD")
     private String reasonCode;

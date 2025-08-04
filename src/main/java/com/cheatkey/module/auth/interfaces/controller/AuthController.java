@@ -18,7 +18,7 @@ import com.cheatkey.module.auth.interfaces.dto.*;
 import com.cheatkey.module.terms.domain.entity.Terms;
 import com.cheatkey.module.terms.domain.mapper.TermsMapper;
 import com.cheatkey.module.terms.domain.service.TermsService;
-import com.cheatkey.module.terms.interfaces.dto.TermsDto;
+import com.cheatkey.module.terms.interfaces.dto.TermsResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -35,7 +35,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-import static com.cheatkey.common.code.interfaces.dto.OptionsResponse.Option;
+import static com.cheatkey.common.code.interfaces.dto.OptionsResponse.OptionInfo;
 
 @RequiredArgsConstructor
 @RestController
@@ -103,13 +103,13 @@ public class AuthController {
         Long loginId = Long.valueOf(userId);
         authService.checkNotRegistered(loginId);
 
-        List<Option> ageCodeList = codeService.getOptionsByType(CodeType.AGE_GROUP);
-        List<Option> genderCodeList = codeService.getOptionsByType(CodeType.GENDER);
-        List<Option> tradeMethodCodeList = codeService.getOptionsByType(CodeType.TRADE_METHOD);
-        List<Option> tradeItemCodeList = codeService.getOptionsByType(CodeType.TRADE_ITEM);
+        List<OptionInfo> ageCodeList = codeService.getOptionsByType(CodeType.AGE_GROUP);
+        List<OptionInfo> genderCodeList = codeService.getOptionsByType(CodeType.GENDER);
+        List<OptionInfo> tradeMethodCodeList = codeService.getOptionsByType(CodeType.TRADE_METHOD);
+        List<OptionInfo> tradeItemCodeList = codeService.getOptionsByType(CodeType.TRADE_ITEM);
 
         List<Terms> terms = termsService.getTermsForRegistration();
-        List<TermsDto> termsList = termsMapper.toDtoList(terms);
+        List<TermsResponse> termsList = termsMapper.toDtoList(terms);
 
         AuthRegisterInitResponse response = AuthRegisterInitResponse.builder()
                 .ageCodeList(ageCodeList)

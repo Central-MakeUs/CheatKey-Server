@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-import static com.cheatkey.common.code.interfaces.dto.OptionsResponse.Option;
+import static com.cheatkey.common.code.interfaces.dto.OptionsResponse.OptionInfo;
 
 @Tag(name = "(★) Community", description = "커뮤니티 관련 API")
 @Slf4j
@@ -76,7 +76,7 @@ public class CommunityController {
     })
     @GetMapping("/posts/report-reasons")
     public ResponseEntity<CommunityReportInfoOptionsResponse> getReportPost() {
-        List<Option> repostCodeList = codeService.getOptionsByType(CodeType.REPORT);
+        List<OptionInfo> repostCodeList = codeService.getOptionsByType(CodeType.REPORT);
         CommunityReportInfoOptionsResponse response = CommunityReportInfoOptionsResponse.builder()
                 .reportCodeList(repostCodeList)
                 .build();

@@ -6,6 +6,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
+@Schema(description = "커뮤니티 사용자 차단 요청")
 public class CommunityPostBlockRequest {
     @Schema(description = "차단 사유", example = "HATE")
     private String reason;

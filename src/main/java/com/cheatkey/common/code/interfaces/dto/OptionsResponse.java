@@ -11,9 +11,9 @@ import java.util.List;
 @Builder
 public class OptionsResponse {
     @Schema(description = "선택지 응답 옵션")
-    public record Option(String code, String name, String imageUrl, String disabledImageUrl) {
-        public static Option from(Code code) {
-            return new Option(
+    public record OptionInfo(String code, String name, String imageUrl, String disabledImageUrl) {
+        public static OptionInfo from(Code code) {
+            return new OptionInfo(
                 code.getCode(), 
                 code.getCodeName(),
                 code.getImageUrl(),
@@ -22,9 +22,9 @@ public class OptionsResponse {
         }
     }
 
-    public static List<Option> from(List<Code> codes) {
+    public static List<OptionInfo> from(List<Code> codes) {
         return codes.stream()
-                .map(Option::from)
+                .map(OptionInfo::from)
                 .toList();
     }
 }

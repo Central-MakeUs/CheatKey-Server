@@ -7,7 +7,7 @@ import lombok.Getter;
 @Builder
 @Getter
 @Schema(description = "이용 약관 정보")
-public class TermsDto {
+public class TermsResponse {
 
     @Schema(description = "이용 약관 ID")
     private Long id;

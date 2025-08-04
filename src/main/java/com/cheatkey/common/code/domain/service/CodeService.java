@@ -5,7 +5,7 @@ import com.cheatkey.common.code.domain.repository.CodeRepository;
 import com.cheatkey.common.code.interfaces.dto.OptionsResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import static com.cheatkey.common.code.interfaces.dto.OptionsResponse.*;
+import static com.cheatkey.common.code.interfaces.dto.OptionsResponse.OptionInfo;
 
 import java.util.List;
 
@@ -15,7 +15,7 @@ public class CodeService {
 
     private final CodeRepository codeRepository;
 
-    public List<Option> getOptionsByType(CodeType type) {
+    public List<OptionInfo> getOptionsByType(CodeType type) {
         return OptionsResponse.from(codeRepository.findAllByType(type));
     }
 }

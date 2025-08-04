@@ -1,32 +1,30 @@
 package com.cheatkey.module.auth.interfaces.dto;
 
-import com.cheatkey.module.terms.interfaces.dto.TermsDto;
+import com.cheatkey.common.code.interfaces.dto.OptionsResponse.OptionInfo;
+import com.cheatkey.module.terms.interfaces.dto.TermsResponse;
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.*;
+import lombok.Builder;
+import lombok.Getter;
 
 import java.util.List;
 
-import static com.cheatkey.common.code.interfaces.dto.OptionsResponse.*;
-
 @Getter
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
 @Schema(description = "회원가입 초기 정보 응답")
 public class AuthRegisterInitResponse {
 
-    @Schema(description = "연령대 옵션 목록")
-    List<Option> ageCodeList;
+    @Schema(description = "나이대 코드 목록")
+    private List<OptionInfo> ageCodeList;
 
-    @Schema(description = "성별 옵션 목록")
-    List<Option> genderCodeList;
+    @Schema(description = "성별 코드 목록")
+    private List<OptionInfo> genderCodeList;
 
-    @Schema(description = "거래 방식 옵션 목록")
-    List<Option> tradeMethodCodeList;
+    @Schema(description = "거래 방식 코드 목록")
+    private List<OptionInfo> tradeMethodCodeList;
 
-    @Schema(description = "거래 품목 옵션 목록")
-    List<Option> tradeItemCodeList;
+    @Schema(description = "거래 품목 코드 목록")
+    private List<OptionInfo> tradeItemCodeList;
 
     @Schema(description = "이용 약관 목록")
-    private List<TermsDto> termsList;
+    private List<TermsResponse> termsList;
 }
