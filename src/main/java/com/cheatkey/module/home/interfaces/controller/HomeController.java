@@ -1,6 +1,7 @@
 package com.cheatkey.module.home.interfaces.controller;
 
 import com.cheatkey.common.config.security.SecurityUtil;
+import com.cheatkey.common.exception.ErrorResponse;
 import com.cheatkey.module.home.application.facade.HomeFacade;
 import com.cheatkey.module.home.interfaces.dto.HomeDashboardResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,7 +27,8 @@ public class HomeController {
 
     @Operation(summary = "(★) 메인 대시보드 조회", description = "사용자 정보, 인기글 목록을 포함한 메인 대시보드 정보를 조회합니다.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "메인 대시보드 조회 성공", content = @Content(schema = @Schema(implementation = HomeDashboardResponse.class)))
+            @ApiResponse(responseCode = "200", description = "메인 대시보드 조회 성공", content = @Content(schema = @Schema(implementation = HomeDashboardResponse.class))),
+            @ApiResponse(responseCode = "401", description = "인증 실패 (토큰 오류)", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @GetMapping("/dashboard")
     public ResponseEntity<HomeDashboardResponse> getDashboard() {

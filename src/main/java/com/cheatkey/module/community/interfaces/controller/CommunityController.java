@@ -3,6 +3,7 @@ package com.cheatkey.module.community.interfaces.controller;
 import com.cheatkey.common.code.domain.entity.CodeType;
 import com.cheatkey.common.code.domain.service.CodeService;
 import com.cheatkey.common.config.security.SecurityUtil;
+import com.cheatkey.common.exception.ErrorResponse;
 import com.cheatkey.common.exception.ImageException;
 import com.cheatkey.module.community.application.facade.CommunityPostFacade;
 import com.cheatkey.module.community.domian.service.CommunityService;
@@ -39,7 +40,8 @@ public class CommunityController {
 
     @Operation(summary = "(★) 커뮤니티 게시글 목록 조회 & 메인 검색", description = "정상(ACTIVE) 상태의 게시글 중 차단되지 않은 게시글만 페이징/검색/정렬 조건에 따라 조회합니다. 대표 이미지는 최대 5개 presignedUrl만 제공합니다.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "게시글 목록 조회 성공", content = @Content(schema = @Schema(implementation = CommunityPostListResponse.class)))
+            @ApiResponse(responseCode = "200", description = "게시글 목록 조회 성공", content = @Content(schema = @Schema(implementation = CommunityPostListResponse.class))),
+            @ApiResponse(responseCode = "401", description = "인증 실패 (토큰 오류)", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @GetMapping("/posts")
     public ResponseEntity<Page<CommunityPostListResponse>> getPosts(@ModelAttribute CommunityPostListRequest request) {
@@ -54,7 +56,10 @@ public class CommunityController {
 
     @Operation(summary = "(★) 커뮤니티 게시글 상세 조회", description = "정상(ACTIVE) 상태의 게시글 상세 정보를 조회합니다. 첨부파일 전체, 댓글/대댓글, 차단/신고 정책, 삭제 가능 여부 등을 포함합니다.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "게시글 상세 조회 성공", content = @Content(schema = @Schema(implementation = CommunityPostDetailResponse.class)))
+            @ApiResponse(responseCode = "200", description = "게시글 상세 조회 성공", content = @Content(schema = @Schema(implementation = CommunityPostDetailResponse.class))),
+            @ApiResponse(responseCode = "401", description = "인증 실패 (토큰 오류)", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "게시글을 찾을 수 없음", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "신고된 게시글에 대한 접근 권한 없음", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @GetMapping("/posts/{postId}")
     public ResponseEntity<CommunityPostDetailResponse> getPostDetail(@PathVariable Long postId) {
@@ -66,7 +71,8 @@ public class CommunityController {
 
     @Operation(summary = "(★) 게시글 신고하기 목록", description = "게시글 신고하기 목록을 조회합니다.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "게시글 신고하기 목록 조회 성공", content = @Content(schema = @Schema(implementation = CommunityReportInfoOptionsResponse.class)))
+            @ApiResponse(responseCode = "200", description = "게시글 신고하기 목록 조회 성공", content = @Content(schema = @Schema(implementation = CommunityReportInfoOptionsResponse.class))),
+            @ApiResponse(responseCode = "401", description = "인증 실패 (토큰 오류)", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @GetMapping("/posts/report-reasons")
     public ResponseEntity<CommunityReportInfoOptionsResponse> getReportPost() {
@@ -80,8 +86,9 @@ public class CommunityController {
     @Operation(summary = "(★) 커뮤니티 글 작성", description = "커뮤니티 글을 작성합니다. 파일 첨부 가능.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "글 작성 성공, postId 반환", content = @Content(schema = @Schema(implementation = Long.class))),
-        @ApiResponse(responseCode = "400", description = "유효성 검증 실패 등", content = @Content(schema = @Schema(implementation = com.cheatkey.common.exception.ErrorResponse.class))),
-        @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content(schema = @Schema(implementation = com.cheatkey.common.exception.ErrorResponse.class)))
+        @ApiResponse(responseCode = "400", description = "유효성 검증 실패 (제목/내용 누락, 파일 업로드 실패)", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(responseCode = "401", description = "인증 실패 (토큰 오류)", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(responseCode = "500", description = "서버 내부 오류 (파일 업로드 실패)", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @PostMapping("/posts")
     public ResponseEntity<Long> createPost(@Valid @RequestBody CommunityPostCreateRequest request) throws ImageException {
@@ -92,7 +99,9 @@ public class CommunityController {
     @Operation(summary = "(★) 게시글 신고하기", description = "게시글을 신고합니다. 신고 사유 코드는 t_code 테이블의 REPORT 그룹 코드 사용.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "신고 성공"),
-        @ApiResponse(responseCode = "400", description = "이미 신고한 게시글/존재하지 않는 게시글 등", content = @Content(schema = @Schema(implementation = com.cheatkey.common.exception.ErrorResponse.class)))
+        @ApiResponse(responseCode = "400", description = "이미 신고한 게시글", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(responseCode = "401", description = "인증 실패 (토큰 오류)", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(responseCode = "404", description = "존재하지 않는 게시글", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @PostMapping("/posts/{postId}/report")
     public ResponseEntity<Void> reportPost(@PathVariable Long postId, @RequestBody CommunityPostReportRequest request) {
@@ -104,7 +113,8 @@ public class CommunityController {
     @Operation(summary = "(★) 게시글 작성자 차단(해당 유저 차단하기)", description = "특정 게시글 작성자를 차단합니다. 차단자는 해당 유저의 모든 게시글을 볼 수 없습니다.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "차단 성공"),
-        @ApiResponse(responseCode = "400", description = "이미 차단한 유저 등", content = @Content(schema = @Schema(implementation = com.cheatkey.common.exception.ErrorResponse.class)))
+        @ApiResponse(responseCode = "400", description = "이미 차단한 유저", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(responseCode = "401", description = "인증 실패 (토큰 오류)", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @PostMapping("/users/{blockedId}/block")
     public ResponseEntity<Void> blockUser(@PathVariable Long blockedId, @RequestBody CommunityPostBlockRequest request) {
@@ -116,7 +126,8 @@ public class CommunityController {
     @Operation(summary = "(★) 게시글 삭제", description = "본인만 게시글을 삭제할 수 있습니다. 삭제 시 게시글은 노출되지 않습니다.")
     @ApiResponses({
         @ApiResponse(responseCode = "204", description = "삭제 성공"),
-        @ApiResponse(responseCode = "400", description = "존재하지 않는 게시글/본인 아님 등", content = @Content(schema = @Schema(implementation = com.cheatkey.common.exception.ErrorResponse.class)))
+        @ApiResponse(responseCode = "401", description = "삭제 권한 없음", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(responseCode = "404", description = "존재하지 않는 게시글", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @DeleteMapping("/posts/{postId}")
     public ResponseEntity<Void> deletePost(@PathVariable Long postId) {

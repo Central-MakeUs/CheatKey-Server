@@ -6,6 +6,7 @@ import com.cheatkey.common.config.security.SecurityUtil;
 import com.cheatkey.common.config.security.SkipUserStatusCheck;
 import com.cheatkey.common.exception.CustomException;
 import com.cheatkey.common.exception.ErrorCode;
+import com.cheatkey.common.exception.ErrorResponse;
 import com.cheatkey.common.jwt.JwtProvider;
 import com.cheatkey.module.auth.domain.entity.Auth;
 import com.cheatkey.module.auth.domain.entity.Provider;
@@ -55,7 +56,9 @@ public class AuthController {
     @Operation(summary = "(★) 소셜 로그인", description = "provider, idToken, accessToken(카카오만)을 받아 JWT를 발급합니다. 신규 사용자는 자동 회원가입.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "로그인 성공, JWT 반환", content = @Content(schema = @Schema(implementation = SignInResponse.class))),
-            @ApiResponse(responseCode = "400", description = "잘못된 요청/토큰 오류")
+            @ApiResponse(responseCode = "400", description = "잘못된 요청 (지원하지 않는 provider, 토큰 오류)", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "401", description = "인증 실패 (토큰 검증 실패)", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "502", description = "카카오 API 호출 실패", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @SkipUserStatusCheck
     @PostMapping("/login")
@@ -89,9 +92,9 @@ public class AuthController {
 
     @Operation(summary = "(★) 회원가입 초기 정보 조회", description = "로그인된 사용자만 접근할 수 있으며, 이미 가입된 사용자인 경우 예외를 반환합니다.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "회원가입 정보 반환"),
-            @ApiResponse(responseCode = "401", description = "로그인되지 않은 상태"),
-            @ApiResponse(responseCode = "409", description = "이미 가입된 사용자")
+            @ApiResponse(responseCode = "200", description = "회원가입 정보 반환", content = @Content(schema = @Schema(implementation = AuthRegisterInitResponse.class))),
+            @ApiResponse(responseCode = "401", description = "비로그인 상태", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "이미 가입된 사용자", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @SkipUserStatusCheck
     @GetMapping("/register")
@@ -122,7 +125,8 @@ public class AuthController {
     @Operation(summary = "(★) 닉네임 중복 체크", description = "입력한 닉네임이 이미 사용 중인지 검증합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "사용 가능한 닉네임"),
-            @ApiResponse(responseCode = "409", description = "중복된 닉네임")
+            @ApiResponse(responseCode = "400", description = "닉네임 형식 오류 (2~5자, 이모지 불가)", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "중복된 닉네임", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @SkipUserStatusCheck
     @GetMapping("/register/nickname-check")
@@ -134,10 +138,10 @@ public class AuthController {
 
     @Operation(summary = "(★) 회원가입", description = "로그인된 사용자만 접근 가능하며, 사용자 정보를 등록하고 회원가입을 완료합니다.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "회원가입 성공"),
-            @ApiResponse(responseCode = "400", description = "잘못된 요청"),
-            @ApiResponse(responseCode = "401", description = "로그인되지 않은 상태"),
-            @ApiResponse(responseCode = "409", description = "중복된 정보 등으로 실패")
+            @ApiResponse(responseCode = "200", description = "회원가입 성공", content = @Content(schema = @Schema(implementation = SignInResponse.class))),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청 (필수 약관 미동의, 닉네임 형식 오류)", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "401", description = "비로그인 상태", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "중복된 닉네임", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @SkipUserStatusCheck
     @PostMapping("/register")
@@ -160,7 +164,10 @@ public class AuthController {
     }
 
     @Operation(summary = "(★) 로그아웃", description = "로그인된 사용자의 로그아웃 처리. 리프레시 토큰 무효화")
-    @ApiResponse(responseCode = "200", description = "로그아웃 성공")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "로그아웃 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패 (토큰 오류)", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(@RequestHeader("Authorization") String authorization) {
         if (authorization == null || !authorization.startsWith("Bearer ")) {
@@ -174,7 +181,10 @@ public class AuthController {
     }
 
     @Operation(summary = "(★) 회원 탈퇴", description = "로그인된 사용자의 회원 정보를 삭제하고, 리프레시 토큰을 무효화합니다.")
-    @ApiResponse(responseCode = "200", description = "회원 탈퇴 성공")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "회원 탈퇴 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패 (토큰 오류)", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     @DeleteMapping("/withdraw")
     public ResponseEntity<Void> withdraw() {
         String userId = SecurityUtil.getCurrentUserId();
@@ -189,7 +199,9 @@ public class AuthController {
     @Operation(summary = "(★) 리프레시 토큰으로 액세스 토큰 재발급", description = "리프레시 토큰을 받아 새로운 액세스 토큰(및 필요시 리프레시 토큰)을 반환합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "재발급 성공, JWT 반환", content = @Content(schema = @Schema(implementation = SignInResponse.class))),
-            @ApiResponse(responseCode = "400", description = "잘못된 요청/토큰 오류")
+            @ApiResponse(responseCode = "400", description = "잘못된 요청 (토큰 형식 오류)", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "401", description = "토큰 만료 또는 유효하지 않은 토큰", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "리프레시 토큰을 찾을 수 없음", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @PostMapping("/refresh")
     public ResponseEntity<SignInResponse> refresh(@RequestHeader("Authorization") String authorization) {
