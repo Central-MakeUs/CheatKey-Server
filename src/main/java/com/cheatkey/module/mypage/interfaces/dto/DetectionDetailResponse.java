@@ -1,5 +1,6 @@
 package com.cheatkey.module.mypage.interfaces.dto;
 
+import com.cheatkey.module.detection.domain.entity.DetectionGroup;
 import com.cheatkey.module.detection.domain.entity.DetectionStatus;
 import com.cheatkey.module.detection.domain.entity.DetectionType;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -33,4 +34,10 @@ public class DetectionDetailResponse {
     
     @Schema(description = "분석 일시", example = "2024-01-01T10:00:00")
     private LocalDateTime detectedAt;
+    
+    @Schema(description = """
+    사기 그룹
+    - NORMAL: 거래&투자 사기
+    - PHISHING: 피싱&사칭 사기""", example = "PHISHING")
+    private DetectionGroup group;
 } 

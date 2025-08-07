@@ -57,6 +57,7 @@ class DetectionControllerIntegrationTest {
         DetectionHistory history = DetectionHistory.builder()
                 .inputText("테스트 입력 텍스트")
                 .status(DetectionStatus.SAFE)
+                .group(DetectionGroup.PHISHING)
                 .detectionType(DetectionType.CASE.name())
                 .userId(1L)
                 .topScore(0.5f)
@@ -97,7 +98,8 @@ class DetectionControllerIntegrationTest {
                 .andExpect(jsonPath("$.inputText").value("테스트 입력 텍스트"))
                 .andExpect(jsonPath("$.topScore").value(0.5))
                 .andExpect(jsonPath("$.matchedCaseId").value("test_case_123"))
-                .andExpect(jsonPath("$.detectedAt").exists());
+                .andExpect(jsonPath("$.detectedAt").exists())
+                .andExpect(jsonPath("$.group").value(DetectionGroup.PHISHING.name()));
     }
 
     @Test

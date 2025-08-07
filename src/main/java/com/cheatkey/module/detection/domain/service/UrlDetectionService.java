@@ -27,6 +27,7 @@ public class UrlDetectionService {
             DetectionHistory history = DetectionHistory.builder()
                     .inputText(input.content())
                     .status(status)
+                    .group(DetectionGroup.PHISHING)
                     .detectionType(DetectionType.URL.name())
                     .userId(userId)
                     .build();

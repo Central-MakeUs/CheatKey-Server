@@ -1,19 +1,24 @@
 package com.cheatkey.module.detection.domain.mapper;
 
 import com.cheatkey.module.detection.domain.entity.DetectionCategory;
+import com.cheatkey.module.detection.domain.entity.DetectionGroup;
 import com.cheatkey.module.detection.domain.entity.DetectionHistory;
 import com.cheatkey.module.detection.domain.entity.DetectionStatus;
 import com.cheatkey.module.detection.domain.entity.DetectionType;
 import com.cheatkey.module.detection.infra.client.VectorDbClient;
 import com.cheatkey.module.mypage.interfaces.dto.DetectionDetailResponse;
 import com.cheatkey.module.mypage.interfaces.dto.DetectionHistoryResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
+@RequiredArgsConstructor
 public class DetectionMapper {
+
+    private final VectorDbClient vectorDbClient;
 
     public DetectionStatus mapToStatus(List<VectorDbClient.SearchResult> results) {
         if (results.isEmpty()) return DetectionStatus.SAFE;
@@ -50,6 +55,7 @@ public class DetectionMapper {
                 .detectedAt(history.getDetectedAt())
                 .topScore(history.getTopScore())
                 .matchedCaseId(history.getMatchedCaseId())
+                .group(history.getGroup())
                 .build();
     }
 
@@ -68,6 +74,7 @@ public class DetectionMapper {
                 .topScore(history.getTopScore())
                 .matchedCaseId(history.getMatchedCaseId())
                 .detectedAt(history.getDetectedAt())
+                .group(history.getGroup())
                 .build();
     }
 }

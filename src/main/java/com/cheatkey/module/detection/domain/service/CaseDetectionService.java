@@ -48,6 +48,7 @@ public class CaseDetectionService {
                     .inputText(input.content())
                     .topScore(topScore)
                     .status(status)
+                    .group(group)
                     .detectionType(DetectionType.CASE.name())
                     .userId(loginUserId)
                     .matchedCaseId(results.isEmpty() ? null : results.get(0).id())

@@ -25,6 +25,10 @@ public class DetectionHistory {
     @Enumerated(EnumType.STRING)
     private DetectionStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "detection_group")
+    private DetectionGroup group;
+
     @CreationTimestamp
     private LocalDateTime detectedAt;
 

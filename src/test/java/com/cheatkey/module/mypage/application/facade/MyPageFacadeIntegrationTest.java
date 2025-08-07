@@ -8,6 +8,7 @@ import com.cheatkey.module.community.domain.entity.CommunityCategory;
 import com.cheatkey.module.community.domain.entity.CommunityPost;
 import com.cheatkey.module.community.domain.entity.PostStatus;
 import com.cheatkey.module.community.domain.repository.CommunityPostRepository;
+import com.cheatkey.module.detection.domain.entity.DetectionGroup;
 import com.cheatkey.module.detection.domain.entity.DetectionHistory;
 import com.cheatkey.module.detection.domain.entity.DetectionStatus;
 import com.cheatkey.module.detection.domain.repository.DetectionHistoryRepository;
@@ -113,6 +114,7 @@ class MyPageFacadeIntegrationTest {
         DetectionHistory history = DetectionHistory.builder()
                 .userId(TEST_USER_ID)
                 .status(DetectionStatus.SAFE)
+                .group(DetectionGroup.PHISHING)
                 .detectionType("URL")
                 .inputText("https://example.com")
                 .detectedAt(LocalDateTime.now())
@@ -142,6 +144,7 @@ class MyPageFacadeIntegrationTest {
         DetectionHistory todayHistory = DetectionHistory.builder()
                 .userId(TEST_USER_ID)
                 .status(DetectionStatus.SAFE)
+                .group(DetectionGroup.PHISHING)
                 .detectionType("URL")
                 .inputText(uniqueTodayText)
                 .detectedAt(LocalDateTime.now())
@@ -151,6 +154,7 @@ class MyPageFacadeIntegrationTest {
         DetectionHistory oldHistory = DetectionHistory.builder()
                 .userId(TEST_USER_ID)
                 .status(DetectionStatus.DANGER)
+                .group(DetectionGroup.NORMAL)
                 .detectionType("CASE")
                 .inputText(uniqueOldText)
                 .detectedAt(LocalDateTime.now().minusDays(10))
