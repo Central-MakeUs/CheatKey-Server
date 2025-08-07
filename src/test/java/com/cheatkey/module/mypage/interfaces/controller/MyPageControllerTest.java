@@ -70,6 +70,16 @@ class MyPageControllerTest {
     }
 
     @Test
+    @DisplayName("이용약관 조회 API 테스트")
+    void 이용약관_조회_API_테스트() throws Exception {
+        // when & then
+        mockMvc.perform(get("/v1/api/mypage/terms")
+                        .header("Authorization", "Bearer " + jwtToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray());
+    }
+
+    @Test
     @DisplayName("작성글 관리 조회 API 테스트")
     void 작성글_관리_조회_API_테스트() throws Exception {
         // when & then
