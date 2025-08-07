@@ -1,6 +1,6 @@
-package com.cheatkey.module.community.domian.repository;
+package com.cheatkey.module.community.domain.repository;
 
-import com.cheatkey.module.community.domian.entity.CommunityPostFile;
+import com.cheatkey.module.community.domain.entity.CommunityPostFile;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

@@ -1,6 +1,6 @@
-package com.cheatkey.module.community.domian.repository;
+package com.cheatkey.module.community.domain.repository;
 
-import com.cheatkey.module.community.domian.entity.CommunityReportedPost;
+import com.cheatkey.module.community.domain.entity.CommunityReportedPost;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CommunityReportedPostRepository extends JpaRepository<CommunityReportedPost, Long> {

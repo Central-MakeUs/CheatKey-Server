@@ -1,8 +1,8 @@
 package com.cheatkey.module.home.domain.mapper;
 
 import com.cheatkey.module.auth.domain.entity.Auth;
-import com.cheatkey.module.community.domian.entity.CommunityPost;
-import com.cheatkey.module.community.domian.service.CommunityService.CommunityPostWithAuthorInfo;
+import com.cheatkey.module.community.domain.entity.CommunityPost;
+import com.cheatkey.module.community.domain.service.CommunityService.CommunityPostWithAuthorInfo;
 import com.cheatkey.module.home.interfaces.dto.HomeDashboardResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

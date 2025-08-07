@@ -3,14 +3,14 @@ package com.cheatkey.module.community.interfaces.controller;
 import com.cheatkey.common.jwt.JwtProvider;
 import com.cheatkey.module.auth.domain.entity.AuthRole;
 import com.cheatkey.module.auth.domain.entity.Provider;
-import com.cheatkey.module.community.domian.entity.CommunityCategory;
-import com.cheatkey.module.community.domian.entity.CommunityPost;
-import com.cheatkey.module.community.domian.repository.CommunityPostRepository;
+import com.cheatkey.module.community.domain.entity.CommunityCategory;
+import com.cheatkey.module.community.domain.entity.CommunityPost;
+import com.cheatkey.module.community.domain.repository.CommunityPostRepository;
 import com.cheatkey.module.community.interfaces.dto.CommunityPostCreateRequest;
 import com.cheatkey.module.community.interfaces.dto.CommunityPostReportRequest;
 import com.cheatkey.module.community.interfaces.dto.CommunityPostBlockRequest;
-import com.cheatkey.module.community.domian.repository.CommunityReportedPostRepository;
-import com.cheatkey.module.community.domian.repository.CommunityPostBlockRepository;
+import com.cheatkey.module.community.domain.repository.CommunityReportedPostRepository;
+import com.cheatkey.module.community.domain.repository.CommunityPostBlockRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -164,7 +164,7 @@ class CommunityControllerIntegrationTest {
                 .userId(10L)
                 .nickname("테스트유저1")
                 .viewCount(0L)
-                .status(com.cheatkey.module.community.domian.entity.PostStatus.ACTIVE)
+                .status(com.cheatkey.module.community.domain.entity.PostStatus.ACTIVE)
                 .build();
         communityPostRepository.save(post);
         Long postId = post.getId();

@@ -23,7 +23,7 @@ public enum DetectionPeriod {
                 return period;
             }
         }
-        return ALL; // 기본값
+        return TODAY; // 기본값
     }
     
     public LocalDateTime getStartDate() {

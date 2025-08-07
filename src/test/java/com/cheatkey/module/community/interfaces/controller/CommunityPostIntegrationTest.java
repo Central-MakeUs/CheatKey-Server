@@ -3,24 +3,21 @@ package com.cheatkey.module.community.interfaces.controller;
 import com.cheatkey.common.jwt.JwtProvider;
 import com.cheatkey.module.auth.domain.entity.AuthRole;
 import com.cheatkey.module.auth.domain.entity.Provider;
-import com.cheatkey.module.community.domian.entity.CommunityCategory;
-import com.cheatkey.module.community.domian.entity.CommunityPost;
-import com.cheatkey.module.community.domian.entity.PostStatus;
-import com.cheatkey.module.community.domian.repository.CommunityPostRepository;
-import com.cheatkey.module.community.domian.repository.CommunityPostBlockRepository;
-import com.cheatkey.module.community.interfaces.dto.CommunityPostListResponse;
-import com.cheatkey.module.community.interfaces.dto.CommunityPostDetailResponse;
+import com.cheatkey.module.community.domain.entity.CommunityCategory;
+import com.cheatkey.module.community.domain.entity.CommunityPost;
+import com.cheatkey.module.community.domain.entity.PostStatus;
+import com.cheatkey.module.community.domain.repository.CommunityPostRepository;
+import com.cheatkey.module.community.domain.repository.CommunityPostBlockRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
-import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -67,7 +64,7 @@ class CommunityPostIntegrationTest {
 
         // userId=1이 userId=4를 차단
         communityPostBlockRepository.save(
-            com.cheatkey.module.community.domian.entity.CommunityPostBlock.builder().blockerId(1L).blockedId(4L).isActive(true).build()
+            com.cheatkey.module.community.domain.entity.CommunityPostBlock.builder().blockerId(1L).blockedId(4L).isActive(true).build()
         );
     }
 

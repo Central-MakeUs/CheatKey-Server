@@ -1,6 +1,6 @@
-package com.cheatkey.module.community.domian.repository;
+package com.cheatkey.module.community.domain.repository;
 
-import com.cheatkey.module.community.domian.entity.comment.CommunityComment;
+import com.cheatkey.module.community.domain.entity.comment.CommunityComment;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.querydsl.QuerydslPredicateExecutor;

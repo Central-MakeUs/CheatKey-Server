@@ -6,7 +6,7 @@ import com.cheatkey.common.config.security.SecurityUtil;
 import com.cheatkey.common.exception.ErrorResponse;
 import com.cheatkey.common.exception.ImageException;
 import com.cheatkey.module.community.application.facade.CommunityPostFacade;
-import com.cheatkey.module.community.domian.service.CommunityService;
+import com.cheatkey.module.community.domain.service.CommunityService;
 import com.cheatkey.module.community.interfaces.dto.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;

@@ -1,6 +1,6 @@
-package com.cheatkey.module.community.domian.entity.comment;
+package com.cheatkey.module.community.domain.entity.comment;
 
-import com.cheatkey.module.community.domian.entity.CommunityPost;
+import com.cheatkey.module.community.domain.entity.CommunityPost;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;

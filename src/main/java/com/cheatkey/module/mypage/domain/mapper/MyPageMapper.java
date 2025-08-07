@@ -2,9 +2,7 @@ package com.cheatkey.module.mypage.domain.mapper;
 
 import com.cheatkey.module.auth.domain.entity.Auth;
 import com.cheatkey.module.auth.domain.entity.ProfileImage;
-import com.cheatkey.module.community.domian.entity.CommunityPost;
-import com.cheatkey.module.detection.domain.entity.DetectionHistory;
-import com.cheatkey.module.detection.domain.entity.DetectionType;
+import com.cheatkey.module.community.domain.entity.CommunityPost;
 import com.cheatkey.module.mypage.interfaces.dto.*;
 import org.springframework.stereotype.Component;
 

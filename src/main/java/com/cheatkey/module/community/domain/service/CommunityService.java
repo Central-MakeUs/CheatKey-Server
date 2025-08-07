@@ -1,13 +1,13 @@
-package com.cheatkey.module.community.domian.service;
+package com.cheatkey.module.community.domain.service;
 
-import com.cheatkey.module.community.domian.entity.CommunityPost;
-import com.cheatkey.module.community.domian.entity.CommunityReportedPost;
-import com.cheatkey.module.community.domian.entity.CommunityPostBlock;
-import com.cheatkey.module.community.domian.entity.PostStatus;
-import com.cheatkey.module.community.domian.entity.comment.CommunityComment;
-import com.cheatkey.module.community.domian.repository.CommunityPostRepository;
-import com.cheatkey.module.community.domian.repository.CommunityReportedPostRepository;
-import com.cheatkey.module.community.domian.repository.CommunityPostBlockRepository;
+import com.cheatkey.module.community.domain.entity.CommunityPost;
+import com.cheatkey.module.community.domain.entity.CommunityReportedPost;
+import com.cheatkey.module.community.domain.entity.CommunityPostBlock;
+import com.cheatkey.module.community.domain.entity.PostStatus;
+import com.cheatkey.module.community.domain.entity.comment.CommunityComment;
+import com.cheatkey.module.community.domain.repository.CommunityPostRepository;
+import com.cheatkey.module.community.domain.repository.CommunityReportedPostRepository;
+import com.cheatkey.module.community.domain.repository.CommunityPostBlockRepository;
 import com.cheatkey.common.exception.CustomException;
 import com.cheatkey.common.exception.ErrorCode;
 import com.cheatkey.module.auth.domain.entity.Auth;
@@ -19,22 +19,20 @@ import com.cheatkey.module.community.interfaces.dto.CommunityPostListResponse;
 import com.cheatkey.module.community.interfaces.dto.CommunityPostDetailResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import com.cheatkey.module.community.domian.entity.CommunityPostFile;
-import com.cheatkey.module.community.domian.repository.CommunityPostFileRepository;
+import com.cheatkey.module.community.domain.entity.CommunityPostFile;
+import com.cheatkey.module.community.domain.repository.CommunityPostFileRepository;
 import com.cheatkey.module.community.interfaces.dto.comment.CommunityCommentResponse;
 import com.cheatkey.module.file.domain.entity.FileUpload;
 import com.cheatkey.module.file.domain.repository.FileUploadRepository;
 import com.cheatkey.module.file.domain.service.FileService;
 import org.springframework.data.domain.PageImpl;
-import com.cheatkey.module.mypage.interfaces.dto.UserPostResponse;
-import com.cheatkey.module.community.domian.entity.mapper.CommunityPostMapper;
+import com.cheatkey.module.community.domain.entity.mapper.CommunityPostMapper;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import org.springframework.beans.factory.annotation.Autowired;
 import java.util.Map;
-import com.cheatkey.module.community.domian.repository.CommunityCommentRepository;
+import com.cheatkey.module.community.domain.repository.CommunityCommentRepository;
 
 @Service
 @RequiredArgsConstructor

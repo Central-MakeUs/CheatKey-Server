@@ -1,4 +1,4 @@
-package com.cheatkey.module.community.domian.entity;
+package com.cheatkey.module.community.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.*;

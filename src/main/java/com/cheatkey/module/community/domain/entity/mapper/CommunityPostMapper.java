@@ -1,7 +1,7 @@
-package com.cheatkey.module.community.domian.entity.mapper;
+package com.cheatkey.module.community.domain.entity.mapper;
 
-import com.cheatkey.module.community.domian.entity.CommunityPost;
-import com.cheatkey.module.community.domian.entity.comment.CommunityComment;
+import com.cheatkey.module.community.domain.entity.CommunityPost;
+import com.cheatkey.module.community.domain.entity.comment.CommunityComment;
 import com.cheatkey.module.community.interfaces.dto.CommunityPostListResponse;
 import com.cheatkey.module.community.interfaces.dto.CommunityPostDetailResponse;
 import com.cheatkey.module.file.interfaces.dto.FileUploadResponse;

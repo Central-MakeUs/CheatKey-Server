@@ -2,11 +2,11 @@ package com.cheatkey.module.community.application.facade;
 
 import com.cheatkey.common.exception.ImageException;
 import com.cheatkey.common.service.S3FileService;
-import com.cheatkey.module.community.domian.entity.CommunityPost;
-import com.cheatkey.module.community.domian.entity.CommunityCategory;
-import com.cheatkey.module.community.domian.entity.CommunityPostFile;
-import com.cheatkey.module.community.domian.repository.CommunityPostFileRepository;
-import com.cheatkey.module.community.domian.service.CommunityService;
+import com.cheatkey.module.community.domain.entity.CommunityPost;
+import com.cheatkey.module.community.domain.entity.CommunityCategory;
+import com.cheatkey.module.community.domain.entity.CommunityPostFile;
+import com.cheatkey.module.community.domain.repository.CommunityPostFileRepository;
+import com.cheatkey.module.community.domain.service.CommunityService;
 import com.cheatkey.module.community.interfaces.dto.CommunityPostCreateRequest;
 import com.cheatkey.module.detection.domain.entity.DetectionCategory;
 import com.cheatkey.module.detection.infra.client.VectorDbClient;

@@ -1,6 +1,6 @@
 package com.cheatkey.module.community.interfaces.dto;
 
-import com.cheatkey.module.community.domian.entity.PostStatus;
+import com.cheatkey.module.community.domain.entity.PostStatus;
 import com.cheatkey.module.community.interfaces.dto.comment.CommunityCommentResponse;
 import com.cheatkey.module.file.interfaces.dto.FileUploadResponse;
 import io.swagger.v3.oas.annotations.media.Schema;

@@ -1,13 +1,13 @@
 package com.cheatkey.module.community.interfaces.dto;
 
-import com.cheatkey.module.community.domian.entity.CommunityCategory;
+import com.cheatkey.module.community.domain.entity.CommunityCategory;
 import lombok.Getter;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.Builder;
 
 import java.util.List;
-import org.springframework.web.multipart.MultipartFile;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;

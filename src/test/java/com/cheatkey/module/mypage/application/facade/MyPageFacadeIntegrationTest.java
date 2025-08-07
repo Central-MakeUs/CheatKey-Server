@@ -4,15 +4,13 @@ import com.cheatkey.module.auth.domain.entity.Auth;
 import com.cheatkey.module.auth.domain.entity.ProfileImage;
 import com.cheatkey.module.auth.domain.repository.AuthRepository;
 import com.cheatkey.module.auth.domain.repository.ProfileImageRepository;
-import com.cheatkey.module.community.domian.entity.CommunityCategory;
-import com.cheatkey.module.community.domian.entity.CommunityPost;
-import com.cheatkey.module.community.domian.entity.PostStatus;
-import com.cheatkey.module.community.domian.repository.CommunityPostRepository;
+import com.cheatkey.module.community.domain.entity.CommunityCategory;
+import com.cheatkey.module.community.domain.entity.CommunityPost;
+import com.cheatkey.module.community.domain.entity.PostStatus;
+import com.cheatkey.module.community.domain.repository.CommunityPostRepository;
 import com.cheatkey.module.detection.domain.entity.DetectionHistory;
 import com.cheatkey.module.detection.domain.entity.DetectionStatus;
-import com.cheatkey.module.detection.domain.entity.DetectionType;
 import com.cheatkey.module.detection.domain.repository.DetectionHistoryRepository;
-import com.cheatkey.module.mypage.application.facade.MyPageFacade;
 import com.cheatkey.module.mypage.interfaces.dto.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -26,7 +24,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

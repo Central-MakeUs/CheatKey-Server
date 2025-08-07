@@ -1,7 +1,7 @@
-package com.cheatkey.module.community.domian.repository;
+package com.cheatkey.module.community.domain.repository;
 
-import com.cheatkey.module.community.domian.entity.CommunityPost;
-import com.cheatkey.module.community.domian.entity.PostStatus;
+import com.cheatkey.module.community.domain.entity.CommunityPost;
+import com.cheatkey.module.community.domain.entity.PostStatus;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.OrderSpecifier;
@@ -12,7 +12,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import lombok.RequiredArgsConstructor;
 import java.util.List;
-import static com.cheatkey.module.community.domian.entity.QCommunityPost.communityPost;
+import static com.cheatkey.module.community.domain.entity.QCommunityPost.communityPost;
 
 @RequiredArgsConstructor
 public class CommunityPostRepositoryImpl implements CommunityPostRepositoryCustom {

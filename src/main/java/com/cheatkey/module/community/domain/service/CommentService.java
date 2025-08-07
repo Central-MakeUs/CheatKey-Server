@@ -1,12 +1,12 @@
-package com.cheatkey.module.community.domian.service;
+package com.cheatkey.module.community.domain.service;
 
 import com.cheatkey.common.exception.CustomException;
 import com.cheatkey.common.exception.ErrorCode;
-import com.cheatkey.module.community.domian.entity.comment.CommunityComment;
-import com.cheatkey.module.community.domian.entity.CommunityPost;
-import com.cheatkey.module.community.domian.entity.comment.CommentStatus;
-import com.cheatkey.module.community.domian.repository.CommunityCommentRepository;
-import com.cheatkey.module.community.domian.repository.CommunityPostRepository;
+import com.cheatkey.module.community.domain.entity.comment.CommunityComment;
+import com.cheatkey.module.community.domain.entity.CommunityPost;
+import com.cheatkey.module.community.domain.entity.comment.CommentStatus;
+import com.cheatkey.module.community.domain.repository.CommunityCommentRepository;
+import com.cheatkey.module.community.domain.repository.CommunityPostRepository;
 import com.cheatkey.module.community.interfaces.dto.comment.CommunityCommentRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
