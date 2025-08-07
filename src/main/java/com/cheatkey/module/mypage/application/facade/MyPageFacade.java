@@ -12,6 +12,10 @@ import com.cheatkey.module.detection.domain.entity.DetectionPeriod;
 import com.cheatkey.module.detection.domain.service.DetectionService;
 import com.cheatkey.module.mypage.domain.mapper.MyPageMapper;
 import com.cheatkey.module.mypage.interfaces.dto.*;
+import com.cheatkey.module.terms.domain.entity.Terms;
+import com.cheatkey.module.terms.domain.mapper.TermsMapper;
+import com.cheatkey.module.terms.domain.service.TermsService;
+import com.cheatkey.module.terms.interfaces.dto.TermsResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -35,6 +39,8 @@ public class MyPageFacade {
     private final CommunityService communityService;
     private final DetectionService detectionService;
     private final MyPageMapper myPageMapper;
+    private final TermsService termsService;
+    private final TermsMapper termsMapper;
 
 
     @Transactional
@@ -69,6 +75,11 @@ public class MyPageFacade {
     @Transactional
     public void updateUserInfo(Long userId, UpdateUserInfoRequest request) {
         authService.updateUserInfo(userId, request);
+    }
+
+    public List<TermsResponse> getTerms() {
+        List<Terms> terms = termsService.getTermsForRegistration();
+        return termsMapper.toDtoList(terms);
     }
 
     public UserPostManagementResponse getUserPostManagement(Long userId, Pageable pageable) {

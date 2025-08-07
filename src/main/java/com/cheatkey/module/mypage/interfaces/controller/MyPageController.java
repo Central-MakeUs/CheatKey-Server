@@ -4,6 +4,7 @@ import com.cheatkey.common.config.security.SecurityUtil;
 import com.cheatkey.common.exception.ErrorResponse;
 import com.cheatkey.module.mypage.application.facade.MyPageFacade;
 import com.cheatkey.module.mypage.interfaces.dto.*;
+import com.cheatkey.module.terms.interfaces.dto.TermsResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -52,6 +53,17 @@ public class MyPageController {
         Long userId = Long.parseLong(SecurityUtil.getCurrentUserId());
         myPageFacade.updateUserInfo(userId, request);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/terms")
+    @Operation(summary = "(★) 이용약관 조회", description = "모든 이용약관 목록을 조회합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "이용약관 조회 성공", content = @Content(schema = @Schema(implementation = List.class))),
+            @ApiResponse(responseCode = "401", description = "인증 실패 (토큰 오류)", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity<List<TermsResponse>> getTerms() {
+        List<TermsResponse> response = myPageFacade.getTerms();
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/community/posts/management")
