@@ -6,6 +6,7 @@ import com.cheatkey.module.file.domain.entity.FileUpload;
 import com.cheatkey.module.file.domain.repository.FileUploadRepository;
 import com.cheatkey.module.file.domain.entity.FileFolder;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,6 +23,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@Disabled("S3 파일 업로드 실 API 호출용 테스트 - 수동 실행 전용")
 class FileServiceTest {
 
     @Mock
