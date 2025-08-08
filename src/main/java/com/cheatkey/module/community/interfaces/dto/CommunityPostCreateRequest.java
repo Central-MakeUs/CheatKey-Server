@@ -17,9 +17,6 @@ import jakarta.validation.constraints.Size;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CommunityPostCreateRequest {
-    private Long userId;
-    private String nickname;
-
     @NotBlank(message = "제목은 필수입니다.")
     @Size(min = 10, max = 100, message = "제목은 10자 이상 100자 이하로 입력해 주세요.")
     private String title;

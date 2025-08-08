@@ -34,7 +34,7 @@ public class CommunityPostFacade {
     private final VectorDbClient vectorDbClient;
 
     @Transactional
-    public Long createPostWithFiles(CommunityPostCreateRequest request) throws ImageException {
+    public Long createPostWithFiles(CommunityPostCreateRequest request, Long userId, String nickname) throws ImageException {
         // 1. 커뮤니티 글 등록
         String safeTitle = Jsoup.clean(request.getTitle(), Safelist.none());
         String safeContent = Jsoup.clean(request.getContent(), Safelist.basic());
@@ -42,8 +42,8 @@ public class CommunityPostFacade {
             safeTitle,
             safeContent,
             request.getCategory(),
-            request.getUserId(),
-            request.getNickname()
+            userId,
+            nickname
         );
         Long postId = communityService.createPost(post);
 
@@ -85,8 +85,8 @@ public class CommunityPostFacade {
                     "category", DetectionCategory.INVESTMENT,
                     "title", safeTitle,
                     "content", safeContent,
-                    "userId", request.getUserId(),
-                    "nickname", request.getNickname(),
+                    "userId", userId,
+                    "nickname", nickname,
                     "source", "community"
                 );
                 

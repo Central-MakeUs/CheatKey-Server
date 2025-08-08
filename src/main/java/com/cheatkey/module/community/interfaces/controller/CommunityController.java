@@ -5,6 +5,7 @@ import com.cheatkey.common.code.domain.service.CodeService;
 import com.cheatkey.common.config.security.SecurityUtil;
 import com.cheatkey.common.exception.ErrorResponse;
 import com.cheatkey.common.exception.ImageException;
+import com.cheatkey.module.auth.domain.service.AuthService;
 import com.cheatkey.module.community.application.facade.CommunityPostFacade;
 import com.cheatkey.module.community.domain.service.CommunityService;
 import com.cheatkey.module.community.interfaces.dto.*;
@@ -37,6 +38,7 @@ public class CommunityController {
     private final CommunityPostFacade communityPostFacade;
     private final CommunityService communityService;
     private final CodeService codeService;
+    private final AuthService authService;
 
     @Operation(summary = "(★) 커뮤니티 게시글 목록 조회 & 메인 검색", description = "정상(ACTIVE) 상태의 게시글 중 차단되지 않은 게시글만 페이징/검색/정렬 조건에 따라 조회합니다. 대표 이미지는 최대 5개 presignedUrl만 제공합니다.")
     @ApiResponses({
@@ -92,7 +94,17 @@ public class CommunityController {
     })
     @PostMapping("/posts")
     public ResponseEntity<Long> createPost(@Valid @RequestBody CommunityPostCreateRequest request) throws ImageException {
-        Long postId = communityPostFacade.createPostWithFiles(request);
+        Long userId = Long.valueOf(SecurityUtil.getCurrentUserId());
+        String userNickname = authService.getNickname(userId);
+        
+        CommunityPostCreateRequest updatedRequest = CommunityPostCreateRequest.builder()
+            .title(request.getTitle())
+            .content(request.getContent())
+            .category(request.getCategory())
+            .fileUploadIds(request.getFileUploadIds())
+            .build();
+        
+        Long postId = communityPostFacade.createPostWithFiles(updatedRequest, userId, userNickname);
         return ResponseEntity.ok(postId);
     }
 

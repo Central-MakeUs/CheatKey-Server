@@ -45,7 +45,6 @@ class CommunityPostFacadeTest {
         when(request.getTitle()).thenReturn("테스트 제목");
         when(request.getContent()).thenReturn("테스트 내용");
         when(request.getCategory()).thenReturn(null); // 필요시 실제 enum 값으로 변경
-        when(request.getUserId()).thenReturn(1L);
         when(request.getFileUploadIds()).thenReturn(List.of(100L, 101L));
         when(communityService.createPost(any(CommunityPost.class))).thenReturn(10L);
         FileUpload file1 = mock(FileUpload.class);
@@ -56,7 +55,7 @@ class CommunityPostFacadeTest {
         when(file2.getIsTemp()).thenReturn(false);
         when(file1.getS3Key()).thenReturn("uploads/temp/2024/01/15/file1.jpg");
 
-        Long postId = communityPostFacade.createPostWithFiles(request);
+        Long postId = communityPostFacade.createPostWithFiles(request, 1L, "테스트유저");
 
         assertThat(postId).isEqualTo(10L);
         verify(communityService).createPost(any(CommunityPost.class));
@@ -74,11 +73,10 @@ class CommunityPostFacadeTest {
         when(request.getTitle()).thenReturn("테스트 제목");
         when(request.getContent()).thenReturn("테스트 내용");
         when(request.getCategory()).thenReturn(null);
-        when(request.getUserId()).thenReturn(1L);
         when(request.getFileUploadIds()).thenReturn(null);
         when(communityService.createPost(any(CommunityPost.class))).thenReturn(11L);
 
-        Long postId = communityPostFacade.createPostWithFiles(request);
+        Long postId = communityPostFacade.createPostWithFiles(request, 1L, "테스트유저");
 
         assertThat(postId).isEqualTo(11L);
         verify(communityService).createPost(any(CommunityPost.class));
@@ -93,13 +91,12 @@ class CommunityPostFacadeTest {
         when(request.getTitle()).thenReturn("테스트 제목");
         when(request.getContent()).thenReturn("테스트 내용");
         when(request.getCategory()).thenReturn(null);
-        when(request.getUserId()).thenReturn(1L);
         when(request.getFileUploadIds()).thenReturn(List.of(100L));
         when(communityService.createPost(any(CommunityPost.class))).thenReturn(12L);
         when(fileUploadRepository.findById(anyLong())).thenReturn(Optional.empty());
 
         org.junit.jupiter.api.Assertions.assertThrows(ImageException.class, () -> {
-            communityPostFacade.createPostWithFiles(request);
+            communityPostFacade.createPostWithFiles(request, 1L, "테스트유저");
         });
     }
 
@@ -110,11 +107,10 @@ class CommunityPostFacadeTest {
         when(request.getTitle()).thenReturn("<script>alert('x')</script>제목");
         when(request.getContent()).thenReturn("<b>굵게</b><script>alert('x')</script>");
         when(request.getCategory()).thenReturn(null); // 필요시 실제 enum 값으로 변경
-        when(request.getUserId()).thenReturn(1L);
         when(request.getFileUploadIds()).thenReturn(null);
         when(communityService.createPost(any(CommunityPost.class))).thenReturn(10L);
 
-        communityPostFacade.createPostWithFiles(request);
+        communityPostFacade.createPostWithFiles(request, 1L, "테스트유저");
 
         org.mockito.ArgumentCaptor<CommunityPost> captor = org.mockito.ArgumentCaptor.forClass(CommunityPost.class);
         verify(communityService).createPost(captor.capture());
