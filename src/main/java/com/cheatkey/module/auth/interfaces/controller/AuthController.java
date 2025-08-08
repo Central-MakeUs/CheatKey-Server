@@ -99,7 +99,7 @@ public class AuthController {
     @SkipUserStatusCheck
     @GetMapping("/register")
     public ResponseEntity<AuthRegisterInitResponse> initRegister() {
-        String userId = com.cheatkey.common.config.security.SecurityUtil.getCurrentUserId();
+        String userId = SecurityUtil.getCurrentUserId();
         Long loginId = Long.valueOf(userId);
         authService.checkNotRegistered(loginId);
 
@@ -163,7 +163,7 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "(★) 로그아웃", description = "로그인된 사용자의 로그아웃 처리. 리프레시 토큰 무효화")
+    @Operation(summary = "(★) 로그아웃", description = "액세스 토큰으로 인증하고 해당 사용자의 모든 리프레시 토큰을 무효화합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "로그아웃 성공"),
             @ApiResponse(responseCode = "401", description = "인증 실패 (토큰 오류)", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
@@ -174,9 +174,8 @@ public class AuthController {
             throw new CustomException(ErrorCode.INVALID_TOKEN);
         }
         
-        String refreshToken = authorization.substring(7).trim();
         String userId = SecurityUtil.getCurrentUserId();
-        refreshTokenService.invalidateToken(refreshToken, Long.valueOf(userId));
+        refreshTokenService.invalidateTokenByUserId(Long.valueOf(userId));
         return ResponseEntity.ok().build();
     }
 

@@ -261,11 +261,11 @@ class AuthControllerIntegrationTest {
         given(jwtProvider.getUserIdFromToken(anyString())).willReturn(userId.toString());
         given(jwtProvider.getRoleFromToken(anyString())).willReturn("ROLE_USER");
         given(authRepository.findById(userId)).willReturn(java.util.Optional.of(activeAuth));
-        doNothing().when(refreshTokenService).invalidateToken(anyString(), anyLong());
+        doNothing().when(refreshTokenService).invalidateTokenByUserId(anyLong());
 
-        // WHEN & THEN
+        // WHEN & THEN - access token으로 인증하고 해당 사용자의 모든 refresh token 무효화
         mockMvc.perform(post("/v1/api/auth/logout")
-                .header("Authorization", "Bearer mockRefreshToken"))
+                .header("Authorization", "Bearer mockAccessToken"))
                 .andExpect(status().isOk());
     }
 

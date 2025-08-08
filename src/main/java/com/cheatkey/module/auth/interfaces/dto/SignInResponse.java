@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @Schema(description = "소셜 로그인 응답")
 public class SignInResponse {
     
-    @Schema(description = "사용자 상태", example = "ACTIVE", allowableValues = {"ACTIVE", "PENDING", "SUSPENDED"})
+    @Schema(description = "사용자 상태", example = "ACTIVE", allowableValues = {"PENDING", "ACTIVE", "INACTIVE", "BANNED", "WITHDRAWN"})
     private String userState;
     
     @Schema(description = "인증 타입", example = "Bearer")
