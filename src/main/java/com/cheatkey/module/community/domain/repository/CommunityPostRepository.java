@@ -13,5 +13,5 @@ public interface CommunityPostRepository extends JpaRepository<CommunityPost, Lo
 }
 
 interface CommunityPostRepositoryCustom {
-    Page<CommunityPost> findAllByCustomConditions(Long userId, String keyword, String sort, Pageable pageable);
+    Page<CommunityPost> findAllByCustomConditions(Long userId, String keyword, String category, String sort, Pageable pageable);
 }

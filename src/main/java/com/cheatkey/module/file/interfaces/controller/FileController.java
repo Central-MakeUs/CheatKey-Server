@@ -33,9 +33,9 @@ public class FileController {
 
     private final FileService fileService;
 
-    @Operation(summary = "(★) 파일 업로드", description = "파일을 S3에 업로드하고 Presigned URL을 반환합니다. 업로드된 파일은 임시 상태로 저장되며, 게시물 작성 완료 시 영구화됩니다.")
+    @Operation(summary = "(★) 파일 업로드", description = "파일을 S3에 업로드하고 Presigned URL을 반환합니다. 업로드된 파일은 임시 상태로 저장되며, 게시물 작성 완료 시 영구화됩니다. 여러 파일을 한 번에 업로드할 수 있으며, 응답은 업로드된 각 파일의 정보를 배열로 반환합니다.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "업로드 성공", content = @Content(schema = @Schema(implementation = java.util.List.class))),
+            @ApiResponse(responseCode = "200", description = "업로드 성공 (업로드된 파일 정보 배열 반환)", content = @Content(schema = @Schema(implementation = FileUploadResponse.class, type = "array"))),
             @ApiResponse(responseCode = "400", description = "잘못된 요청 (빈 파일, 파일 크기 초과, 지원하지 않는 파일 형식)", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "401", description = "인증 실패 (토큰 오류)", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "500", description = "서버 내부 오류 (파일 업로드 실패)", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
@@ -50,9 +50,11 @@ public class FileController {
             FileUploadResponse response = FileUploadResponse.builder()
                     .fileUploadId(fileUpload.getId())
                     .originalName(fileUpload.getOriginalName())
+                    .s3Key(fileUpload.getS3Key())
                     .size(fileUpload.getSize())
                     .contentType(fileUpload.getContentType())
                     .isTemp(fileUpload.getIsTemp())
+                    .createdAt(fileUpload.getCreatedAt())
                     .build();
             responses.add(response);
         }

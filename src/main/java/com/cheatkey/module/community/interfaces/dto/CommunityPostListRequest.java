@@ -11,6 +11,9 @@ public class CommunityPostListRequest {
     @Schema(description = "검색어", example = "사기")
     private String keyword;
 
+    @Schema(description = "카테고리", example = "REPORT", allowableValues = {"REPORT", "TALK", "SHARE"})
+    private String category;
+
     @Schema(description = "정렬 기준(latest: 최신순, popular: 인기순)", example = "latest")
     private String sort = "latest";
 

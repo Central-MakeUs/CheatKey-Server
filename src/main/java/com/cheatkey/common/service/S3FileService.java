@@ -132,9 +132,26 @@ public class S3FileService {
      */
     public void moveToPermanent(String tempKey, String permanentKey) throws ImageException {
         try {
+            // 1. 원본 파일 존재 확인
+            if (!amazonS3.doesObjectExist(bucketName, tempKey)) {
+                log.error("원본 파일이 존재하지 않음: {}", tempKey);
+                throw new ImageException(ErrorCode.FILE_NOT_FOUND);
+            }
+            
+            // 2. 복사
             amazonS3.copyObject(bucketName, tempKey, bucketName, permanentKey);
+            
+            // 3. 복사 성공 확인
+            if (!amazonS3.doesObjectExist(bucketName, permanentKey)) {
+                log.error("파일 복사 실패: {} -> {}", tempKey, permanentKey);
+                throw new ImageException(ErrorCode.FILE_UPLOAD_FAILED);
+            }
+            
+            // 4. 원본 삭제
             amazonS3.deleteObject(bucketName, tempKey);
-            log.info("S3 파일 이동: {} -> {}", tempKey, permanentKey);
+            
+            log.info("S3 파일 이동 완료: {} -> {}", tempKey, permanentKey);
+            
         } catch (Exception e) {
             log.error("S3 파일 이동 실패: {} -> {}, reason={}", tempKey, permanentKey, e.getMessage());
             throw new ImageException(ErrorCode.FILE_UPLOAD_FAILED);

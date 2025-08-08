@@ -52,7 +52,7 @@ public class CommunityController {
         int page = Math.max(request.getPage() - 1, 0); // 1부터 시작
         Pageable pageable = PageRequest.of(page, request.getSize());
 
-        Page<CommunityPostListResponse> posts = communityService.getPostList(userId, request.getKeyword(), request.getSort(), pageable);
+        Page<CommunityPostListResponse> posts = communityService.getPostList(userId, request.getKeyword(), request.getCategory(), request.getSort(), pageable);
         return ResponseEntity.ok(posts);
     }
 
@@ -122,16 +122,17 @@ public class CommunityController {
         return ResponseEntity.ok().build();
     }
 
-    @Operation(summary = "(★) 게시글 작성자 차단(해당 유저 차단하기)", description = "특정 게시글 작성자를 차단합니다. 차단자는 해당 유저의 모든 게시글을 볼 수 없습니다.")
+    @Operation(summary = "(★) 게시글 작성자 차단", description = "특정 게시글의 작성자를 차단합니다. 차단자는 해당 유저의 모든 게시글을 볼 수 없습니다.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "차단 성공"),
         @ApiResponse(responseCode = "400", description = "이미 차단한 유저", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-        @ApiResponse(responseCode = "401", description = "인증 실패 (토큰 오류)", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+        @ApiResponse(responseCode = "401", description = "인증 실패 (토큰 오류)", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(responseCode = "404", description = "존재하지 않는 게시글", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    @PostMapping("/users/{blockedId}/block")
-    public ResponseEntity<Void> blockUser(@PathVariable Long blockedId, @RequestBody CommunityPostBlockRequest request) {
+    @PostMapping("/posts/{postId}/author/block")
+    public ResponseEntity<Void> blockPostAuthor(@PathVariable Long postId, @RequestBody CommunityPostBlockRequest request) {
         Long blockerId = Long.valueOf(SecurityUtil.getCurrentUserId());
-        communityService.blockUser(blockerId, blockedId, request.getReason());
+        communityService.blockPostAuthor(blockerId, postId, request.getReason());
         return ResponseEntity.ok().build();
     }
 

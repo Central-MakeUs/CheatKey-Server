@@ -1,5 +1,6 @@
 package com.cheatkey.module.community.domain.service;
 
+import com.cheatkey.module.community.domain.entity.CommunityCategory;
 import com.cheatkey.module.community.domain.entity.CommunityPost;
 import com.cheatkey.module.community.domain.entity.CommunityPostBlock;
 import com.cheatkey.module.community.domain.entity.PostStatus;
@@ -61,8 +62,8 @@ class CommunityPostListServiceTest {
         CommunityPost blockedPost = CommunityPost.builder().id(3L).authorId(4L).authorNickname("테스트유저3").status(PostStatus.ACTIVE).build();
 
         List<CommunityPost> allPosts = List.of(activePost, deletedPost, blockedPost);
-        when(communityPostRepository.findAllByCustomConditions(any(), any(), any(), any())).thenReturn(new PageImpl<>(allPosts));
-        when(communityPostBlockRepository.findAll()).thenReturn(List.of(
+        when(communityPostRepository.findAllByCustomConditions(any(), any(), any(), any(), any())).thenReturn(new PageImpl<>(allPosts));
+        when(communityPostBlockRepository.findByBlockerIdAndIsActive(anyLong(), anyBoolean())).thenReturn(List.of(
             CommunityPostBlock.builder().blockerId(1L).blockedId(4L).isActive(true).build()
         ));
 
@@ -70,12 +71,17 @@ class CommunityPostListServiceTest {
         commentCounts.add(new Object[]{1L, 2L});
         when(communityCommentRepository.countCommentsByPostIds(any())).thenReturn(commentCounts);
         when(communityPostFileRepository.findAll()).thenReturn(Collections.emptyList());
-        when(communityPostMapper.toListDto(any(), anyInt(), anyList())).thenReturn(
-            CommunityPostListResponse.builder().id(1L).authorNickname("닉네임").commentCount(2).thumbnailUrls(List.of()).build()
-        );
+        
+        CommunityPostListResponse mockResponse = CommunityPostListResponse.builder()
+            .id(1L)
+            .authorNickname("닉네임")
+            .commentCount(2)
+            .thumbnailUrls(List.of())
+            .build();
+        when(communityPostMapper.toListDto(any(), anyInt(), anyList())).thenReturn(mockResponse);
 
         // when
-        Page<CommunityPostListResponse> result = communityService.getPostList(1L, null, "latest", PageRequest.of(0, 20));
+        Page<CommunityPostListResponse> result = communityService.getPostList(1L, null, CommunityCategory.REPORT.name(), "latest", PageRequest.of(0, 20));
 
         // then
         assertEquals(1, result.getContent().size());

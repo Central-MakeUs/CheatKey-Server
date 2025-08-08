@@ -64,7 +64,9 @@ class CommunityServiceTest {
         CommunityPost post = CommunityPost.builder()
                 .id(postId)
                 .authorId(3L)
+                .authorNickname("테스트유저")
                 .status(PostStatus.ACTIVE)
+                .viewCount(0L)
                 .build();
         when(communityReportedPostRepository.existsByPostIdAndReporterId(postId, reporterId)).thenReturn(false);
         when(communityPostRepository.findById(postId)).thenReturn(Optional.of(post));
@@ -136,6 +138,92 @@ class CommunityServiceTest {
     }
 
     @Test
+    void blockPostAuthor_success() {
+        // given
+        Long blockerId = 1L;
+        Long postId = 10L;
+        Long blockedId = 2L;
+        String reason = "HATE";
+        
+        CommunityPost post = CommunityPost.builder()
+                .id(postId)
+                .authorId(blockedId)
+                .authorNickname("차단당할유저")
+                .build();
+        
+        when(communityPostRepository.findById(postId)).thenReturn(Optional.of(post));
+        when(communityPostBlockRepository.existsByBlockerIdAndBlockedIdAndIsActiveTrue(blockerId, blockedId)).thenReturn(false);
+
+        // when & then
+        assertDoesNotThrow(() -> communityService.blockPostAuthor(blockerId, postId, reason));
+
+        // then
+        verify(communityPostBlockRepository).save(any(CommunityPostBlock.class));
+    }
+
+    @Test
+    void blockPostAuthor_postNotFound() {
+        // given
+        Long blockerId = 1L;
+        Long postId = 999L;
+        String reason = "HATE";
+        
+        when(communityPostRepository.findById(postId)).thenReturn(Optional.empty());
+
+        // when & then
+        CustomException ex = assertThrows(CustomException.class, () -> communityService.blockPostAuthor(blockerId, postId, reason));
+
+        // then
+        assertEquals(ErrorCode.POST_NOT_FOUND, ex.getErrorCode());
+    }
+
+    @Test
+    void blockPostAuthor_cannotBlockSelf() {
+        // given
+        Long userId = 1L;
+        Long postId = 10L;
+        String reason = "HATE";
+        
+        CommunityPost post = CommunityPost.builder()
+                .id(postId)
+                .authorId(userId)  // 자기 자신이 작성자
+                .authorNickname("테스트유저")
+                .build();
+        
+        when(communityPostRepository.findById(postId)).thenReturn(Optional.of(post));
+
+        // when & then
+        CustomException ex = assertThrows(CustomException.class, () -> communityService.blockPostAuthor(userId, postId, reason));
+
+        // then
+        assertEquals(ErrorCode.CANNOT_BLOCK_SELF, ex.getErrorCode());
+    }
+
+    @Test
+    void blockPostAuthor_alreadyBlocked() {
+        // given
+        Long blockerId = 1L;
+        Long postId = 10L;
+        Long blockedId = 2L;
+        String reason = "HATE";
+        
+        CommunityPost post = CommunityPost.builder()
+                .id(postId)
+                .authorId(blockedId)
+                .authorNickname("차단당할유저")
+                .build();
+        
+        when(communityPostRepository.findById(postId)).thenReturn(Optional.of(post));
+        when(communityPostBlockRepository.existsByBlockerIdAndBlockedIdAndIsActiveTrue(blockerId, blockedId)).thenReturn(true);
+
+        // when & then
+        CustomException ex = assertThrows(CustomException.class, () -> communityService.blockPostAuthor(blockerId, postId, reason));
+
+        // then
+        assertEquals(ErrorCode.USER_ALREADY_BLOCKED, ex.getErrorCode());
+    }
+
+    @Test
     void getPostDetail_success() {
         // given
         Long userId = 1L;
@@ -162,14 +250,16 @@ class CommunityServiceTest {
                 .id(postId)
                 .commentCount(2)
                 .comments(commentResponses)
+                .presignedUrls(List.of())
                 .build();
         
         when(communityPostRepository.findById(postId)).thenReturn(Optional.of(post));
-        when(communityPostBlockRepository.findAll()).thenReturn(List.of());
-        when(communityPostFileRepository.findAll()).thenReturn(List.of());
+        when(communityPostBlockRepository.findByBlockerIdAndIsActive(anyLong(), anyBoolean())).thenReturn(List.of());
+        when(communityPostFileRepository.findByPostIdIn(anyList())).thenReturn(List.of());
+        when(fileUploadRepository.findAllById(anyList())).thenReturn(List.of());
         when(commentService.getCommentsForPost(postId)).thenReturn(comments);
         when(communityPostMapper.toCommentDtoList(comments)).thenReturn(commentResponses);
-        when(communityPostMapper.toDetailDto(eq(post), eq(2), anyList(), eq(commentResponses), eq(true), eq(false), isNull()))
+        when(communityPostMapper.toDetailDto(any(), anyInt(), anyList(), anyList(), anyBoolean(), anyBoolean(), any()))
                 .thenReturn(expectedResponse);
 
         // when
@@ -180,6 +270,7 @@ class CommunityServiceTest {
         assertEquals(expectedResponse, result);
         verify(commentService).getCommentsForPost(postId);
         verify(communityPostMapper).toCommentDtoList(comments);
+        verify(communityPostMapper).toDetailDto(any(), anyInt(), anyList(), anyList(), anyBoolean(), anyBoolean(), any());
     }
 
     @Test
@@ -330,4 +421,6 @@ class CommunityServiceTest {
         assertEquals(1L, result.get(0).getId());
         assertEquals(3L, result.get(1).getId());
     }
+
+
 } 

@@ -2,7 +2,6 @@ package com.cheatkey.module.community.interfaces.dto;
 
 import com.cheatkey.module.community.domain.entity.PostStatus;
 import com.cheatkey.module.community.interfaces.dto.comment.CommunityCommentResponse;
-import com.cheatkey.module.file.interfaces.dto.FileUploadResponse;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
@@ -31,8 +30,8 @@ public class CommunityPostDetailResponse {
     @Schema(description = "댓글 수", example = "5")
     private int commentCount;
 
-    @Schema(description = "첨부파일 전체 정보 리스트")
-    private List<FileUploadResponse> files;
+    @Schema(description = "첨부파일 Presigned URL 리스트 (10분 만료)", example = "[\"https://cheatkey-dev.s3.amazonaws.com/uploads/community/62/2025/08/08/uuid-image1.jpg?X-Amz-Algorithm=...\", \"https://cheatkey-dev.s3.amazonaws.com/uploads/community/62/2025/08/08/uuid-image2.jpg?X-Amz-Algorithm=...\"]")
+    private List<String> presignedUrls;
 
     @Schema(description = "댓글/대댓글 리스트")
     private List<CommunityCommentResponse> comments;

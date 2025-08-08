@@ -56,12 +56,13 @@ class CommunityPostDetailServiceTest {
         // given
         CommunityPost post = CommunityPost.builder().id(1L).authorId(2L).authorNickname("테스트유저").status(PostStatus.ACTIVE).viewCount(0L).build();
         when(communityPostRepository.findById(1L)).thenReturn(Optional.of(post));
-        when(communityPostBlockRepository.findAll()).thenReturn(Collections.emptyList());
-        when(communityPostFileRepository.findAll()).thenReturn(Collections.emptyList());
-        when(fileUploadRepository.findById(anyLong())).thenReturn(Optional.empty());
+        when(communityPostBlockRepository.findByBlockerIdAndIsActive(anyLong(), anyBoolean())).thenReturn(Collections.emptyList());
+        when(communityPostFileRepository.findByPostIdIn(anyList())).thenReturn(Collections.emptyList());
+        when(fileUploadRepository.findAllById(anyList())).thenReturn(Collections.emptyList());
         when(commentService.getCommentsForPost(1L)).thenReturn(Collections.emptyList());
+        when(communityPostMapper.toCommentDtoList(anyList())).thenReturn(Collections.emptyList());
         when(communityPostMapper.toDetailDto(any(), anyInt(), anyList(), anyList(), anyBoolean(), anyBoolean(), any())).thenReturn(
-            CommunityPostDetailResponse.builder().id(1L).authorNickname("닉네임").commentCount(0).build()
+            CommunityPostDetailResponse.builder().id(1L).authorNickname("닉네임").commentCount(0).presignedUrls(List.of()).build()
         );
 
         // when
@@ -93,16 +94,20 @@ class CommunityPostDetailServiceTest {
         // given
         CommunityPost post = CommunityPost.builder().id(1L).authorId(2L).authorNickname("테스트유저").status(PostStatus.REPORTED).build();
         when(communityPostRepository.findById(1L)).thenReturn(Optional.of(post));
-        when(communityPostBlockRepository.findAll()).thenReturn(Collections.emptyList());
+        when(communityPostBlockRepository.findByBlockerIdAndIsActive(anyLong(), anyBoolean())).thenReturn(Collections.emptyList());
+        when(communityPostFileRepository.findByPostIdIn(anyList())).thenReturn(Collections.emptyList());
+        when(fileUploadRepository.findAllById(anyList())).thenReturn(Collections.emptyList());
+        when(commentService.getCommentsForPost(1L)).thenReturn(Collections.emptyList());
+        when(communityPostMapper.toCommentDtoList(anyList())).thenReturn(Collections.emptyList());
         when(communityPostMapper.toDetailDto(any(), anyInt(), anyList(), anyList(), anyBoolean(), anyBoolean(), any())).thenReturn(
-            CommunityPostDetailResponse.builder().id(1L).authorNickname("닉네임").commentCount(0).blockMessage("차단된 글입니다.").build()
+            CommunityPostDetailResponse.builder().id(1L).authorNickname("닉네임").commentCount(0).presignedUrls(List.of()).blockMessage("신고된 게시글에 대한 접근 권한이 없습니다.").build()
         );
 
         // when
         CommunityPostDetailResponse result = communityService.getPostDetail(2L, 1L);
 
         // then
-        assertEquals("차단된 글입니다.", result.getBlockMessage());
+        assertEquals("신고된 게시글에 대한 접근 권한이 없습니다.", result.getBlockMessage());
         verify(communityPostRepository, never()).save(any());
     }
 
@@ -111,16 +116,20 @@ class CommunityPostDetailServiceTest {
         // given
         CommunityPost post = CommunityPost.builder().id(1L).authorId(2L).authorNickname("테스트유저").status(PostStatus.REPORTED).build();
         when(communityPostRepository.findById(1L)).thenReturn(Optional.of(post));
-        when(communityPostBlockRepository.findAll()).thenReturn(Collections.emptyList());
+        when(communityPostBlockRepository.findByBlockerIdAndIsActive(anyLong(), anyBoolean())).thenReturn(Collections.emptyList());
+        when(communityPostFileRepository.findByPostIdIn(anyList())).thenReturn(Collections.emptyList());
+        when(fileUploadRepository.findAllById(anyList())).thenReturn(Collections.emptyList());
+        when(commentService.getCommentsForPost(1L)).thenReturn(Collections.emptyList());
+        when(communityPostMapper.toCommentDtoList(anyList())).thenReturn(Collections.emptyList());
         when(communityPostMapper.toDetailDto(any(), anyInt(), anyList(), anyList(), anyBoolean(), anyBoolean(), any())).thenReturn(
-            CommunityPostDetailResponse.builder().id(1L).authorNickname("닉네임").commentCount(0).blockMessage("차단된 글입니다.").build()
+            CommunityPostDetailResponse.builder().id(1L).authorNickname("닉네임").commentCount(0).presignedUrls(List.of()).blockMessage("신고된 게시글에 대한 접근 권한이 없습니다.").build()
         );
 
         // when
         CommunityPostDetailResponse result = communityService.getPostDetail(3L, 1L);
 
         // then
-        assertEquals("차단된 글입니다.", result.getBlockMessage());
+        assertEquals("신고된 게시글에 대한 접근 권한이 없습니다.", result.getBlockMessage());
         verify(communityPostRepository, never()).save(any());
     }
 
@@ -129,11 +138,15 @@ class CommunityPostDetailServiceTest {
         // given
         CommunityPost post = CommunityPost.builder().id(1L).authorId(2L).authorNickname("테스트유저").status(PostStatus.ACTIVE).build();
         when(communityPostRepository.findById(1L)).thenReturn(Optional.of(post));
-        when(communityPostBlockRepository.findAll()).thenReturn(List.of(
+        when(communityPostBlockRepository.findByBlockerIdAndIsActive(anyLong(), anyBoolean())).thenReturn(List.of(
             CommunityPostBlock.builder().blockerId(3L).blockedId(2L).isActive(true).build()
         ));
+        when(communityPostFileRepository.findByPostIdIn(anyList())).thenReturn(Collections.emptyList());
+        when(fileUploadRepository.findAllById(anyList())).thenReturn(Collections.emptyList());
+        when(commentService.getCommentsForPost(1L)).thenReturn(Collections.emptyList());
+        when(communityPostMapper.toCommentDtoList(anyList())).thenReturn(Collections.emptyList());
         when(communityPostMapper.toDetailDto(any(), anyInt(), anyList(), anyList(), anyBoolean(), anyBoolean(), any())).thenReturn(
-            CommunityPostDetailResponse.builder().id(1L).authorNickname("닉네임").commentCount(0).blockMessage("차단된 글입니다.").build()
+            CommunityPostDetailResponse.builder().id(1L).authorNickname("닉네임").commentCount(0).presignedUrls(List.of()).blockMessage("차단된 글입니다.").build()
         );
 
         // when

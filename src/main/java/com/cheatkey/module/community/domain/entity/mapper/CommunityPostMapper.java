@@ -4,7 +4,6 @@ import com.cheatkey.module.community.domain.entity.CommunityPost;
 import com.cheatkey.module.community.domain.entity.comment.CommunityComment;
 import com.cheatkey.module.community.interfaces.dto.CommunityPostListResponse;
 import com.cheatkey.module.community.interfaces.dto.CommunityPostDetailResponse;
-import com.cheatkey.module.file.interfaces.dto.FileUploadResponse;
 import com.cheatkey.module.community.interfaces.dto.comment.CommunityCommentResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -20,9 +19,10 @@ public interface CommunityPostMapper {
     @Mapping(target = "thumbnailUrls", source = "thumbnailUrls")
     @Mapping(target = "commentCount", source = "commentCount")
     @Mapping(source = "post.authorNickname", target = "authorNickname")
+    @Mapping(source = "post.content", target = "content")
     CommunityPostListResponse toListDto(CommunityPost post, int commentCount, List<String> thumbnailUrls);
 
-    @Mapping(target = "files", source = "files")
+    @Mapping(target = "presignedUrls", source = "presignedUrls")
     @Mapping(target = "comments", source = "comments")
     @Mapping(target = "commentCount", source = "commentCount")
     @Mapping(target = "canDelete", source = "canDelete")
@@ -32,7 +32,7 @@ public interface CommunityPostMapper {
     CommunityPostDetailResponse toDetailDto(
         CommunityPost post,
         int commentCount,
-        List<FileUploadResponse> files,
+        List<String> presignedUrls,
         List<CommunityCommentResponse> comments,
         boolean canDelete,
         boolean blocked,

@@ -210,28 +210,84 @@ class CommunityControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("게시글 차단 통합 테스트 - 성공 및 중복 차단 예외")
-    void blockUser_success_and_duplicate() throws Exception {
+    @DisplayName("게시글 작성자 차단 통합 테스트 - 성공 및 중복 차단 예외")
+    void blockPostAuthor_success_and_duplicate() throws Exception {
         // given
-        Long blockerId = 30L;
-        Long blockedId = 40L;
+        CommunityPost post = CommunityPost.builder()
+                .title("차단 테스트 제목")
+                .content("차단 테스트 내용")
+                .category(CommunityCategory.REPORT)
+                .authorId(40L)  // 차단당할 작성자
+                .authorNickname("차단당할유저")
+                .viewCount(0L)
+                .status(com.cheatkey.module.community.domain.entity.PostStatus.ACTIVE)
+                .build();
+        communityPostRepository.save(post);
+        Long postId = post.getId();
+        
         CommunityPostBlockRequest request = new CommunityPostBlockRequest();
         request.setReason("HATE");
         String jwt = jwtProvider.createAccessToken(testUserId, Provider.KAKAO, AuthRole.USER);
 
         // when & then (정상 차단)
-        mockMvc.perform(post("/v1/api/community/users/" + blockedId + "/block")
+        mockMvc.perform(post("/v1/api/community/posts/" + postId + "/author/block")
                         .header("Authorization", "Bearer " + jwt)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
 
         // when & then (중복 차단)
-        mockMvc.perform(post("/v1/api/community/users/" + blockedId + "/block")
+        mockMvc.perform(post("/v1/api/community/posts/" + postId + "/author/block")
                         .header("Authorization", "Bearer " + jwt)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("USER_ALREADY_BLOCKED"));
+    }
+
+    @Test
+    @DisplayName("게시글 작성자 차단 통합 테스트 - 존재하지 않는 게시글")
+    void blockPostAuthor_postNotFound() throws Exception {
+        // given
+        CommunityPostBlockRequest request = new CommunityPostBlockRequest();
+        request.setReason("HATE");
+        String jwt = jwtProvider.createAccessToken(testUserId, Provider.KAKAO, AuthRole.USER);
+
+        // when & then (존재하지 않는 게시글)
+        mockMvc.perform(post("/v1/api/community/posts/99999/author/block")
+                        .header("Authorization", "Bearer " + jwt)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("POST_NOT_FOUND"));
+    }
+
+    @Test
+    @DisplayName("게시글 작성자 차단 통합 테스트 - 자기 자신 차단 시도")
+    void blockPostAuthor_cannotBlockSelf() throws Exception {
+        // given
+        CommunityPost post = CommunityPost.builder()
+                .title("자기 차단 테스트 제목")
+                .content("자기 차단 테스트 내용")
+                .category(CommunityCategory.REPORT)
+                .authorId(testUserId)  // 현재 로그인한 유저가 작성자
+                .authorNickname("테스트유저")
+                .viewCount(0L)
+                .status(com.cheatkey.module.community.domain.entity.PostStatus.ACTIVE)
+                .build();
+        communityPostRepository.save(post);
+        Long postId = post.getId();
+        
+        CommunityPostBlockRequest request = new CommunityPostBlockRequest();
+        request.setReason("HATE");
+        String jwt = jwtProvider.createAccessToken(testUserId, Provider.KAKAO, AuthRole.USER);
+
+        // when & then (자기 자신 차단 시도)
+        mockMvc.perform(post("/v1/api/community/posts/" + postId + "/author/block")
+                        .header("Authorization", "Bearer " + jwt)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("CANNOT_BLOCK_SELF"));
     }
 } 

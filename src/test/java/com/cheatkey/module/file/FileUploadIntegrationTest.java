@@ -80,6 +80,7 @@ class FileUploadIntegrationTest {
                         .header("Authorization", "Bearer " + jwt))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$[0].fileUploadId").exists())  // ← 수정: id → fileUploadId
                 .andExpect(jsonPath("$[0].originalName").value("test-image.jpg"))
                 .andExpect(jsonPath("$[0].isTemp").value(true))
                 .andExpect(jsonPath("$[0].size").exists())

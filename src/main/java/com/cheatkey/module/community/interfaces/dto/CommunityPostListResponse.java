@@ -16,6 +16,9 @@ public class CommunityPostListResponse {
     @Schema(description = "게시글 제목", example = "사기 사례 공유합니다")
     private String title;
 
+    @Schema(description = "게시글 내용", example = "이런 사기를 당했습니다. 조심하세요...")
+    private String content;
+
     @Schema(description = "작성자 닉네임", example = "홍길동")
     private String authorNickname;
 

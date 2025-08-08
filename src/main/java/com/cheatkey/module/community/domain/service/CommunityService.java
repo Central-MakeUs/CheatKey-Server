@@ -29,6 +29,7 @@ import org.springframework.data.domain.PageImpl;
 import com.cheatkey.module.community.domain.entity.mapper.CommunityPostMapper;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.Map;
@@ -51,12 +52,12 @@ public class CommunityService {
     private final CommunityPostMapper communityPostMapper;
 
     /**
-     * 커뮤니티 게시글 목록 조회 (ACTIVE 상태, 차단 제외, 페이징, 검색, 정렬)
+     * 커뮤니티 게시글 목록 조회 (ACTIVE 상태, 차단 제외, 페이징, 검색, 카테고리, 정렬)
      */
-    public Page<CommunityPostListResponse> getPostList(Long userId, String keyword, String sort, Pageable pageable) {
+    public Page<CommunityPostListResponse> getPostList(Long userId, String keyword, String category, String sort, Pageable pageable) {
 
-        // 1. QueryDSL로 ACTIVE, 검색, 정렬, 페이징 한 번에 조회
-        Page<CommunityPost> postPage = communityPostRepository.findAllByCustomConditions(userId, keyword, sort, pageable);
+        // 1. QueryDSL로 ACTIVE, 검색, 카테고리, 정렬, 페이징 한 번에 조회
+        Page<CommunityPost> postPage = communityPostRepository.findAllByCustomConditions(userId, keyword, category, sort, pageable);
         List<Long> postIds = postPage.getContent().stream().map(CommunityPost::getId).toList();
 
         // 2. 차단된 유저의 게시글 제외 (쿼리 최적화)
@@ -120,8 +121,8 @@ public class CommunityService {
     public CommunityPostDetailResponse getPostDetail(Long userId, Long postId) {
         CommunityPost post = communityPostRepository.findById(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
-        boolean blocked = communityPostBlockRepository.findAll().stream()
-                .anyMatch(b -> b.getBlockerId().equals(userId) && b.getBlockedId().equals(post.getAuthorId()) && b.getIsActive());
+        boolean blocked = communityPostBlockRepository.findByBlockerIdAndIsActive(userId, true).stream()
+                .anyMatch(b -> b.getBlockedId().equals(post.getAuthorId()));
 
         // 본인 글이 삭제(DELETED) 상태면 상세 조회 불가
         if (post.getAuthorId().equals(userId) && post.getStatus() == PostStatus.DELETED) {
@@ -150,28 +151,7 @@ public class CommunityService {
             communityPostRepository.save(post);
         }
 
-        List<CommunityPostFile> files = communityPostFileRepository.findAll().stream()
-                .filter(f -> f.getPostId().equals(post.getId()))
-                .sorted((a, b) -> a.getSortOrder() - b.getSortOrder())
-                .toList();
-
-        List<FileUpload> fileUploads = files.stream()
-                .map(f -> fileUploadRepository.findById(f.getFileUploadId()).orElse(null))
-                .filter(f -> f != null)
-                .toList();
-
-        List<com.cheatkey.module.file.interfaces.dto.FileUploadResponse> fileResponses = fileUploads.stream().map(f ->
-                com.cheatkey.module.file.interfaces.dto.FileUploadResponse.builder()
-                        .id(f.getId())
-                        .originalName(f.getOriginalName())
-                        .s3Key(f.getS3Key())
-                        .size(f.getSize())
-                        .contentType(f.getContentType())
-                        .isTemp(f.getIsTemp())
-                        .createdAt(f.getCreatedAt())
-                        .fileUploadId(f.getId())
-                        .build()
-        ).collect(Collectors.toList());
+        List<String> presignedUrls = getPostImageUrls(post.getId());
 
         List<CommunityComment> comments = commentService.getCommentsForPost(postId);
         List<CommunityCommentResponse> commentResponses = communityPostMapper.toCommentDtoList(comments);
@@ -180,7 +160,7 @@ public class CommunityService {
         return communityPostMapper.toDetailDto(
                 post,
                 commentResponses.size(),
-                fileResponses,
+                presignedUrls,
                 commentResponses,
                 canDelete,
                 blocked,
@@ -209,7 +189,7 @@ public class CommunityService {
     }
 
     /**
-     * 게시글 이미지 URL 목록 조회
+     * 게시글 이미지 URL 목록 조회 (정렬 포함)
      */
     public Map<Long, List<String>> getPostImageUrlsMap(List<Long> postIds) {
         List<CommunityPostFile> files = communityPostFileRepository.findByPostIdIn(postIds);
@@ -235,7 +215,49 @@ public class CommunityService {
                             }
                             return null;
                         }, Collectors.toList())
+                )).entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> entry.getValue().stream()
+                                .filter(Objects::nonNull)
+                                .collect(Collectors.toList())
                 ));
+    }
+
+    /**
+     * 단일 게시글 이미지 URL 목록 조회 (정렬 포함)
+     */
+    public List<String> getPostImageUrls(Long postId) {
+        List<CommunityPostFile> files = communityPostFileRepository.findByPostIdIn(List.of(postId)).stream()
+                .sorted((a, b) -> {
+                    Integer sortOrderA = a.getSortOrder() != null ? a.getSortOrder() : 0;
+                    Integer sortOrderB = b.getSortOrder() != null ? b.getSortOrder() : 0;
+                    return sortOrderA - sortOrderB;
+                })
+                .toList();
+
+        List<Long> fileUploadIds = files.stream()
+                .map(CommunityPostFile::getFileUploadId)
+                .distinct()
+                .toList();
+        
+        Map<Long, FileUpload> fileUploadMap = fileUploadRepository.findAllById(fileUploadIds).stream()
+                .collect(Collectors.toMap(FileUpload::getId, f -> f));
+
+        return files.stream()
+                .map(f -> {
+                    FileUpload fileUpload = fileUploadMap.get(f.getFileUploadId());
+                    if (fileUpload != null) {
+                        try {
+                            return fileService.getPermanentFilePresignedUrl(fileUpload.getS3Key(), 10).toString();
+                        } catch (Exception e) {
+                            return null;
+                        }
+                    }
+                    return null;
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 
     public Long createPost(CommunityPost communityPost) {
@@ -250,6 +272,12 @@ public class CommunityService {
         }
         CommunityPost post = communityPostRepository.findById(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+        
+        // 본인이 작성한 게시글은 신고할 수 없음
+        if (post.getAuthorId().equals(reporterId)) {
+            throw new CustomException(ErrorCode.CANNOT_REPORT_OWN_POST);
+        }
+        
         post = setPostStatus(post, PostStatus.REPORTED);
         communityPostRepository.save(post);
         CommunityReportedPost report = CommunityReportedPost.builder()
@@ -265,6 +293,34 @@ public class CommunityService {
         if (communityPostBlockRepository.existsByBlockerIdAndBlockedIdAndIsActiveTrue(blockerId, blockedId)) {
             throw new CustomException(ErrorCode.USER_ALREADY_BLOCKED);
         }
+        CommunityPostBlock block = CommunityPostBlock.builder()
+                .blockerId(blockerId)
+                .blockedId(blockedId)
+                .reason(reason)
+                .isActive(true)
+                .build();
+        communityPostBlockRepository.save(block);
+    }
+
+    @Transactional
+    public void blockPostAuthor(Long blockerId, Long postId, String reason) {
+        // 1. 게시글 존재 여부 확인 및 작성자 ID 조회
+        CommunityPost post = communityPostRepository.findById(postId)
+                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+        
+        Long blockedId = post.getAuthorId();
+        
+        // 2. 자기 자신을 차단하려는 경우 방지
+        if (blockerId.equals(blockedId)) {
+            throw new CustomException(ErrorCode.CANNOT_BLOCK_SELF);
+        }
+        
+        // 3. 이미 차단한 유저인지 확인
+        if (communityPostBlockRepository.existsByBlockerIdAndBlockedIdAndIsActiveTrue(blockerId, blockedId)) {
+            throw new CustomException(ErrorCode.USER_ALREADY_BLOCKED);
+        }
+        
+        // 4. 차단 처리
         CommunityPostBlock block = CommunityPostBlock.builder()
                 .blockerId(blockerId)
                 .blockedId(blockedId)
@@ -298,6 +354,8 @@ public class CommunityService {
                 .content(post.getContent())
                 .category(post.getCategory())
                 .authorId(post.getAuthorId())
+                .authorNickname(post.getAuthorNickname())
+                .viewCount(post.getViewCount())
                 .createdAt(post.getCreatedAt())
                 .updatedAt(post.getUpdatedAt())
                 .status(status)

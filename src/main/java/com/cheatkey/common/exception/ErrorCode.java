@@ -82,6 +82,8 @@ public enum ErrorCode {
     POST_NOT_OWNER(HttpStatus.UNAUTHORIZED, "본인만 삭제할 수 있습니다."),
     POST_REPORTED_ACCESS_DENIED(HttpStatus.FORBIDDEN, "신고된 게시글에 대한 접근 권한이 없습니다."),
     USER_ALREADY_BLOCKED(HttpStatus.BAD_REQUEST, "이미 차단한 유저입니다."),
+    CANNOT_BLOCK_SELF(HttpStatus.BAD_REQUEST, "자기 자신을 차단할 수 없습니다."),
+    CANNOT_REPORT_OWN_POST(HttpStatus.BAD_REQUEST, "본인이 작성한 게시글은 신고할 수 없습니다."),
 
 
     /**

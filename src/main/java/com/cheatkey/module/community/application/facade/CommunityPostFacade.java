@@ -50,28 +50,54 @@ public class CommunityPostFacade {
 
         // 2. 첨부파일 영구화 및 매핑
         List<Long> fileUploadIds = request.getFileUploadIds();
+        
         if (fileUploadIds != null && !fileUploadIds.isEmpty()) {
-            for (Long fileUploadId : fileUploadIds) {
-                FileUpload fileUpload = fileUploadRepository.findById(fileUploadId)
-                        .orElseThrow(() -> new ImageException(ErrorCode.FILE_NOT_FOUND));
+            log.info("파일 영구화 처리 시작: {}개 파일", fileUploadIds.size());
+            for (int i = 0; i < fileUploadIds.size(); i++) {
+                Long fileUploadId = fileUploadIds.get(i);
+                try {
+                    FileUpload fileUpload = fileUploadRepository.findById(fileUploadId)
+                            .orElseThrow(() -> new ImageException(ErrorCode.FILE_NOT_FOUND));
 
-                // 임시 파일을 영구 파일로 이동
-                if (fileUpload.getIsTemp()) {
-                    s3FileService.moveToPermanent(fileUpload.getS3Key(), "community");
-                    fileUpload.updateToPermanent(fileUpload.getS3Key().replaceFirst("uploads/temp/", "uploads/community/"));
-                    fileUploadRepository.save(fileUpload);
+                    // 임시 파일을 영구 파일로 이동
+                    if (fileUpload.getIsTemp()) {
+                        String newKey = fileUpload.getS3Key().replaceFirst("uploads/temp/", "uploads/");
+                        
+                        try {
+                            // S3 파일 이동
+                            s3FileService.moveToPermanent(fileUpload.getS3Key(), newKey);
+                            
+                            // DB 업데이트
+                            fileUpload.updateToPermanent(newKey);
+                            fileUploadRepository.save(fileUpload);
+                            
+                            log.info("파일 영구화 완료: fileUploadId={}, oldKey={}, newKey={}", 
+                                    fileUploadId, fileUpload.getS3Key(), newKey);
+                                    
+                        } catch (Exception e) {
+                            log.error("파일 영구화 실패: fileUploadId={}, oldKey={}, newKey={}, error={}", 
+                                    fileUploadId, fileUpload.getS3Key(), newKey, e.getMessage(), e);
+                            throw e;
+                        }
+                    }
+
+                    // 커뮤니티 게시글과 파일 연결 (순서대로 sortOrder 설정)
+                    CommunityPostFile communityPostFile = CommunityPostFile.builder()
+                            .postId(postId)
+                            .fileUploadId(fileUploadId)
+                            .sortOrder(i) // 파일 업로드 순서대로 sortOrder 설정
+                            .build();
+                    communityPostFileRepository.save(communityPostFile);
+                } catch (Exception e) {
+                    log.error("파일 처리 중 오류 발생: fileUploadId={}, error={}", fileUploadId, e.getMessage(), e);
+                    throw e;
                 }
-
-                // 커뮤니티 게시글과 파일 연결
-                CommunityPostFile communityPostFile = CommunityPostFile.builder()
-                        .postId(postId)
-                        .fileUploadId(fileUploadId)
-                        .build();
-                communityPostFileRepository.save(communityPostFile);
             }
         }
 
+        // TODO: Vector DB 저장 기능 임시 비활성화 (오류 해결 필요)
         // 3. Vector DB 저장 (REPORT, SHARE 카테고리만)
+        /*
         if (request.getCategory() == CommunityCategory.REPORT || 
             request.getCategory() == CommunityCategory.SHARE) {
             try {
@@ -89,12 +115,13 @@ public class CommunityPostFacade {
                 );
                 
                 vectorDbClient.saveVector(postId.toString(), embedding, payload);
-                log.info("Vector DB 저장 완료: postId={}, category={}", postId, "거래 사기");
+                log.info("Vector DB 저장 완료: postId={}", postId);
             } catch (Exception e) {
-                log.warn("Vector DB 저장 실패: postId={}, error={}", postId, e.getMessage());
+                log.error("Vector DB 저장 실패: postId={}, error={}", postId, e.getMessage(), e);
                 // Vector DB 저장 실패해도 게시글 작성은 성공으로 처리
             }
         }
+        */
         
         return postId;
     }

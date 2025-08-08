@@ -19,19 +19,29 @@ public class CommunityPostRepositoryImpl implements CommunityPostRepositoryCusto
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public Page<CommunityPost> findAllByCustomConditions(Long userId, String keyword, String sort, Pageable pageable) {
+    public Page<CommunityPost> findAllByCustomConditions(Long userId, String keyword, String category, String sort, Pageable pageable) {
         BooleanExpression isActive = communityPost.status.eq(PostStatus.ACTIVE);
         BooleanExpression search = Expressions.TRUE;
+        BooleanExpression categoryFilter = Expressions.TRUE;
+        
+        // 검색어 필터링
         if (keyword != null && !keyword.isEmpty()) {
             search = communityPost.title.containsIgnoreCase(keyword)
                     .or(communityPost.content.containsIgnoreCase(keyword));
         }
+        
+        // 카테고리 필터링
+        if (category != null && !category.isEmpty()) {
+            categoryFilter = communityPost.category.eq(com.cheatkey.module.community.domain.entity.CommunityCategory.valueOf(category));
+        }
+        
         OrderSpecifier<?> order = communityPost.createdAt.desc();
         if ("popular".equals(sort)) {
             order = communityPost.viewCount.desc();
         }
+        
         JPQLQuery<CommunityPost> query = queryFactory.selectFrom(communityPost)
-                .where(isActive.and(search))
+                .where(isActive.and(search).and(categoryFilter))
                 .orderBy(order);
         long total = query.fetchCount();
         List<CommunityPost> content = query.offset(pageable.getOffset()).limit(pageable.getPageSize()).fetch();
