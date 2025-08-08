@@ -9,7 +9,7 @@ import org.springframework.data.domain.Pageable;
 
 public interface CommunityPostRepository extends JpaRepository<CommunityPost, Long>, QuerydslPredicateExecutor<CommunityPost>, CommunityPostRepositoryCustom {
     // 페이징, 검색, 정렬 등 커스텀 쿼리 필요시 QueryDSL 사용
-    Page<CommunityPost> findByUserIdAndStatusOrderByCreatedAtDesc(Long userId, PostStatus status, Pageable pageable);
+    Page<CommunityPost> findByAuthorIdAndStatusOrderByCreatedAtDesc(Long authorId, PostStatus status, Pageable pageable);
 }
 
 interface CommunityPostRepositoryCustom {

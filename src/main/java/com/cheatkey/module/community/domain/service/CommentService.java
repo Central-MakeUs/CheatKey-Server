@@ -21,7 +21,7 @@ public class CommentService {
     private final CommunityPostRepository postRepository;
 
     @Transactional
-    public Long createComment(CommunityCommentRequest request, Long userId, String userNickname) {
+    public Long createComment(CommunityCommentRequest request, Long authorId, String authorNickname) {
         CommunityPost post = postRepository.findById(request.getPostId())
                 .orElseThrow(() -> new CustomException(ErrorCode.COMMUNITY_POST_NOT_FOUND));
         if (post.getStatus() != null && !post.getStatus().name().equals("ACTIVE")) {
@@ -45,8 +45,8 @@ public class CommentService {
         CommunityComment comment = CommunityComment.builder()
                 .post(post)
                 .parent(parent)
-                .userId(userId)
-                .userNickname(userNickname)
+                .authorId(authorId)
+                .authorNickname(authorNickname)
                 .content(request.getContent())
                 .status(CommentStatus.ACTIVE)
                 .build();
@@ -54,10 +54,10 @@ public class CommentService {
     }
 
     @Transactional
-    public void deleteComment(Long commentId, Long userId) {
+    public void deleteComment(Long commentId, Long authorId) {
         CommunityComment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new CustomException(ErrorCode.COMMUNITY_COMMENT_NOT_FOUND));
-        if (!comment.getUserId().equals(userId)) {
+        if (!comment.getAuthorId().equals(authorId)) {
             throw new CustomException(ErrorCode.COMMUNITY_COMMENT_ONLY_AUTHOR_CAN_DELETE);
         }
         comment.setStatus(CommentStatus.DELETED);
@@ -73,9 +73,6 @@ public class CommentService {
             throw new CustomException(ErrorCode.COMMUNITY_POST_DELETED_OR_REPORTED);
         }
         
-        return commentRepository.findAll().stream()
-                .filter(c -> c.getPost().getId().equals(postId))
-                .filter(c -> c.getStatus() == CommentStatus.ACTIVE)
-                .toList();
+        return commentRepository.findByPostIdAndStatus(postId, CommentStatus.ACTIVE);
     }
 }

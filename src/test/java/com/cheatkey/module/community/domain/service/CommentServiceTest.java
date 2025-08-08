@@ -55,8 +55,8 @@ class CommentServiceTest {
                 .id(10L)
                 .post(c.getPost())
                 .parent(c.getParent())
-                .userId(c.getUserId())
-                .userNickname(c.getUserNickname())
+                .authorId(c.getAuthorId())
+                .authorNickname(c.getAuthorNickname())
                 .content(c.getContent())
                 .status(c.getStatus())
                 .createdAt(c.getCreatedAt())
@@ -130,7 +130,7 @@ class CommentServiceTest {
     @Test
     @DisplayName("댓글 삭제 성공")
     void deleteComment_success() {
-        CommunityComment comment = CommunityComment.builder().id(10L).userId(2L).status(CommentStatus.ACTIVE).build();
+        CommunityComment comment = CommunityComment.builder().id(10L).authorId(2L).status(CommentStatus.ACTIVE).build();
         when(commentRepository.findById(10L)).thenReturn(Optional.of(comment));
         commentService.deleteComment(10L, 2L);
         assertThat(comment.getStatus()).isEqualTo(CommentStatus.DELETED);
@@ -140,7 +140,7 @@ class CommentServiceTest {
     @Test
     @DisplayName("댓글 삭제 실패 - 본인 아님")
     void deleteComment_fail_notAuthor() {
-        CommunityComment comment = CommunityComment.builder().id(10L).userId(2L).status(CommentStatus.ACTIVE).build();
+        CommunityComment comment = CommunityComment.builder().id(10L).authorId(2L).status(CommentStatus.ACTIVE).build();
         when(commentRepository.findById(10L)).thenReturn(Optional.of(comment));
         assertThatThrownBy(() -> commentService.deleteComment(10L, 3L))
                 .isInstanceOf(CustomException.class)
@@ -167,8 +167,8 @@ class CommentServiceTest {
                 .id(1L)
                 .post(post)
                 .parent(null)
-                .userId(2L)
-                .userNickname("유저1")
+                .authorId(2L)
+                .authorNickname("유저1")
                 .content("댓글1")
                 .status(CommentStatus.ACTIVE)
                 .build();
@@ -177,8 +177,8 @@ class CommentServiceTest {
                 .id(2L)
                 .post(post)
                 .parent(null)
-                .userId(3L)
-                .userNickname("유저2")
+                .authorId(3L)
+                .authorNickname("유저2")
                 .content("댓글2")
                 .status(CommentStatus.ACTIVE)
                 .build();

@@ -54,7 +54,7 @@ class CommunityPostDetailServiceTest {
     @Test
     void 정상_게시글_상세_조회_및_조회수_증가_정책_테스트() {
         // given
-        CommunityPost post = CommunityPost.builder().id(1L).userId(2L).nickname("닉네임").status(PostStatus.ACTIVE).viewCount(0L).build();
+        CommunityPost post = CommunityPost.builder().id(1L).authorId(2L).authorNickname("테스트유저").status(PostStatus.ACTIVE).viewCount(0L).build();
         when(communityPostRepository.findById(1L)).thenReturn(Optional.of(post));
         when(communityPostBlockRepository.findAll()).thenReturn(Collections.emptyList());
         when(communityPostFileRepository.findAll()).thenReturn(Collections.emptyList());
@@ -78,7 +78,7 @@ class CommunityPostDetailServiceTest {
     @Test
     void 본인글_삭제상태_상세조회_예외_정책_테스트() {
         // given
-        CommunityPost post = CommunityPost.builder().id(1L).userId(2L).nickname("닉네임").status(PostStatus.DELETED).build();
+        CommunityPost post = CommunityPost.builder().id(1L).authorId(2L).authorNickname("테스트유저").status(PostStatus.DELETED).build();
         when(communityPostRepository.findById(1L)).thenReturn(Optional.of(post));
 
         // when & then
@@ -91,7 +91,7 @@ class CommunityPostDetailServiceTest {
     @Test
     void 본인글_신고상태_상세조회_차단메시지_정책_테스트() {
         // given
-        CommunityPost post = CommunityPost.builder().id(1L).userId(2L).nickname("닉네임").status(PostStatus.REPORTED).build();
+        CommunityPost post = CommunityPost.builder().id(1L).authorId(2L).authorNickname("테스트유저").status(PostStatus.REPORTED).build();
         when(communityPostRepository.findById(1L)).thenReturn(Optional.of(post));
         when(communityPostBlockRepository.findAll()).thenReturn(Collections.emptyList());
         when(communityPostMapper.toDetailDto(any(), anyInt(), anyList(), anyList(), anyBoolean(), anyBoolean(), any())).thenReturn(
@@ -109,7 +109,7 @@ class CommunityPostDetailServiceTest {
     @Test
     void 비정상상태_타인글_상세조회_차단메시지_정책_테스트() {
         // given
-        CommunityPost post = CommunityPost.builder().id(1L).userId(2L).nickname("닉네임").status(PostStatus.REPORTED).build();
+        CommunityPost post = CommunityPost.builder().id(1L).authorId(2L).authorNickname("테스트유저").status(PostStatus.REPORTED).build();
         when(communityPostRepository.findById(1L)).thenReturn(Optional.of(post));
         when(communityPostBlockRepository.findAll()).thenReturn(Collections.emptyList());
         when(communityPostMapper.toDetailDto(any(), anyInt(), anyList(), anyList(), anyBoolean(), anyBoolean(), any())).thenReturn(
@@ -127,7 +127,7 @@ class CommunityPostDetailServiceTest {
     @Test
     void 차단유저_글_상세조회_차단메시지_정책_테스트() {
         // given
-        CommunityPost post = CommunityPost.builder().id(1L).userId(2L).nickname("닉네임").status(PostStatus.ACTIVE).build();
+        CommunityPost post = CommunityPost.builder().id(1L).authorId(2L).authorNickname("테스트유저").status(PostStatus.ACTIVE).build();
         when(communityPostRepository.findById(1L)).thenReturn(Optional.of(post));
         when(communityPostBlockRepository.findAll()).thenReturn(List.of(
             CommunityPostBlock.builder().blockerId(3L).blockedId(2L).isActive(true).build()

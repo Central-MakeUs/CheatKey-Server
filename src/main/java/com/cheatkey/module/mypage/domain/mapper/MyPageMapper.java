@@ -40,7 +40,7 @@ public class MyPageMapper {
     public UserPostResponse toUserPostResponse(CommunityPost post, Long commentCount, List<String> imageUrls) {
         return UserPostResponse.builder()
                 .id(post.getId())
-                .nickname(post.getNickname())
+                .nickname(post.getAuthorNickname())
                 .title(post.getTitle())
                 .content(post.getContent())
                 .createdAt(post.getCreatedAt())

@@ -56,9 +56,9 @@ class CommunityPostListServiceTest {
     @Test
     void 정상_상태_및_차단_제외_댓글수_닉네임_정책_테스트() {
         // given
-        CommunityPost activePost = CommunityPost.builder().id(1L).userId(2L).nickname("닉네임").status(PostStatus.ACTIVE).build();
-        CommunityPost deletedPost = CommunityPost.builder().id(2L).userId(3L).nickname("닉네임2").status(PostStatus.DELETED).build();
-        CommunityPost blockedPost = CommunityPost.builder().id(3L).userId(4L).nickname("닉네임3").status(PostStatus.ACTIVE).build();
+        CommunityPost activePost = CommunityPost.builder().id(1L).authorId(2L).authorNickname("테스트유저").status(PostStatus.ACTIVE).build();
+        CommunityPost deletedPost = CommunityPost.builder().id(2L).authorId(3L).authorNickname("테스트유저2").status(PostStatus.DELETED).build();
+        CommunityPost blockedPost = CommunityPost.builder().id(3L).authorId(4L).authorNickname("테스트유저3").status(PostStatus.ACTIVE).build();
 
         List<CommunityPost> allPosts = List.of(activePost, deletedPost, blockedPost);
         when(communityPostRepository.findAllByCustomConditions(any(), any(), any(), any())).thenReturn(new PageImpl<>(allPosts));

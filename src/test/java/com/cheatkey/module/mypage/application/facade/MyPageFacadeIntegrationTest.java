@@ -82,14 +82,13 @@ class MyPageFacadeIntegrationTest {
     void 사용자_작성글_목록_조회_성공() {
         // given - 테스트용 게시글 생성
         CommunityPost post = CommunityPost.builder()
-                .userId(TEST_USER_ID)
-                .nickname("테스터")
+                .authorId(TEST_USER_ID)
+                .authorNickname("테스터")
                 .title("테스트 게시글")
                 .content("테스트 내용")
-                .status(PostStatus.ACTIVE)
                 .category(CommunityCategory.REPORT)
-                .viewCount(5L)
-                .createdAt(LocalDateTime.now())
+                .status(PostStatus.ACTIVE)
+                .viewCount(0L)
                 .build();
         communityPostRepository.save(post);
 

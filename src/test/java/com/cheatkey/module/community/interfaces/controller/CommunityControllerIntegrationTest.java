@@ -101,8 +101,8 @@ class CommunityControllerIntegrationTest {
         assertThat(post.getTitle()).isEqualTo("통합테스트 제목12345");
         assertThat(post.getContent()).isEqualTo("통합테스트 내용12345");
         assertThat(post.getCategory()).isEqualTo(CommunityCategory.REPORT);
-        assertThat(post.getUserId()).isEqualTo(testUserId);
-        assertThat(post.getNickname()).isEqualTo(testUserNickname);
+        assertThat(post.getAuthorId()).isEqualTo(testUserId);
+        assertThat(post.getAuthorNickname()).isEqualTo(testUserNickname);
     }
 
     @Test
@@ -182,8 +182,8 @@ class CommunityControllerIntegrationTest {
                 .title("신고 테스트 제목")
                 .content("신고 테스트 내용")
                 .category(CommunityCategory.REPORT)
-                .userId(10L)
-                .nickname("테스트유저1")
+                .authorId(10L)
+                .authorNickname("테스트유저1")
                 .viewCount(0L)
                 .status(com.cheatkey.module.community.domain.entity.PostStatus.ACTIVE)
                 .build();

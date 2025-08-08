@@ -63,7 +63,7 @@ class CommunityServiceTest {
         String reasonCode = "FAKE";
         CommunityPost post = CommunityPost.builder()
                 .id(postId)
-                .userId(3L)
+                .authorId(3L)
                 .status(PostStatus.ACTIVE)
                 .build();
         when(communityReportedPostRepository.existsByPostIdAndReporterId(postId, reporterId)).thenReturn(false);
@@ -142,8 +142,8 @@ class CommunityServiceTest {
         Long postId = 1L;
         CommunityPost post = CommunityPost.builder()
                 .id(postId)
-                .userId(userId)
-                .nickname("테스트유저")
+                .authorId(3L)
+                .authorNickname("테스트유저")
                 .status(PostStatus.ACTIVE)
                 .viewCount(0L)
                 .build();

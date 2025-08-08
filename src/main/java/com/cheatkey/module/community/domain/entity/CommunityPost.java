@@ -2,6 +2,8 @@ package com.cheatkey.module.community.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
@@ -24,23 +26,27 @@ public class CommunityPost {
     @Enumerated(EnumType.STRING)
     private CommunityCategory category;
 
-    private Long userId;
-    private String nickname;
+    private Long authorId;
+    private String authorNickname;
     private Long viewCount;
+
+    @CreationTimestamp
     private LocalDateTime createdAt;
+
+    @UpdateTimestamp
     private LocalDateTime updatedAt;
 
     @Enumerated(EnumType.STRING)
     private PostStatus status; // ACTIVE, DELETED, REPORTED (soft delete)
 
 
-    public static CommunityPost createPost(String title, String content, CommunityCategory category, Long userId, String nickname) {
+    public static CommunityPost createPost(String title, String content, CommunityCategory category, Long authorId, String authorNickname) {
         return CommunityPost.builder()
                 .title(title)
                 .content(content)
                 .category(category)
-                .userId(userId)
-                .nickname(nickname)
+                .authorId(authorId)
+                .authorNickname(authorNickname)
                 .viewCount(0L)
                 .status(PostStatus.ACTIVE)
                 .build();

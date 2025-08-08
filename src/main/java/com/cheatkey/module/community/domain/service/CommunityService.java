@@ -59,15 +59,15 @@ public class CommunityService {
         Page<CommunityPost> postPage = communityPostRepository.findAllByCustomConditions(userId, keyword, sort, pageable);
         List<Long> postIds = postPage.getContent().stream().map(CommunityPost::getId).toList();
 
-        // 2. 차단된 유저의 게시글 제외 (in절 최적화)
-        List<Long> blockedUserIds = communityPostBlockRepository.findAll().stream()
-                .filter(b -> b.getBlockerId().equals(userId) && b.getIsActive())
-                .map(b -> b.getBlockedId())
+        // 2. 차단된 유저의 게시글 제외 (쿼리 최적화)
+        List<Long> blockedUserIds = communityPostBlockRepository.findByBlockerIdAndIsActive(userId, true)
+                .stream()
+                .map(CommunityPostBlock::getBlockedId)
                 .toList();
 
         List<CommunityPost> filteredPosts = postPage.getContent().stream()
                 .filter(post -> post.getStatus() == PostStatus.ACTIVE)
-                .filter(post -> !blockedUserIds.contains(post.getUserId()))
+                .filter(post -> !blockedUserIds.contains(post.getAuthorId()))
                 .toList();
 
         // 3. 댓글 수 매핑
@@ -101,53 +101,40 @@ public class CommunityService {
                     .toList();
         }
 
-        // 5. DTO 매핑
-        List<CommunityPostListResponse> dtoList = filteredPosts.stream().map(post -> {
-            List<CommunityPostFile> files = communityPostFileRepository.findAll().stream()
-                    .filter(f -> f.getPostId().equals(post.getId()))
-                    .sorted((a, b) -> a.getSortOrder() - b.getSortOrder())
-                    .limit(5)
-                    .toList();
+        // 5. DTO 변환
+        List<CommunityPostListResponse> responseList = filteredPosts.stream()
+                .map(post -> {
+                    int commentCount = commentCountMap.getOrDefault(post.getId(), 0);
+                    List<String> thumbnailUrls = getPostImageUrlsMap(List.of(post.getId())).getOrDefault(post.getId(), List.of());
+                    return communityPostMapper.toListDto(post, commentCount, thumbnailUrls);
+                })
+                .toList();
 
-            List<String> thumbnailUrls = files.stream().map(f -> {
-                Optional<FileUpload> fileUploadOpt = fileUploadRepository.findById(f.getFileUploadId());
-                return fileUploadOpt.map(fileUpload -> {
-                    try {
-                        return fileService.getPermanentFilePresignedUrl(fileUpload.getS3Key(), 10).toString();
-                    } catch (Exception e) {
-                        return null;
-                    }
-                }).orElse(null);
-            }).filter(url -> url != null).collect(Collectors.toList());
-
-            int commentCount = commentCountMap.getOrDefault(post.getId(), 0);
-            return communityPostMapper.toListDto(post, commentCount, thumbnailUrls);
-        }).toList();
-
-        return new PageImpl<>(dtoList, pageable, postPage.getTotalElements());
+        return new PageImpl<>(responseList, pageable, postPage.getTotalElements());
     }
 
     /**
      * 커뮤니티 게시글 상세 조회 (ACTIVE 상태, 차단/신고 정책 반영)
      */
+    @Transactional
     public CommunityPostDetailResponse getPostDetail(Long userId, Long postId) {
         CommunityPost post = communityPostRepository.findById(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
         boolean blocked = communityPostBlockRepository.findAll().stream()
-                .anyMatch(b -> b.getBlockerId().equals(userId) && b.getBlockedId().equals(post.getUserId()) && b.getIsActive());
+                .anyMatch(b -> b.getBlockerId().equals(userId) && b.getBlockedId().equals(post.getAuthorId()) && b.getIsActive());
 
         // 본인 글이 삭제(DELETED) 상태면 상세 조회 불가
-        if (post.getUserId().equals(userId) && post.getStatus() == PostStatus.DELETED) {
+        if (post.getAuthorId().equals(userId) && post.getStatus() == PostStatus.DELETED) {
             throw new CustomException(ErrorCode.POST_NOT_FOUND);
         }
 
         // 본인 글이 신고(REPORTED) 상태면 접근 권한 없음 메시지 반환
-        if (post.getUserId().equals(userId) && post.getStatus() == PostStatus.REPORTED) {
+        if (post.getAuthorId().equals(userId) && post.getStatus() == PostStatus.REPORTED) {
             return communityPostMapper.toDetailDto(post, 0, List.of(), List.of(), false, blocked, "신고된 게시글에 대한 접근 권한이 없습니다.");
         }
 
         // 비정상(삭제/신고 등) 상태는 본인 글이 아니면 접근 권한 없음 메시지 반환
-        if (post.getStatus() != PostStatus.ACTIVE && !post.getUserId().equals(userId)) {
+        if (post.getStatus() != PostStatus.ACTIVE && !post.getAuthorId().equals(userId)) {
             return communityPostMapper.toDetailDto(post, 0, List.of(), List.of(), false, blocked, "신고된 게시글에 대한 접근 권한이 없습니다.");
         }
 
@@ -157,7 +144,7 @@ public class CommunityService {
         }
 
         // 조회수 증가 (본인 글이 아닐 때만, 차단/비정상 상태가 아닌 경우에만)
-        if (!post.getUserId().equals(userId)) {
+        if (!post.getAuthorId().equals(userId)) {
             if (post.getViewCount() == null) post.setViewCount(0L);
             post.setViewCount(post.getViewCount() + 1);
             communityPostRepository.save(post);
@@ -188,7 +175,7 @@ public class CommunityService {
 
         List<CommunityComment> comments = commentService.getCommentsForPost(postId);
         List<CommunityCommentResponse> commentResponses = communityPostMapper.toCommentDtoList(comments);
-        boolean canDelete = post.getUserId().equals(userId);
+        boolean canDelete = post.getAuthorId().equals(userId);
 
         return communityPostMapper.toDetailDto(
                 post,
@@ -206,7 +193,7 @@ public class CommunityService {
      */
     @Transactional(readOnly = true)
     public Page<CommunityPost> getUserPosts(Long userId, Pageable pageable) {
-        return communityPostRepository.findByUserIdAndStatusOrderByCreatedAtDesc(userId, PostStatus.ACTIVE, pageable);
+        return communityPostRepository.findByAuthorIdAndStatusOrderByCreatedAtDesc(userId, PostStatus.ACTIVE, pageable);
     }
 
     /**
@@ -224,7 +211,6 @@ public class CommunityService {
     /**
      * 게시글 이미지 URL 목록 조회
      */
-    @Transactional(readOnly = true)
     public Map<Long, List<String>> getPostImageUrlsMap(List<Long> postIds) {
         List<CommunityPostFile> files = communityPostFileRepository.findByPostIdIn(postIds);
         List<Long> fileUploadIds = files.stream()
@@ -292,7 +278,7 @@ public class CommunityService {
     public void deletePost(Long postId, Long userId) {
         CommunityPost post = communityPostRepository.findById(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
-        if (!post.getUserId().equals(userId)) {
+        if (!post.getAuthorId().equals(userId)) {
             throw new CustomException(ErrorCode.POST_NOT_OWNER);
         }
         
@@ -311,7 +297,7 @@ public class CommunityService {
                 .title(post.getTitle())
                 .content(post.getContent())
                 .category(post.getCategory())
-                .userId(post.getUserId())
+                .authorId(post.getAuthorId())
                 .createdAt(post.getCreatedAt())
                 .updatedAt(post.getUpdatedAt())
                 .status(status)
@@ -382,7 +368,7 @@ public class CommunityService {
                 ));
 
         // 3. 작성자 정보 조회
-        List<Long> authorIds = allPosts.stream().map(CommunityPost::getUserId).distinct().toList();
+        List<Long> authorIds = allPosts.stream().map(CommunityPost::getAuthorId).distinct().toList();
         Map<Long, Auth> authorMap = authRepository.findAllById(authorIds).stream()
                 .collect(Collectors.toMap(Auth::getId, auth -> auth));
 
@@ -409,7 +395,7 @@ public class CommunityService {
                 })
                 .limit(limit)
                 .map(post -> {
-                    Auth author = authorMap.get(post.getUserId());
+                    Auth author = authorMap.get(post.getAuthorId());
                     return new CommunityPostWithAuthorInfo(post, author);
                 })
                 .toList();

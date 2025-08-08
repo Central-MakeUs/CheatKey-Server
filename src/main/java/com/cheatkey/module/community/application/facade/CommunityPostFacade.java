@@ -21,6 +21,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.safety.Safelist;
 import com.cheatkey.module.file.domain.entity.FileUpload;
 import com.cheatkey.module.file.domain.repository.FileUploadRepository;
+import com.cheatkey.common.exception.ErrorCode;
 
 @Slf4j
 @Service
@@ -34,7 +35,7 @@ public class CommunityPostFacade {
     private final VectorDbClient vectorDbClient;
 
     @Transactional
-    public Long createPostWithFiles(CommunityPostCreateRequest request, Long userId, String nickname) throws ImageException {
+    public Long createPostWithFiles(CommunityPostCreateRequest request, Long authorId, String authorNickname) throws ImageException {
         // 1. 커뮤니티 글 등록
         String safeTitle = Jsoup.clean(request.getTitle(), Safelist.none());
         String safeContent = Jsoup.clean(request.getContent(), Safelist.basic());
@@ -42,34 +43,31 @@ public class CommunityPostFacade {
             safeTitle,
             safeContent,
             request.getCategory(),
-            userId,
-            nickname
+            authorId,
+            authorNickname
         );
         Long postId = communityService.createPost(post);
 
         // 2. 첨부파일 영구화 및 매핑
         List<Long> fileUploadIds = request.getFileUploadIds();
         if (fileUploadIds != null && !fileUploadIds.isEmpty()) {
-            int order = 0;
             for (Long fileUploadId : fileUploadIds) {
                 FileUpload fileUpload = fileUploadRepository.findById(fileUploadId)
-                        .orElseThrow(() -> new ImageException(com.cheatkey.common.exception.ErrorCode.FILE_NOT_FOUND));
+                        .orElseThrow(() -> new ImageException(ErrorCode.FILE_NOT_FOUND));
 
+                // 임시 파일을 영구 파일로 이동
                 if (fileUpload.getIsTemp()) {
-                    String permanentKey = fileUpload.getS3Key().replaceFirst("uploads/temp/", "uploads/");
-                    s3FileService.moveToPermanent(fileUpload.getS3Key(), permanentKey);
-
-                    fileUpload.updateToPermanent(permanentKey);
+                    s3FileService.moveToPermanent(fileUpload.getS3Key(), "community");
+                    fileUpload.updateToPermanent(fileUpload.getS3Key().replaceFirst("uploads/temp/", "uploads/community/"));
                     fileUploadRepository.save(fileUpload);
                 }
 
-                CommunityPostFile fileEntity = CommunityPostFile.builder()
+                // 커뮤니티 게시글과 파일 연결
+                CommunityPostFile communityPostFile = CommunityPostFile.builder()
                         .postId(postId)
-                        .fileUploadId(fileUpload.getId())
-                        .sortOrder(order++)
-                        .createdAt(java.time.LocalDateTime.now())
+                        .fileUploadId(fileUploadId)
                         .build();
-                communityPostFileRepository.save(fileEntity);
+                communityPostFileRepository.save(communityPostFile);
             }
         }
 
@@ -85,8 +83,8 @@ public class CommunityPostFacade {
                     "category", DetectionCategory.INVESTMENT,
                     "title", safeTitle,
                     "content", safeContent,
-                    "userId", userId,
-                    "nickname", nickname,
+                    "userId", authorId,
+                    "nickname", authorNickname,
                     "source", "community"
                 );
                 

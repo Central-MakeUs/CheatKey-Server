@@ -25,10 +25,10 @@ public class CommunityComment {
     private CommunityComment parent; // null이면 댓글, 아니면 대댓글
 
     @Column(nullable = false)
-    private Long userId;
+    private Long authorId;
 
     @Column(nullable = false, length = 50)
-    private String userNickname;
+    private String authorNickname;
 
     @Column(nullable = false, length = 200)
     private String content;

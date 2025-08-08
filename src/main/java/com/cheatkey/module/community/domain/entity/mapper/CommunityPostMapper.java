@@ -19,7 +19,7 @@ public interface CommunityPostMapper {
 
     @Mapping(target = "thumbnailUrls", source = "thumbnailUrls")
     @Mapping(target = "commentCount", source = "commentCount")
-    @Mapping(source = "post.nickname", target = "authorNickname")
+    @Mapping(source = "post.authorNickname", target = "authorNickname")
     CommunityPostListResponse toListDto(CommunityPost post, int commentCount, List<String> thumbnailUrls);
 
     @Mapping(target = "files", source = "files")
@@ -28,7 +28,7 @@ public interface CommunityPostMapper {
     @Mapping(target = "canDelete", source = "canDelete")
     @Mapping(target = "blocked", source = "blocked")
     @Mapping(target = "blockMessage", source = "blockMessage")
-    @Mapping(source = "post.nickname", target = "authorNickname")
+    @Mapping(source = "post.authorNickname", target = "authorNickname")
     CommunityPostDetailResponse toDetailDto(
         CommunityPost post,
         int commentCount,
@@ -64,8 +64,8 @@ public interface CommunityPostMapper {
                 .id(comment.getId())
                 .postId(comment.getPost().getId())
                 .parentId(comment.getParent() != null ? comment.getParent().getId() : null)
-                .userId(comment.getUserId())
-                .userNickname(comment.getUserNickname())
+                .authorId(comment.getAuthorId())
+                .authorNickname(comment.getAuthorNickname())
                 .content(comment.getContent())
                 .status(comment.getStatus().name())
                 .createdAt(comment.getCreatedAt())

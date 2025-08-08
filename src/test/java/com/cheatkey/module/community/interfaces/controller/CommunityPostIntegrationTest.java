@@ -50,16 +50,16 @@ class CommunityPostIntegrationTest {
 
         // 기본 데이터: ACTIVE 2개, DELETED 1개, 차단 1개
         communityPostRepository.save(
-                CommunityPost.builder().title("TestTitle1").content("TestContents1").userId(1L).nickname("TestUser1")
+                CommunityPost.builder().title("TestTitle1").content("TestContents1").authorId(1L).authorNickname("TestUser1")
                         .status(PostStatus.ACTIVE).category(CommunityCategory.REPORT).viewCount(0L).build());
         communityPostRepository.save(
-                CommunityPost.builder().title("TestTitle2").content("TestContents2").userId(2L).nickname("TestUser2")
+                CommunityPost.builder().title("TestTitle2").content("TestContents2").authorId(2L).authorNickname("TestUser2")
                         .status(PostStatus.ACTIVE).category(CommunityCategory.REPORT).viewCount(0L).build());
         communityPostRepository.save(
-                CommunityPost.builder().title("TestTitle3").content("TestContents3").userId(3L).nickname("TestUser3")
+                CommunityPost.builder().title("TestTitle3").content("TestContents3").authorId(3L).authorNickname("TestUser3")
                         .status(PostStatus.DELETED).category(CommunityCategory.REPORT).viewCount(0L).build());
         communityPostRepository.save(
-                CommunityPost.builder().title("TestTitle4").content("TestContents4").userId(4L).nickname("TestUser4")
+                CommunityPost.builder().title("TestTitle4").content("TestContents4").authorId(4L).authorNickname("TestUser4")
                         .status(PostStatus.ACTIVE).category(CommunityCategory.REPORT).viewCount(0L).build());
 
         // userId=1이 userId=4를 차단
@@ -91,7 +91,7 @@ class CommunityPostIntegrationTest {
     @Test
     @DisplayName("[통합] 커뮤니티 게시글 상세 - 정상/차단/상태/조회수 정책")
     void 커뮤니티_게시글_상세_정책_통합테스트() throws Exception {
-        CommunityPost post = communityPostRepository.findAll().stream().filter(p -> p.getUserId() == 2L).findFirst().orElseThrow();
+        CommunityPost post = communityPostRepository.findAll().stream().filter(p -> p.getAuthorId() == 2L).findFirst().orElseThrow();
         String jwt = jwtProvider.createAccessToken(1L, Provider.KAKAO, AuthRole.USER);
 
         String response = mockMvc.perform(get("/v1/api/community/posts/" + post.getId())

@@ -18,11 +18,11 @@ public class CommunityCommentResponse {
     @Schema(description = "부모 댓글 ID (null이면 댓글)", example = "10")
     private Long parentId;
 
-    @Schema(description = "작성자 userId", example = "2")
-    private Long userId;
+    @Schema(description = "작성자 authorId", example = "2")
+    private Long authorId;
 
     @Schema(description = "작성자 닉네임", example = "테스트유저")
-    private String userNickname;
+    private String authorNickname;
 
     @Schema(description = "댓글/대댓글 내용", example = "이 글 정말 유용하네요!")
     private String content;
