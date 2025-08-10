@@ -20,7 +20,7 @@ import jakarta.validation.constraints.Size;
 @Schema(description = "커뮤니티 게시글 생성 요청")
 public class CommunityPostCreateRequest {
     @NotBlank(message = "제목은 필수입니다.")
-    @Size(min = 10, max = 100, message = "제목은 10자 이상 100자 이하로 입력해 주세요.")
+    @Size(min = 2, max = 100, message = "제목은 2자 이상 100자 이하로 입력해 주세요.")
     @Schema(description = "게시글 제목", example = "사기 사례를 공유합니다")
     private String title;
 
