@@ -101,14 +101,6 @@ public class AuthService {
             }
             auth.setProfileImageId(request.getProfileImageId());
         }
-        
-        // 나이와 성별 정보 업데이트 (선택사항)
-        if (request.getAgeCode() != null) {
-            auth.setAgeCode(request.getAgeCode());
-        }
-        if (request.getGenderCode() != null) {
-            auth.setGenderCode(request.getGenderCode());
-        }
     }
 
     @Transactional
