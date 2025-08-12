@@ -119,17 +119,17 @@ public class AuthService {
             throw new CustomException(ErrorCode.AUTH_DUPLICATE_NICKNAME);
         }
 
-        // 필수 정보 체크
-        if (updateInfo.getAgeCode() == null || updateInfo.getGenderCode() == null) {
-            throw new CustomException(ErrorCode.AUTH_MISSING_REQUIRED_INFORMATION);
-        }
-
         nicknameValidator.checkFormat(updateInfo.getNickname());
 
         // 기존 Auth 엔티티에 정보 업데이트
         auth.setNickname(updateInfo.getNickname());
-        auth.setAgeCode(updateInfo.getAgeCode());
-        auth.setGenderCode(updateInfo.getGenderCode());
+        // 나이와 성별은 선택사항이므로 null이 아닐 때만 설정
+        if (updateInfo.getAgeCode() != null) {
+            auth.setAgeCode(updateInfo.getAgeCode());
+        }
+        if (updateInfo.getGenderCode() != null) {
+            auth.setGenderCode(updateInfo.getGenderCode());
+        }
         auth.setTradeMethodCodes(updateInfo.getTradeMethodCodes());
         auth.setTradeItemCodes(updateInfo.getTradeItemCodes());
         auth.setLevel(1);                   // 최초 등록은 레벨 1 고정

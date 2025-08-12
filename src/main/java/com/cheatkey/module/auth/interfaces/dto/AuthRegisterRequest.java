@@ -17,11 +17,9 @@ public class AuthRegisterRequest {
     @Schema(description = "닉네임", example = "테스트123")
     private String nickname;
 
-    @NotBlank
     @Schema(description = "나이대 코드", example = "50_60")
     private String ageCode;
 
-    @NotBlank
     @Schema(description = "성별 코드", example = "FEMALE")
     private String genderCode;
 
