@@ -47,6 +47,15 @@ public enum ErrorCode {
     INVALID_INPUT_TYPE_CASE(HttpStatus.BAD_REQUEST, "검사 입력 타입은 CASE이어야 합니다."),
     DETECTION_FAILED(HttpStatus.BAD_REQUEST, "피싱 분석 중 오류가 발생 했습니다. 다시 시도해 주세요."),
     GOOGLE_API_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "Google Safe Browsing API 호출에 실패했습니다. 나중에 다시 시도해주세요."),
+    
+    // 품질 평가 관련 에러 코드
+    QUALITY_ASSESSMENT_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "품질 평가 중 오류가 발생했습니다."),
+    SEARCH_WORKFLOW_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "검색 워크플로우 실행 중 오류가 발생했습니다."),
+    
+    // OpenAI 관련 에러 코드
+    OPENAI_API_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "OpenAI API 호출 중 오류가 발생했습니다."),
+    OPENAI_COST_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "OpenAI API 일일 비용 제한을 초과했습니다."),
+    OPENAI_DAILY_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "OpenAI API 일일 호출 제한을 초과했습니다."),
 
     // JWT
     TOKEN_NOT_FOUND(HttpStatus.NOT_FOUND, "헤더에 Access Token을 찾을 수 없습니다."),
