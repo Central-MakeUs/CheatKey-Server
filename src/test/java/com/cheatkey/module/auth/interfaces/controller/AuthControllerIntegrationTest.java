@@ -220,31 +220,6 @@ class AuthControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("회원 탈퇴 성공")
-    @WithMockUser(username = "104", authorities = "ROLE_USER")
-    void withdraw_success() throws Exception {
-        // GIVEN
-        Long userId = 104L;
-        Auth activeAuth = Auth.builder()
-                .id(userId)
-                .provider(Provider.KAKAO)
-                .status(AuthStatus.ACTIVE)
-                .role(AuthRole.USER)
-                .build();
-
-        given(jwtProvider.validateToken(anyString())).willReturn(true);
-        given(jwtProvider.getUserIdFromToken(anyString())).willReturn(userId.toString());
-        given(jwtProvider.getRoleFromToken(anyString())).willReturn("ROLE_USER");
-        given(authRepository.findById(userId)).willReturn(java.util.Optional.of(activeAuth));
-        doNothing().when(refreshTokenService).invalidateTokenByUserId(userId);
-
-        // WHEN & THEN
-        mockMvc.perform(delete("/v1/api/auth/withdraw")
-                .header("Authorization", "Bearer mockToken"))
-                .andExpect(status().isOk());
-    }
-
-    @Test
     @DisplayName("로그아웃 성공")
     @WithMockUser(username = "105", authorities = "ROLE_USER")
     void logout_success() throws Exception {

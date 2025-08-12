@@ -33,12 +33,16 @@ class CommentServiceTest {
     private CommunityPostRepository postRepository;
     @Mock
     private CommunityPostBlockRepository communityPostBlockRepository;
+    @Mock
+    private WithdrawnUserCacheService withdrawnUserCacheService;
     @InjectMocks
     private CommentService commentService;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+        // WithdrawnUserCacheService Mock 기본 설정
+        when(withdrawnUserCacheService.getWithdrawnUserIds()).thenReturn(List.of());
     }
 
     @Test

@@ -8,17 +8,21 @@ import com.cheatkey.module.community.domain.entity.comment.CommentStatus;
 import com.cheatkey.module.community.domain.repository.CommunityCommentRepository;
 import com.cheatkey.module.community.domain.repository.CommunityPostRepository;
 import com.cheatkey.module.community.interfaces.dto.comment.CommunityCommentRequest;
+import com.cheatkey.module.auth.domain.repository.AuthRepository;
+import com.cheatkey.module.auth.domain.entity.AuthStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class CommentService {
     private final CommunityCommentRepository commentRepository;
     private final CommunityPostRepository postRepository;
+    private final WithdrawnUserCacheService withdrawnUserCacheService;
 
     @Transactional
     public Long createComment(CommunityCommentRequest request, Long authorId, String authorNickname) {
@@ -73,6 +77,28 @@ public class CommentService {
             throw new CustomException(ErrorCode.COMMUNITY_POST_DELETED_OR_REPORTED);
         }
         
-        return commentRepository.findByPostIdAndStatus(postId, CommentStatus.ACTIVE);
+        List<CommunityComment> comments = commentRepository.findByPostIdAndStatus(postId, CommentStatus.ACTIVE);
+        
+        // 탈퇴한 사용자 처리
+        List<Long> withdrawnUserIds = withdrawnUserCacheService.getWithdrawnUserIds();
+        return comments.stream()
+                .map(comment -> {
+                    if (withdrawnUserIds.contains(comment.getAuthorId())) {
+                        // 탈퇴한 사용자의 댓글은 '탈퇴된 사용자'로 표기
+                        return CommunityComment.builder()
+                                .id(comment.getId())
+                                .post(comment.getPost())
+                                .parent(comment.getParent())
+                                .authorId(comment.getAuthorId())
+                                .authorNickname("탈퇴된 사용자")
+                                .content(comment.getContent())
+                                .status(comment.getStatus())
+                                .createdAt(comment.getCreatedAt())
+                                .deletedAt(comment.getDeletedAt())
+                                .build();
+                    }
+                    return comment;
+                })
+                .collect(Collectors.toList());
     }
 }

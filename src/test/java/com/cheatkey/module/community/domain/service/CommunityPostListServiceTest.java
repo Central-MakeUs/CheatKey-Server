@@ -45,12 +45,16 @@ class CommunityPostListServiceTest {
     private FileService fileService;
     @Mock
     private CommunityPostMapper communityPostMapper;
+    @Mock
+    private WithdrawnUserCacheService withdrawnUserCacheService;
     @InjectMocks
     private CommunityService communityService;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+        // WithdrawnUserCacheService Mock 기본 설정
+        when(withdrawnUserCacheService.getWithdrawnUserIds()).thenReturn(List.of());
     }
 
 

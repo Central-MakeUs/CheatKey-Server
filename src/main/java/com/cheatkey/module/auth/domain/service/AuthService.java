@@ -14,6 +14,7 @@ import com.cheatkey.module.auth.interfaces.dto.SignInResponse;
 import com.cheatkey.module.mypage.interfaces.dto.UpdateUserInfoRequest;
 import com.cheatkey.module.terms.domain.service.TermsAgreementService;
 import com.cheatkey.module.auth.domain.entity.AuthActivity;
+import com.cheatkey.module.community.domain.service.WithdrawnUserCacheService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +35,7 @@ public class AuthService {
     private final JwtProvider jwtProvider;
     private final RefreshTokenService refreshTokenService;
     private final AuthActivityService authActivityService;
+    private final WithdrawnUserCacheService withdrawnUserCacheService;
 
 
     public void validateNickname(String nickname) {
@@ -173,10 +175,24 @@ public class AuthService {
                 .build();
     }
 
-    public void deleteUser(Long userId) {
+    @Transactional
+    public void withdrawUser(Long userId, String reason) {
         Auth auth = authRepository.findById(userId)
             .orElseThrow(() -> new CustomException(ErrorCode.AUTH_UNAUTHORIZED));
-        auth.setStatus(AuthStatus.WITHDRAWN);
+        
+        // 이미 탈퇴한 회원인지 확인
+        if (auth.getStatus().equals(AuthStatus.WITHDRAWN)) {
+            throw new CustomException(ErrorCode.AUTH_ALREADY_WITHDRAWN);
+        }
+        
+        // 탈퇴 처리
+        auth.withdraw(reason);
         authRepository.save(auth);
+        
+        // 탈퇴 활동 기록
+        authActivityService.recordActivity(userId, AuthActivity.ActivityType.USER_WITHDRAWAL, null, null, true, reason);
+        
+        // 탈퇴한 사용자 캐시 무효화
+        withdrawnUserCacheService.evictWithdrawnUsersCache();
     }
 }

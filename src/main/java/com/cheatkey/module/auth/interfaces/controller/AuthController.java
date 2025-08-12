@@ -185,11 +185,11 @@ public class AuthController {
             @ApiResponse(responseCode = "401", description = "인증 실패 (토큰 오류)", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @DeleteMapping("/withdraw")
-    public ResponseEntity<Void> withdraw() {
+    public ResponseEntity<Void> withdraw(@RequestBody @Valid AuthWithdrawRequest withdrawRequest) {
         String userId = SecurityUtil.getCurrentUserId();
         Long loginId = Long.valueOf(userId);
 
-        authService.deleteUser(loginId);
+        authService.withdrawUser(loginId, withdrawRequest.getReasonCode());
         refreshTokenService.invalidateTokenByUserId(loginId);
 
         return ResponseEntity.ok().build();

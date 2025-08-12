@@ -28,6 +28,10 @@ public enum ErrorCode {
 
     AUTH_REQUIRED_TERMS_NOT_AGREED(HttpStatus.BAD_REQUEST, "필수 약관에 모두 동의해야 가입할 수 있습니다."),
 
+    AUTH_WITHDRAWN_RECENTLY(HttpStatus.FORBIDDEN, "탈퇴 후 30일이 지나야 재가입이 가능합니다."),
+
+    AUTH_ALREADY_WITHDRAWN(HttpStatus.BAD_REQUEST, "이미 탈퇴한 회원입니다."),
+
     // MyPage (마이페이지)
     PROFILE_IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "프로필 이미지를 찾을 수 없습니다."),
     PROFILE_IMAGE_INVALID(HttpStatus.BAD_REQUEST, "유효하지 않은 프로필 이미지입니다."),
