@@ -207,12 +207,16 @@ public class LangGraphStyleWorkflow {
                     state.updateStatus(DetectionWorkflowState.WorkflowStatus.FAILED);
                     state.setDecisionReason(DetectionWorkflowState.DecisionReason.INPUT_TOO_VAGUE);
                     state.setActionType(ActionType.INVALID_INPUT_CASE);
+                    // 프론트엔드 호환성을 위해 status를 UNKNOWN으로 설정
+                    state.setDetectionStatus(DetectionStatus.UNKNOWN);
                     state.addLog("피싱 사례와 무관한 입력으로 판정: " + validation.getReason());
                 } else if (validation.getValidationType() == ValidationType.NEEDS_CLARIFICATION) {
                     // 맥락이 불분명한 입력
                     state.updateStatus(DetectionWorkflowState.WorkflowStatus.FAILED);
                     state.setDecisionReason(DetectionWorkflowState.DecisionReason.INPUT_TOO_VAGUE);
                     state.setActionType(ActionType.AMBIGUOUS_INPUT);
+                    // 프론트엔드 호환성을 위해 status를 UNKNOWN으로 설정
+                    state.setDetectionStatus(DetectionStatus.UNKNOWN);
                     state.addLog("입력 맥락이 불분명하여 추가 설명 필요: " + validation.getReason());
                 } else {
                     // 기타 검증 실패

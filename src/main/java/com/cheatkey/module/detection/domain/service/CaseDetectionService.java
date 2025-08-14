@@ -73,6 +73,14 @@ public class CaseDetectionService {
         DetectionStatus status = workflowState.getDetectionStatus();
         DetectionCategory category = detectionMapper.mapToCategory(workflowState.getSearchResults());
         
+        // @TODO 프론트엔드 호환성을 위한 특별 처리
+        if (status == null && workflowState.getActionType() != null) {
+            if (workflowState.getActionType() == ActionType.INVALID_INPUT_CASE || 
+                workflowState.getActionType() == ActionType.AMBIGUOUS_INPUT) {
+                status = DetectionStatus.UNKNOWN;
+            }
+        }
+        
         DetectionGroup group;
         if (category != null) {
             group = category.isPhishingGroup() ? DetectionGroup.PHISHING : DetectionGroup.NORMAL;
@@ -152,11 +160,17 @@ public class CaseDetectionService {
         failureQuality.setImprovementSteps(List.of("워크플로우 실패: " + workflowState.getLastError()));
         failureQuality.setActionType(failureActionType);
 
-        // @TODO 실패 정의 확인 필요
+        // 프론트엔드 호환성을 위한 특별 처리
+        DetectionStatus failureStatus = DetectionStatus.SAFE; // 기본값
+        if (failureActionType == ActionType.INVALID_INPUT_CASE || 
+            failureActionType == ActionType.AMBIGUOUS_INPUT) {
+            failureStatus = DetectionStatus.UNKNOWN;
+        }
+        
         // 실패 상태의 DetectionResult 생성
         DetectionResult failureResult = new DetectionResult(
             null,       // ID 없음
-            DetectionStatus.SAFE, // 기본값
+            failureStatus, // 프론트엔드 호환성을 위해 적절한 상태 설정
             DetectionGroup.NORMAL // 기본값
         );
         
