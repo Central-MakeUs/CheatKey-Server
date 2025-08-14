@@ -15,7 +15,7 @@ public class OpenAICostTracker {
     private final Map<String, Integer> dailyCallCounts = new ConcurrentHashMap<>();
     private final Map<String, Double> dailyCosts = new ConcurrentHashMap<>();
     
-    // GPT-5-nano 가격 정보 (2024년 기준)
+    // GPT-5 가격 정보 (2024년 기준)
     private static final double INPUT_TOKEN_COST_PER_MILLION = 0.05;    // $0.05 / 1M tokens
     private static final double OUTPUT_TOKEN_COST_PER_MILLION = 0.40;   // $0.40 / 1M tokens
     
@@ -51,7 +51,7 @@ public class OpenAICostTracker {
     }
     
     /**
-     * GPT-5-nano 토큰 기반 비용 계산
+     * GPT-5 토큰 기반 비용 계산
      * @param inputTokens 입력 토큰 수
      * @param outputTokens 출력 토큰 수
      * @return 예상 비용 (달러)

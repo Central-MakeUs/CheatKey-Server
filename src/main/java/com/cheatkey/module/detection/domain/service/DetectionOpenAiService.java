@@ -1,12 +1,13 @@
 package com.cheatkey.module.detection.domain.service;
 
-import com.theokanning.openai.completion.chat.ChatCompletionRequest;
-import com.theokanning.openai.completion.chat.ChatMessage;
-import com.theokanning.openai.service.OpenAiService;
+import com.cheatkey.common.config.openai.dto.OpenAIResponsesRequest;
+import com.cheatkey.common.config.openai.dto.OpenAIResponsesResponse;
 import com.cheatkey.module.detection.domain.config.OpenAIConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 
@@ -16,50 +17,79 @@ import java.util.List;
 public class DetectionOpenAiService {
     
     private final OpenAIConfig openAIConfig;
-    private final OpenAiService openAiService;
+    private final WebClient openAiWebClient;
     
     public String generateResponse(String prompt) {
         try {
-            log.info("GPT-5-nano API 호출 시작: {} 토큰", prompt.length());
-            
-            // OpenAI API 설정 정보 로깅
-            log.debug("모델: {}, 최대 토큰: {}, 온도: {}", 
-                openAIConfig.getModel(), 
-                openAIConfig.getMaxTokens(), 
-                openAIConfig.getTemperature());
-            
             // 실제 OpenAI API 호출
             return callOpenAI(prompt);
             
         } catch (Exception e) {
-            log.error("GPT-5-nano API 호출 실패", e);
-            throw new RuntimeException("GPT-5-nano 서비스 일시적 오류: " + e.getMessage(), e);
+            log.error("OpenAI API 호출 실패", e);
+            throw new RuntimeException("OpenAI 서비스 일시적 오류: " + e.getMessage(), e);
         }
     }
     
     /**
-     * 실제 OpenAI API 호출
+     * OpenAI Chat Completions API 호출
      */
     private String callOpenAI(String prompt) {
         try {
-            // ChatCompletionRequest 생성
-            ChatCompletionRequest request = ChatCompletionRequest.builder()
-                .model(openAIConfig.getModel())
-                .messages(List.of(new ChatMessage("user", prompt)))
-                .maxTokens(openAIConfig.getMaxTokens())
-                .temperature(openAIConfig.getTemperature())
+            // 파라미터 유효성 검사
+            if (prompt == null || prompt.trim().isEmpty()) {
+                throw new IllegalArgumentException("프롬프트가 비어있습니다.");
+            }
+            
+            // OpenAIResponsesRequest 생성
+            OpenAIResponsesRequest.Message message = OpenAIResponsesRequest.Message.builder()
+                .role("user")
+                .content(prompt)
                 .build();
             
-            // OpenAI API 호출
-            String response = openAiService.createChatCompletion(request)
-                .getChoices().get(0).getMessage().getContent();
+            OpenAIResponsesRequest request = OpenAIResponsesRequest.builder()
+                .model(openAIConfig.getModel())
+                .messages(List.of(message))
+                .maxTokens(openAIConfig.getMaxCompletionTokens())
+                .temperature(openAIConfig.getTemperature())
+                .build();
+
+            log.debug("OpenAI API 요청 상세: {}", request);
             
-            log.info("GPT-5-nano API 호출 성공: {} 토큰 응답", response.length());
-            return response;
+            // OpenAI Chat Completions API 호출
+            OpenAIResponsesResponse response = openAiWebClient.post()
+                .uri("/v1/chat/completions")
+                .bodyValue(request)
+                .retrieve()
+                .bodyToMono(OpenAIResponsesResponse.class)
+                .block();
+            
+            if (response == null) {
+                throw new RuntimeException("OpenAI API 응답이 null입니다.");
+            }
+            
+            // 응답 텍스트 추출
+            return extractResponseText(response);
             
         } catch (Exception e) {
             log.error("OpenAI API 호출 중 오류 발생", e);
-            throw new RuntimeException("OpenAI API 호출 실패", e);
+            throw new RuntimeException("OpenAI API 호출 실패: " + e.getMessage(), e);
         }
+    }
+    
+    /**
+     * 응답 텍스트 추출: choices[0].message.content에서 추출
+     */
+    private String extractResponseText(OpenAIResponsesResponse response) {
+        if (response.getChoices() != null && !response.getChoices().isEmpty()) {
+            var firstChoice = response.getChoices().get(0);
+            if (firstChoice.getMessage() != null && firstChoice.getMessage().getContent() != null) {
+                String content = firstChoice.getMessage().getContent().trim();
+                if (!content.isEmpty()) {
+                    return content;
+                }
+            }
+        }
+        
+        throw new RuntimeException("OpenAI API 응답에서 텍스트를 추출할 수 없습니다.");
     }
 }

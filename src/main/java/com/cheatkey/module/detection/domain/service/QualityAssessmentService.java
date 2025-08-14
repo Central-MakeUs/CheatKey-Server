@@ -1,17 +1,9 @@
 package com.cheatkey.module.detection.domain.service;
 
-import com.cheatkey.module.detection.domain.entity.QualityAssessment;
-import com.cheatkey.module.detection.domain.entity.QualityGrade;
-import com.cheatkey.module.detection.domain.entity.QualityValidationMethod;
 import com.cheatkey.module.detection.domain.config.QualityAssessmentConfig;
-import com.cheatkey.module.detection.infra.client.VectorDbClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Slf4j
 @Service
@@ -19,69 +11,11 @@ import java.util.List;
 public class QualityAssessmentService {
     
     private final QualityAssessmentConfig config;
-    
-    public QualityAssessment assessQuality(List<VectorDbClient.SearchResult> results, String userInput) {
-        QualityAssessment assessment = new QualityAssessment();
-        
-        if (results.isEmpty()) {
-            assessment.setOverallScore(0.0);
-            assessment.setQualityGrade(QualityGrade.UNACCEPTABLE);
-            assessment.setReason("검색 결과가 없습니다");
-            assessment.setSuggestion("유사한 피싱 사례를 찾을 수 없습니다. 새로운 사례로 등록하여 향후 참고할 수 있습니다.");
-            assessment.setAcceptable(false);
-            assessment.setAssessmentTime(LocalDateTime.now());
-            assessment.setValidationMethod(QualityValidationMethod.BACKEND_ONLY);
-            return assessment;
-        }
-        
-        // 유사도 점수 기반 품질 계산
-        float topScore = results.get(0).score();
-        double qualityScore = calculateQualityScore(topScore, results.size(), userInput);
-        
-        // 유사도 점수가 너무 낮은 경우 특별 처리
-        if (topScore < 0.3f) {
-            qualityScore = Math.min(qualityScore, 3.0); // 최대 3점으로 제한
-            assessment.setReason("검색 결과의 유사도가 매우 낮습니다");
-            assessment.setSuggestion("더 구체적인 상황을 설명해주시거나 새로운 사례로 등록해주세요");
-        }
-        
-        assessment.setOverallScore(qualityScore);
-        assessment.setQualityGrade(QualityGrade.fromScore(qualityScore));
-        assessment.setTopSimilarityScore(topScore);
-        assessment.setResultCount(results.size());
-        assessment.setAcceptable(qualityScore >= config.getMinAcceptableScore());
-        assessment.setAssessmentTime(LocalDateTime.now());
-        
-        // 품질에 따른 상세 분석
-        analyzeQualityDetails(assessment, results, userInput);
-        
-        return assessment;
-    }
-    
-    private double calculateQualityScore(float topScore, int resultCount, String userInput) {
-        // 유사도 점수 (0-6점) - 가중치 60%
-        double similarityScore = topScore * 6.0;
-        
-        // 결과 개수 점수 (0-2점) - 가중치 20%
-        double countScore = calculateCountScore(resultCount);
-        
-        // 입력 품질 점수 (0-2점) - 가중치 20%
-        double inputQualityScore = calculateInputQualityScore(userInput);
-        
-        // 가중 평균 계산
-        double weightedScore = (similarityScore * 0.6) + (countScore * 0.2) + (inputQualityScore * 0.2);
-        
-        return Math.min(weightedScore, 10.0);
-    }
-    
-    private double calculateCountScore(int resultCount) {
-        if (resultCount >= 5) return 2.0;
-        if (resultCount >= 3) return 1.5;
-        if (resultCount >= 1) return 1.0;
-        return 0.0;
-    }
-    
-    private double calculateInputQualityScore(String input) {
+
+    /**
+     * 입력 품질 점수 계산 (10점 만점)
+     */
+    public double calculateInputQualityScore(String input) {
         // 무의미한 입력 감지 (즉시 0점)
         if (isMeaninglessInput(input)) {
             return 0.0;
@@ -89,24 +23,39 @@ public class QualityAssessmentService {
         
         // 피싱 관련성 없는 입력 감지 (낮은 점수)
         if (!isPhishingRelated(input)) {
-            return 0.5;
+            return 2.5; // 0.5 * 5.0
         }
         
         double score = 0.0;
         
-        // 길이 점수 (0-0.5점) - 설정 기반
-        score += calculateLengthScore(input);
+        // 길이 점수 (0-2점) - 설정 기반
+        score += calculateLengthScore(input) * 5.0; // 0-0.4점 → 0-2점
         
-        // 질문 의도 점수 (0-0.5점) - 설정 기반
-        score += calculateIntentScore(input);
+        // 피싱 관련성 점수 (0-3점) - 핵심 가치
+        score += calculatePhishingRelevanceScore(input) * 5.0; // 0-0.6점 → 0-3점
         
-        // 구체성 점수 (0-0.5점) - 설정 기반
-        score += calculateSpecificityScore(input);
+        // 구체성 점수 (0-2점) - 설정 기반
+        score += calculateSpecificityScore(input) * 5.0; // 0-0.4점 → 0-2점
         
-        // 플랫폼/서비스 점수 (0-0.5점) - 설정 기반
-        score += calculatePlatformScore(input);
+        // 플랫폼/서비스 점수 (0-2점) - 설정 기반
+        score += calculatePlatformScore(input) * 5.0; // 0-0.4점 → 0-2점
         
-        return score;
+        // 성적 유혹/유출 키워드 점수 (0-1점) - 최신 트렌드
+        score += calculateTemptationScore(input) * 5.0; // 0-0.2점 → 0-1점
+        
+        return Math.min(score, 10.0); // 최대 10점으로 제한
+    }
+    
+    /**
+     * 길이 점수 계산 (0-0.4점)
+     */
+    private double calculateLengthScore(String input) {
+        // 설정 기반 길이 점수
+        int length = input.length();
+        if (length >= config.getMinGoodLength()) return 0.5;
+        if (length >= config.getMinAcceptableLength()) return 0.3;
+        if (length >= config.getMinLength()) return 0.1;
+        return 0.0;
     }
     
     private boolean isMeaninglessInput(String input) {
@@ -155,80 +104,75 @@ public class QualityAssessmentService {
         return false;
     }
     
-    private double calculateLengthScore(String input) {
-        // 설정 기반 길이 점수
-        int length = input.length();
-        if (length >= config.getMinGoodLength()) return 0.5;
-        if (length >= config.getMinAcceptableLength()) return 0.3;
-        if (length >= config.getMinLength()) return 0.1;
-        return 0.0;
-    }
-    
-    private double calculateIntentScore(String input) {
-        double score = 0.0;
-        
-        // 질문 의도
-        if (input.contains("?") || input.contains("무엇") || input.contains("어떻게")) score += 0.3;
-        if (input.contains("왜") || input.contains("언제")) score += 0.2;
-        
-        return Math.min(score, 0.5);
-    }
-    
     private double calculateSpecificityScore(String input) {
         double score = 0.0;
         
         // 구체적 상황 묘사
-        if (input.contains("받았는데") || input.contains("보냈는데")) score += 0.3;
+        if (input.contains("받았는데") || input.contains("보냈는데")) score += 0.2;
         if (input.contains("클릭했는데") || input.contains("입력했는데")) score += 0.2;
         
-        return Math.min(score, 0.5);
+        // 최신 피싱 상황 패턴
+        if (input.contains("가입했어요") || input.contains("등록했어요")) score += 0.2;
+        if (input.contains("요구합니다") || input.contains("달라고")) score += 0.2;
+        if (input.contains("소개받은") || input.contains("추천받은")) score += 0.1;
+        
+        return Math.min(score, 0.4);
     }
     
     private double calculatePlatformScore(String input) {
         double score = 0.0;
         
-        // 플랫폼/서비스
-        if (input.contains("이메일") || input.contains("문자") || input.contains("전화")) score += 0.3;
-        if (input.contains("은행") || input.contains("카드") || input.contains("결제")) score += 0.2;
+        // 기존 플랫폼/서비스
+        if (input.contains("이메일") || input.contains("문자") || input.contains("전화")) score += 0.2;
+        if (input.contains("은행") || input.contains("카드") || input.contains("결제")) score += 0.1;
         
-        return Math.min(score, 0.5);
+        // 최신 플랫폼 확장
+        if (input.contains("텔레그램") || input.contains("라인") || input.contains("카카오톡")) score += 0.2;
+        if (input.contains("오픈채팅") || input.contains("사이트") || input.contains("앱")) score += 0.2;
+        if (input.contains("인스타그램") || input.contains("페이스북") || input.contains("트위터")) score += 0.1;
+        
+        return Math.min(score, 0.4);
     }
     
-    private void analyzeQualityDetails(QualityAssessment assessment, List<VectorDbClient.SearchResult> results, String userInput) {
-        double score = assessment.getOverallScore();
+    /**
+     * 피싱 관련성 점수 계산 (핵심 가치)
+     */
+    private double calculatePhishingRelevanceScore(String input) {
+        double score = 0.0;
+        String lowerInput = input.toLowerCase();
         
-        if (score >= 8.0) {
-            assessment.setReason("검색 결과가 매우 높은 관련성을 보임");
-            assessment.setSuggestion("분석 결과를 신뢰할 수 있습니다");
-        } else if (score >= 6.0) {
-            assessment.setReason("검색 결과가 양호한 관련성을 보임");
-            assessment.setSuggestion("결과를 참고하되 추가 검증을 권장합니다");
-        } else if (score >= 4.0) {
-            assessment.setReason("검색 결과가 제한적인 관련성을 보임");
-            assessment.setSuggestion("더 구체적인 상황을 설명해주세요");
-        } else {
-            assessment.setReason("검색 결과의 관련성이 낮음");
-            assessment.setSuggestion("다른 키워드나 표현으로 재검색해보세요");
-        }
+        // 기본 피싱 키워드
+        if (lowerInput.contains("피싱") || lowerInput.contains("사기") || lowerInput.contains("사칭")) score += 0.3;
+        if (lowerInput.contains("의심") || lowerInput.contains("이상") || lowerInput.contains("수상")) score += 0.2;
         
-        // 개선 단계 제안
-        assessment.setImprovementSteps(generateImprovementSteps(score, userInput));
+        // 금전적 위험 요소
+        if (lowerInput.contains("계좌") || lowerInput.contains("비밀번호") || lowerInput.contains("카드")) score += 0.2;
+        if (lowerInput.contains("송금") || lowerInput.contains("이체") || lowerInput.contains("결제")) score += 0.2;
+        if (lowerInput.contains("부업") || lowerInput.contains("돈") || lowerInput.contains("수익")) score += 0.2;
+        
+        // 개인정보 유출 위험
+        if (lowerInput.contains("개인정보") || lowerInput.contains("신분증") || lowerInput.contains("주민번호")) score += 0.2;
+        if (lowerInput.contains("연락처") || lowerInput.contains("주소") || lowerInput.contains("생년월일")) score += 0.1;
+        
+        return Math.min(score, 0.6);
     }
     
-    private List<String> generateImprovementSteps(double score, String userInput) {
-        List<String> steps = new ArrayList<>();
+    /**
+     * 성적 유혹/유출 키워드 점수 계산 (최신 트렌드)
+     */
+    private double calculateTemptationScore(String input) {
+        double score = 0.0;
+        String lowerInput = input.toLowerCase();
         
-        if (score < 5.0) {
-            steps.add("구체적인 시간과 장소를 명시해주세요");
-            steps.add("어떤 플랫폼이나 서비스를 이용했는지 알려주세요");
-            steps.add("의심스러웠던 구체적인 행동이나 메시지를 설명해주세요");
-        }
+        // 성적 유혹 키워드
+        if (lowerInput.contains("섹파") || lowerInput.contains("섹시") || lowerInput.contains("외로움")) score += 0.1;
+        if (lowerInput.contains("연애") || lowerInput.contains("소개팅") || lowerInput.contains("만남")) score += 0.1;
+        if (lowerInput.contains("친구") || lowerInput.contains("대화") || lowerInput.contains("상담")) score += 0.1;
         
-        if (score < 7.0) {
-            steps.add("금액이나 계좌 정보 등 구체적인 세부사항을 포함해주세요");
-            steps.add("연락받은 방법(이메일, 문자, 전화 등)을 명시해주세요");
-        }
+        // 유출/추천 키워드
+        if (lowerInput.contains("추천") || lowerInput.contains("소개") || lowerInput.contains("알려줘")) score += 0.1;
+        if (lowerInput.contains("가입") || lowerInput.contains("등록") || lowerInput.contains("신청")) score += 0.1;
         
-        return steps;
+        return Math.min(score, 0.2);
     }
 }

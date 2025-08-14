@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -53,7 +54,7 @@ public class CaseDetectionService {
         log.warn("워크플로우 실패: {}", workflowState.getLastError());
         
         // 실패 이력 저장 (기본 정보만)
-        DetectionHistory failureHistory = createDetectionHistory(input, loginUserId);
+        DetectionHistory failureHistory = createDetectionHistory(input, loginUserId, null, null);
         failureHistory = detectionHistoryRepository.save(failureHistory);
         
         // 실패 응답 생성
@@ -67,14 +68,20 @@ public class CaseDetectionService {
         log.info("워크플로우 성공: 품질 점수={}, 결과 수={}", 
             workflowState.getQualityAssessment().getOverallScore(),
             workflowState.getResultCount());
-        
+
         // 1. 검색 결과를 기반으로 위험도 및 카테고리 결정
-        DetectionStatus status = detectionMapper.mapToStatus(workflowState.getSearchResults());
+        DetectionStatus status = workflowState.getDetectionStatus();
         DetectionCategory category = detectionMapper.mapToCategory(workflowState.getSearchResults());
-        DetectionGroup group = category.isPhishingGroup() ? DetectionGroup.PHISHING : DetectionGroup.NORMAL;
+        
+        DetectionGroup group;
+        if (category != null) {
+            group = category.isPhishingGroup() ? DetectionGroup.PHISHING : DetectionGroup.NORMAL;
+        } else {
+            group = DetectionGroup.PHISHING;
+        }
         
         // 2. 성공 이력 저장
-        DetectionHistory successHistory = createDetectionHistory(input, loginUserId);
+        DetectionHistory successHistory = createDetectionHistory(input, loginUserId, status, group);
         successHistory = DetectionHistory.builder()
             .id(successHistory.getId())
             .userId(successHistory.getUserId())
@@ -83,8 +90,7 @@ public class CaseDetectionService {
             .detectedAt(successHistory.getDetectedAt())
             .status(status)
             .group(group)
-            .topScore(workflowState.getTopSimilarityScore())
-            .matchedCaseId(workflowState.getSearchResults().isEmpty() ? null : 
+            .matchedCaseId(workflowState.getSearchResults().isEmpty() ? null :
                 workflowState.getSearchResults().get(0).id())
             .build();
         detectionHistoryRepository.save(successHistory);
@@ -103,22 +109,25 @@ public class CaseDetectionService {
         log.error("예상치 못한 오류로 인한 분석 실패", e);
         
         // 오류 이력 저장 (기본 정보만)
-        DetectionHistory errorHistory = createDetectionHistory(input, loginUserId);
+        DetectionHistory errorHistory = createDetectionHistory(input, loginUserId, null, null);
         detectionHistoryRepository.save(errorHistory);
         
         // 오류 응답 생성
-        return createErrorResponse(e.getMessage());
+        return createErrorResponse(ActionType.SYSTEM_ERROR, e.getMessage());
     }
     
     /**
      * 검출 이력 생성
      */
-    private DetectionHistory createDetectionHistory(DetectionInput input, Long loginUserId) {
+    private DetectionHistory createDetectionHistory(DetectionInput input, Long loginUserId, 
+                                                  DetectionStatus status, DetectionGroup group) {
         return DetectionHistory.builder()
             .userId(loginUserId)
             .inputText(input.content())
             .detectionType(input.type().name())
             .detectedAt(LocalDateTime.now())
+            .status(status != null ? status : DetectionStatus.SAFE)
+            .group(group != null ? group : DetectionGroup.PHISHING)
             .build();
     }
     
@@ -126,19 +135,27 @@ public class CaseDetectionService {
      * 실패 응답 생성
      */
     private DetectionResponse createFailureResponse(DetectionWorkflowState workflowState) {
+        // workflowState에서 ActionType 가져오기
+        ActionType failureActionType = workflowState.getActionType();
+        if (failureActionType == null) {
+            failureActionType = ActionType.SYSTEM_ERROR; // 기본값
+        }
+        
         // 기본 품질 평가 생성 (실패 상태)
         QualityAssessment failureQuality = new QualityAssessment();
         failureQuality.setOverallScore(0.0);
-        failureQuality.setQualityGrade(QualityGrade.UNACCEPTABLE);
-        failureQuality.setReason("워크플로우 실행 실패: " + workflowState.getLastError());
-        failureQuality.setSuggestion("잠시 후 다시 시도해주세요");
         failureQuality.setAcceptable(false);
         failureQuality.setAssessmentTime(LocalDateTime.now());
-        failureQuality.setValidationMethod(QualityValidationMethod.FALLBACK_RULES);
-        
+        failureQuality.setPreservedTopScore(0.0f);
+        failureQuality.setSearchAttempts(1);
+        failureQuality.setResultCount(0);
+        failureQuality.setImprovementSteps(List.of("워크플로우 실패: " + workflowState.getLastError()));
+        failureQuality.setActionType(failureActionType);
+
+        // @TODO 실패 정의 확인 필요
         // 실패 상태의 DetectionResult 생성
         DetectionResult failureResult = new DetectionResult(
-            null, // ID 없음
+            null,       // ID 없음
             DetectionStatus.SAFE, // 기본값
             DetectionGroup.NORMAL // 기본값
         );
@@ -149,20 +166,22 @@ public class CaseDetectionService {
     /**
      * 오류 응답 생성
      */
-    private DetectionResponse createErrorResponse(String errorMessage) {
+    private DetectionResponse createErrorResponse(ActionType actionType, String errorMessage) {
         // 기본 품질 평가 생성 (오류 상태)
         QualityAssessment errorQuality = new QualityAssessment();
         errorQuality.setOverallScore(0.0);
-        errorQuality.setQualityGrade(QualityGrade.UNACCEPTABLE);
-        errorQuality.setReason("시스템 오류: " + errorMessage);
-        errorQuality.setSuggestion("관리자에게 문의해주세요");
         errorQuality.setAcceptable(false);
         errorQuality.setAssessmentTime(LocalDateTime.now());
-        errorQuality.setValidationMethod(QualityValidationMethod.FALLBACK_RULES);
-        
+        errorQuality.setPreservedTopScore(0.0f);
+        errorQuality.setSearchAttempts(1);
+        errorQuality.setResultCount(0);
+        errorQuality.setImprovementSteps(List.of("시스템 오류: " + errorMessage));
+        errorQuality.setActionType(actionType);
+
+        // @TODO 오류 정의 확인 필요
         // 오류 상태의 DetectionResult 생성
         DetectionResult errorResult = new DetectionResult(
-            null, // ID 없음
+            null,       // ID 없음
             DetectionStatus.SAFE, // 기본값
             DetectionGroup.NORMAL // 기본값
         );

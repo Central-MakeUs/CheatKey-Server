@@ -75,9 +75,6 @@ dependencies {
 	implementation 'org.apache.commons:commons-text:1.11.0'
 	implementation 'org.jsoup:jsoup:1.17.2'
 
-	// OpenAI Java 라이브러리
-	implementation 'com.theokanning.openai-gpt3-java:service:0.18.2'
-
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.security:spring-security-test'
 	testImplementation 'software.amazon.awssdk:s3:2.29.44'
