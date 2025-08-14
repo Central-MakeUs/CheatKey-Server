@@ -15,5 +15,5 @@ public interface CommunityCommentRepository extends JpaRepository<CommunityComme
     @Query("SELECT COUNT(c) FROM CommunityComment c WHERE c.post.id = :postId AND c.status = 'ACTIVE'")
     Long countCommentsByPostId(@Param("postId") Long postId);
     
-    List<CommunityComment> findByPostIdAndStatus(Long postId, CommentStatus status);
+    List<CommunityComment> findByPostId(Long postId);
 }

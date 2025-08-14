@@ -187,8 +187,7 @@ class CommentServiceTest {
                 .status(CommentStatus.ACTIVE)
                 .build();
         
-        when(commentRepository.findByPostIdAndStatus(1L, CommentStatus.ACTIVE))
-                .thenReturn(List.of(comment1, comment2));
+        when(commentRepository.findByPostId(1L)).thenReturn(List.of(comment1, comment2));
 
         // when
         List<CommunityComment> result = commentService.getCommentsForPost(1L);

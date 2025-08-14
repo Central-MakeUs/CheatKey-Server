@@ -8,8 +8,6 @@ import com.cheatkey.module.community.domain.entity.comment.CommentStatus;
 import com.cheatkey.module.community.domain.repository.CommunityCommentRepository;
 import com.cheatkey.module.community.domain.repository.CommunityPostRepository;
 import com.cheatkey.module.community.interfaces.dto.comment.CommunityCommentRequest;
-import com.cheatkey.module.auth.domain.repository.AuthRepository;
-import com.cheatkey.module.auth.domain.entity.AuthStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,7 +39,7 @@ public class CommentService {
                 throw new CustomException(ErrorCode.COMMUNITY_COMMENT_CANNOT_REPLY_TO_REPLY);
             }
 
-            if (parent.getStatus() != CommentStatus.ACTIVE) {
+            if (parent.getStatus() != null && !parent.getStatus().name().equals("ACTIVE")) {
                 throw new CustomException(ErrorCode.COMMUNITY_COMMENT_DELETED_CANNOT_REPLY);
             }
         }
@@ -77,15 +75,15 @@ public class CommentService {
             throw new CustomException(ErrorCode.COMMUNITY_POST_DELETED_OR_REPORTED);
         }
         
-        // 모든 댓글과 대댓글을 가져옴 (삭제된 부모 댓글의 자식 대댓글도 포함)
-        List<CommunityComment> allComments = commentRepository.findByPostIdAndStatus(postId, CommentStatus.ACTIVE);
+        // 모든 상태의 댓글과 대댓글 조회 (ACTIVE, DELETED 모두 포함)
+        List<CommunityComment> allComments = commentRepository.findByPostId(postId);
         
-        // 탈퇴한 사용자 처리
+        // 탈퇴한 사용자 처리 - 닉네임만 "탈퇴된 사용자"로 변경
         List<Long> withdrawnUserIds = withdrawnUserCacheService.getWithdrawnUserIds();
         return allComments.stream()
                 .map(comment -> {
                     if (withdrawnUserIds.contains(comment.getAuthorId())) {
-                        // 탈퇴한 사용자의 댓글은 '탈퇴된 사용자'로 표기
+                        // 탈퇴한 사용자의 댓글은 닉네임만 "탈퇴된 사용자"로 표기
                         return CommunityComment.builder()
                                 .id(comment.getId())
                                 .post(comment.getPost())

@@ -1,7 +1,6 @@
 package com.cheatkey.module.community.domain.entity.mapper;
 
 import com.cheatkey.module.community.domain.entity.CommunityPost;
-import com.cheatkey.module.community.domain.entity.PostStatus;
 import com.cheatkey.module.community.domain.entity.comment.CommunityComment;
 import com.cheatkey.module.community.domain.entity.comment.CommentStatus;
 import com.cheatkey.module.community.interfaces.dto.CommunityPostListResponse;
@@ -77,6 +76,22 @@ public interface CommunityPostMapper {
 
         boolean canDelete = comment.getAuthorId().equals(currentUserId);
 
+        // 삭제된 댓글/대댓글 처리
+        if (comment.getStatus() == CommentStatus.DELETED) {
+            return CommunityCommentResponse.builder()
+                    .id(comment.getId())
+                    .postId(comment.getPost().getId())
+                    .parentId(comment.getParent() != null ? comment.getParent().getId() : null)
+                    .authorNickname("(삭제)")
+                    .content("삭제된 댓글입니다.")
+                    .status(CommentStatus.DELETED.name())
+                    .createdAt(comment.getCreatedAt())
+                    .canDelete(false)
+                    .children(children)
+                    .build();
+        }
+
+        // 정상 댓글/대댓글 처리
         return CommunityCommentResponse.builder()
                 .id(comment.getId())
                 .postId(comment.getPost().getId())
@@ -101,7 +116,7 @@ public interface CommunityPostMapper {
                 .parentId(null)
                 .authorNickname("(삭제)")
                 .content("삭제된 댓글입니다.")
-                .status(PostStatus.DELETED.name())
+                .status(CommentStatus.DELETED.name())
                 .createdAt(comment.getCreatedAt())
                 .canDelete(false)
                 .children(children)
