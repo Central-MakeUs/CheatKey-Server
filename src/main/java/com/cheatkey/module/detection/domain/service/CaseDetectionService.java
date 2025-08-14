@@ -3,7 +3,6 @@ package com.cheatkey.module.detection.domain.service;
 import com.cheatkey.module.detection.domain.entity.*;
 import com.cheatkey.module.detection.domain.mapper.DetectionMapper;
 import com.cheatkey.module.detection.domain.repository.DetectionHistoryRepository;
-import com.cheatkey.module.detection.infra.client.VectorDbClient;
 import com.cheatkey.module.detection.interfaces.dto.DetectionResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,8 +19,7 @@ public class CaseDetectionService {
     
     private final DetectionHistoryRepository detectionHistoryRepository;
     private final DetectionMapper detectionMapper;
-    private final VectorDbClient vectorDbClient;
-    
+
     // LangGraph 스타일 워크플로우로 교체
     private final LangGraphStyleWorkflow langGraphWorkflow;
     
@@ -53,8 +51,17 @@ public class CaseDetectionService {
     private DetectionResponse handleWorkflowFailure(DetectionWorkflowState workflowState, DetectionInput input, Long loginUserId) {
         log.warn("워크플로우 실패: {}", workflowState.getLastError());
         
-        // 실패 이력 저장 (기본 정보만)
-        DetectionHistory failureHistory = createDetectionHistory(input, loginUserId, null, null);
+        // @TODO UNKNOWN 상태일 때는 히스토리 저장하지 않음
+        // INVALID_INPUT_CASE, AMBIGUOUS_INPUT은 피싱과 무관한 입력이므로 이력으로 남길 필요 없음
+        // 향후 ActionType 기반 UI 개선 후 정규화 필요
+        if (workflowState.getActionType() == ActionType.INVALID_INPUT_CASE || 
+            workflowState.getActionType() == ActionType.AMBIGUOUS_INPUT) {
+            // UNKNOWN 상태는 히스토리 저장하지 않고 바로 응답 반환
+            return createFailureResponse(workflowState);
+        }
+        
+        // 기타 실패 케이스는 히스토리 저장
+        DetectionHistory failureHistory = createDetectionHistory(input, loginUserId, DetectionStatus.SAFE, DetectionGroup.PHISHING);
         failureHistory = detectionHistoryRepository.save(failureHistory);
         
         // 실패 응답 생성
