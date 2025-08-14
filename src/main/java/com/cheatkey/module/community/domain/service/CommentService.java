@@ -77,11 +77,12 @@ public class CommentService {
             throw new CustomException(ErrorCode.COMMUNITY_POST_DELETED_OR_REPORTED);
         }
         
-        List<CommunityComment> comments = commentRepository.findByPostIdAndStatus(postId, CommentStatus.ACTIVE);
+        // 모든 댓글과 대댓글을 가져옴 (삭제된 부모 댓글의 자식 대댓글도 포함)
+        List<CommunityComment> allComments = commentRepository.findByPostIdAndStatus(postId, CommentStatus.ACTIVE);
         
         // 탈퇴한 사용자 처리
         List<Long> withdrawnUserIds = withdrawnUserCacheService.getWithdrawnUserIds();
-        return comments.stream()
+        return allComments.stream()
                 .map(comment -> {
                     if (withdrawnUserIds.contains(comment.getAuthorId())) {
                         // 탈퇴한 사용자의 댓글은 '탈퇴된 사용자'로 표기

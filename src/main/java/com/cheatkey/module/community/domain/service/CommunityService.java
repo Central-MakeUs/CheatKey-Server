@@ -177,12 +177,14 @@ public class CommunityService {
         List<String> presignedUrls = getPostImageUrls(post.getId());
 
         List<CommunityComment> comments = commentService.getCommentsForPost(postId);
-        List<CommunityCommentResponse> commentResponses = communityPostMapper.toCommentDtoList(comments);
+        List<CommunityCommentResponse> commentResponses = communityPostMapper.toCommentDtoList(comments, userId);
+        int totalCommentCount = communityCommentRepository.countCommentsByPostId(postId).intValue();
+        
         boolean canDelete = post.getAuthorId().equals(userId);
 
         return communityPostMapper.toDetailDto(
                 post,
-                commentResponses.size(),
+                totalCommentCount,  // commentResponses.size() 대신 전체 댓글 수 사용
                 presignedUrls,
                 commentResponses,
                 canDelete,

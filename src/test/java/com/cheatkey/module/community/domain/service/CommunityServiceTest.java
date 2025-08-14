@@ -265,8 +265,8 @@ class CommunityServiceTest {
         );
         
         List<CommunityCommentResponse> commentResponses = List.of(
-            CommunityCommentResponse.builder().id(1L).content("댓글1").build(),
-            CommunityCommentResponse.builder().id(2L).content("댓글2").build()
+            CommunityCommentResponse.builder().id(1L).content("댓글1").canDelete(false).build(),
+            CommunityCommentResponse.builder().id(2L).content("댓글2").canDelete(false).build()
         );
         
         CommunityPostDetailResponse expectedResponse = CommunityPostDetailResponse.builder()
@@ -281,7 +281,7 @@ class CommunityServiceTest {
         when(communityPostFileRepository.findByPostIdIn(anyList())).thenReturn(List.of());
         when(fileUploadRepository.findAllById(anyList())).thenReturn(List.of());
         when(commentService.getCommentsForPost(postId)).thenReturn(comments);
-        when(communityPostMapper.toCommentDtoList(comments)).thenReturn(commentResponses);
+        when(communityPostMapper.toCommentDtoList(comments, userId)).thenReturn(commentResponses);
         when(communityPostMapper.toDetailDto(any(), anyInt(), anyList(), anyList(), anyBoolean(), anyBoolean(), any()))
                 .thenReturn(expectedResponse);
 
@@ -292,7 +292,7 @@ class CommunityServiceTest {
         assertNotNull(result);
         assertEquals(expectedResponse, result);
         verify(commentService).getCommentsForPost(postId);
-        verify(communityPostMapper).toCommentDtoList(comments);
+        verify(communityPostMapper).toCommentDtoList(comments, userId);
         verify(communityPostMapper).toDetailDto(any(), anyInt(), anyList(), anyList(), anyBoolean(), anyBoolean(), any());
     }
 

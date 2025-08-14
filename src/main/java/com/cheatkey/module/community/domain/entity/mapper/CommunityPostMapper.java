@@ -2,6 +2,7 @@ package com.cheatkey.module.community.domain.entity.mapper;
 
 import com.cheatkey.module.community.domain.entity.CommunityPost;
 import com.cheatkey.module.community.domain.entity.comment.CommunityComment;
+import com.cheatkey.module.community.domain.entity.comment.CommentStatus;
 import com.cheatkey.module.community.interfaces.dto.CommunityPostListResponse;
 import com.cheatkey.module.community.interfaces.dto.CommunityPostDetailResponse;
 import com.cheatkey.module.community.interfaces.dto.comment.CommunityCommentResponse;
@@ -11,6 +12,7 @@ import org.mapstruct.factory.Mappers;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.ArrayList;
 
 @Mapper(componentModel = "spring")
 public interface CommunityPostMapper {
@@ -39,7 +41,7 @@ public interface CommunityPostMapper {
         String blockMessage
     );
 
-    default List<CommunityCommentResponse> toCommentDtoList(List<CommunityComment> comments) {
+    default List<CommunityCommentResponse> toCommentDtoList(List<CommunityComment> comments, Long currentUserId) {
         if (comments == null || comments.isEmpty()) {
             return List.of();
         }
@@ -49,26 +51,43 @@ public interface CommunityPostMapper {
                 .filter(c -> c.getParent() != null)
                 .collect(Collectors.groupingBy(c -> c.getParent().getId()));
 
-        return comments.stream()
+        // 부모 댓글과 고아 대댓글(삭제된 부모 댓글의 자식)을 모두 포함
+
+        // 1. 부모 댓글들 추가
+        List<CommunityCommentResponse> parentComments = comments.stream()
                 .filter(c -> c.getParent() == null)
-                .map(c -> toCommentDtoWithChildren(c, childrenMap))
-                .collect(Collectors.toList());
+                .map(c -> toCommentDtoWithChildren(c, childrenMap, currentUserId))
+                .toList();
+        List<CommunityCommentResponse> result = new ArrayList<>(parentComments);
+        
+        // 2. 고아 대댓글들 추가 (삭제된 부모 댓글의 자식)
+        List<CommunityCommentResponse> orphanReplies = comments.stream()
+                .filter(c -> c.getParent() != null && 
+                       comments.stream().noneMatch(p -> p.getId().equals(c.getParent().getId()) && 
+                                                      p.getStatus() == CommentStatus.ACTIVE))
+                .map(c -> toCommentDtoWithChildren(c, childrenMap, currentUserId))
+                .toList();
+        result.addAll(orphanReplies);
+        
+        return result;
     }
 
-    default CommunityCommentResponse toCommentDtoWithChildren(CommunityComment comment, Map<Long, List<CommunityComment>> childrenMap) {
+    default CommunityCommentResponse toCommentDtoWithChildren(CommunityComment comment, Map<Long, List<CommunityComment>> childrenMap, Long currentUserId) {
         List<CommunityCommentResponse> children = childrenMap.getOrDefault(comment.getId(), List.of()).stream()
-                .map(child -> toCommentDtoWithChildren(child, childrenMap))
+                .map(child -> toCommentDtoWithChildren(child, childrenMap, currentUserId))
                 .collect(Collectors.toList());
+
+        boolean canDelete = comment.getAuthorId().equals(currentUserId);
 
         return CommunityCommentResponse.builder()
                 .id(comment.getId())
                 .postId(comment.getPost().getId())
                 .parentId(comment.getParent() != null ? comment.getParent().getId() : null)
-                .authorId(comment.getAuthorId())
                 .authorNickname(comment.getAuthorNickname())
                 .content(comment.getContent())
                 .status(comment.getStatus().name())
                 .createdAt(comment.getCreatedAt())
+                .canDelete(canDelete)
                 .children(children)
                 .build();
     }

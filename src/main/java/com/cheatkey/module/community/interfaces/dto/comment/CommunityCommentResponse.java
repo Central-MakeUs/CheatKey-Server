@@ -18,9 +18,6 @@ public class CommunityCommentResponse {
     @Schema(description = "부모 댓글 ID (null이면 댓글)", example = "10")
     private Long parentId;
 
-    @Schema(description = "작성자 authorId", example = "2")
-    private Long authorId;
-
     @Schema(description = "작성자 닉네임", example = "테스트유저")
     private String authorNickname;
 
@@ -32,6 +29,9 @@ public class CommunityCommentResponse {
 
     @Schema(description = "작성일시", example = "2024-05-01T12:34:56")
     private LocalDateTime createdAt;
+
+    @Schema(description = "삭제 가능 여부(내가 쓴 댓글인지)", example = "true")
+    private boolean canDelete;
 
     @Schema(description = "대댓글 리스트 (자식 댓글)")
     private List<CommunityCommentResponse> children;
