@@ -35,26 +35,36 @@ public abstract class AbstractAuthSignInService {
         Provider provider = getProvider();
         String email = extractEmail(request);
 
-        Optional<Auth> optionalAuth = authRepository.findByProviderAndProviderId(provider, providerId);
+        // 먼저 활성/대기 상태의 사용자 조회
+        Optional<Auth> optionalActiveAuth = authRepository.findActiveByProviderAndProviderId(provider, providerId);
 
-        if (optionalAuth.isPresent()) {
-            Auth existingAuth = optionalAuth.get();
-
-            // 탈퇴 회원인 경우 재가입 가능 여부 확인
-            if (existingAuth.getStatus() == AuthStatus.WITHDRAWN) {
-                if (existingAuth.canRejoin()) {
-                    // 30일 경과: 신규 회원으로 생성
-                    return createNewAuth(provider, providerId, email);
-                } else {
-                    // 30일 미경과: 탈퇴된 사용자 정보 반환
-                    return existingAuth;
-                }
-            }
-
+        if (optionalActiveAuth.isPresent()) {
             // 기존 회원인 경우 (ACTIVE, PENDING)
+            Auth existingAuth = optionalActiveAuth.get();
             updateExistingAuth(existingAuth);
             this.lastAuth = existingAuth;
             return existingAuth;
+        }
+
+        // 활성/대기 상태의 사용자가 없는 경우, 탈퇴된 사용자도 포함하여 조회
+        Optional<Auth> optionalWithdrawnAuth = authRepository.findByProviderAndProviderId(provider, providerId);
+        
+        if (optionalWithdrawnAuth.isPresent()) {
+            Auth withdrawnAuth = optionalWithdrawnAuth.get();
+            
+            // 탈퇴 회원인 경우 재가입 가능 여부 확인
+            if (withdrawnAuth.getStatus() == AuthStatus.WITHDRAWN) {
+                if (withdrawnAuth.canRejoin()) {
+                    // 30일 경과: 신규 회원으로 생성
+                    Auth newAuth = createNewAuth(provider, providerId, email);
+                    this.lastAuth = newAuth;
+                    return newAuth;
+                } else {
+                    // 30일 미경과: 탈퇴된 사용자 정보 반환
+                    this.lastAuth = withdrawnAuth;
+                    return withdrawnAuth;
+                }
+            }
         }
 
         // 완전 신규 회원
