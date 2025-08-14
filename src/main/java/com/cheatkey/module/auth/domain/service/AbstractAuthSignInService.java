@@ -46,8 +46,8 @@ public abstract class AbstractAuthSignInService {
                     // 30일 경과: 신규 회원으로 생성
                     return createNewAuth(provider, providerId, email);
                 } else {
-                    // 30일 미경과: 재가입 불가
-                    throw new CustomException(ErrorCode.AUTH_WITHDRAWN_RECENTLY);
+                    // 30일 미경과: 탈퇴된 사용자 정보 반환
+                    return existingAuth;
                 }
             }
 

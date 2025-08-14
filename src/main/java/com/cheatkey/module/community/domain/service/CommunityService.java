@@ -110,7 +110,7 @@ public class CommunityService {
         List<CommunityPost> processedPosts = filteredPosts.stream()
                 .map(post -> {
                     if (withdrawnUserIds.contains(post.getAuthorId())) {
-                        // 탈퇴한 사용자의 게시글은 '탈퇴된 사용자'로 표기
+                        // 탈퇴한 사용자의 게시글은 '(알수없음)'로 표기
                         return markAsWithdrawnUser(post);
                     }
                     return post;
@@ -170,19 +170,21 @@ public class CommunityService {
         // 탈퇴한 사용자 처리
         List<Long> withdrawnUserIds = withdrawnUserCacheService.getWithdrawnUserIds();
         if (withdrawnUserIds.contains(post.getAuthorId())) {
-            // 탈퇴한 사용자의 게시글은 '탈퇴된 사용자'로 표기
+            // 탈퇴한 사용자의 게시글은 '(알수없음)'로 표기
             post = markAsWithdrawnUser(post);
         }
 
         List<String> presignedUrls = getPostImageUrls(post.getId());
 
         List<CommunityComment> comments = commentService.getCommentsForPost(postId);
-        List<CommunityCommentResponse> commentResponses = communityPostMapper.toCommentDtoList(comments);
+        List<CommunityCommentResponse> commentResponses = communityPostMapper.toCommentDtoList(comments, userId);
+        int totalCommentCount = communityCommentRepository.countCommentsByPostId(postId).intValue();
+        
         boolean canDelete = post.getAuthorId().equals(userId);
 
         return communityPostMapper.toDetailDto(
                 post,
-                commentResponses.size(),
+                totalCommentCount,  // commentResponses.size() 대신 전체 댓글 수 사용
                 presignedUrls,
                 commentResponses,
                 canDelete,
@@ -203,7 +205,7 @@ public class CommunityService {
         List<CommunityPost> posts = postPage.getContent().stream()
                 .map(post -> {
                     if (withdrawnUserIds.contains(post.getAuthorId())) {
-                        // 탈퇴한 사용자의 게시글은 '탈퇴된 사용자'로 표기
+                        // 탈퇴한 사용자의 게시글은 '(알수없음)'로 표기
                         return markAsWithdrawnUser(post);
                     }
                     return post;
@@ -423,7 +425,7 @@ public class CommunityService {
         allPosts = allPosts.stream()
                 .map(post -> {
                     if (post.getAuthorId() != null && withdrawnUserIds.contains(post.getAuthorId())) {
-                        // 탈퇴한 사용자의 게시글은 '탈퇴된 사용자'로 표기
+                        // 탈퇴한 사용자의 게시글은 '(알수없음)'로 표기
                         return markAsWithdrawnUser(post);
                     }
                     return post;
@@ -484,7 +486,7 @@ public class CommunityService {
         allPosts = allPosts.stream()
                 .map(post -> {
                     if (withdrawnUserIds.contains(post.getAuthorId())) {
-                        // 탈퇴한 사용자의 게시글은 '탈퇴된 사용자'로 표기
+                        // 탈퇴한 사용자의 게시글은 '(알수없음)'로 표기
                         return markAsWithdrawnUser(post);
                     }
                     return post;
@@ -521,7 +523,7 @@ public class CommunityService {
     }
 
     /**
-     * 탈퇴한 사용자의 게시글을 '탈퇴된 사용자'로 표기하는 공통 메서드
+     * 탈퇴한 사용자의 게시글을 '(알수없음)'로 표기하는 공통 메서드
      */
     public CommunityPost markAsWithdrawnUser(CommunityPost post) {
         return CommunityPost.builder()
@@ -530,7 +532,7 @@ public class CommunityService {
                 .content(post.getContent())
                 .category(post.getCategory())
                 .authorId(post.getAuthorId())
-                .authorNickname("탈퇴된 사용자")
+                .authorNickname("(알수없음)")
                 .viewCount(post.getViewCount())
                 .createdAt(post.getCreatedAt())
                 .updatedAt(post.getUpdatedAt())
