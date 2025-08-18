@@ -64,6 +64,9 @@ public class CaseDetectionService {
         DetectionHistory failureHistory = createDetectionHistory(input, loginUserId, DetectionStatus.SAFE, DetectionGroup.PHISHING);
         failureHistory = detectionHistoryRepository.save(failureHistory);
         
+//        // 실패한 워크플로우 상태 저장
+//        saveWorkflowState(workflowState, failureHistory.getId(), loginUserId);
+        
         // 실패 응답 생성
         return createFailureResponse(workflowState);
     }
@@ -98,17 +101,21 @@ public class CaseDetectionService {
         // 2. 성공 이력 저장
         DetectionHistory successHistory = createDetectionHistory(input, loginUserId, status, group);
         successHistory = DetectionHistory.builder()
-            .id(successHistory.getId())
-            .userId(successHistory.getUserId())
-            .inputText(successHistory.getInputText())
-            .detectionType(successHistory.getDetectionType())
-            .detectedAt(successHistory.getDetectedAt())
-            .status(status)
-            .group(group)
-            .matchedCaseId(workflowState.getSearchResults().isEmpty() ? null :
-                workflowState.getSearchResults().get(0).id())
-            .build();
+                .id(successHistory.getId())
+                .userId(successHistory.getUserId())
+                .inputText(successHistory.getInputText())
+                .topScore(workflowState.getPreservedTopScore())
+                .status(status)
+                .group(group)
+                .detectedAt(successHistory.getDetectedAt())
+                .detectionType(successHistory.getDetectionType())
+                .matchedCaseId(workflowState.getSearchResults().isEmpty() ? null :
+                    workflowState.getSearchResults().get(0).id())
+                .build();
         detectionHistoryRepository.save(successHistory);
+        
+//        // 워크플로우 상태 저장
+//        saveWorkflowState(workflowState, successHistory.getId(), loginUserId);
         
         // 3. 성공 응답 생성 (품질 평가 결과 포함)
         return new DetectionResponse(
@@ -164,7 +171,6 @@ public class CaseDetectionService {
         failureQuality.setPreservedTopScore(0.0f);
         failureQuality.setSearchAttempts(1);
         failureQuality.setResultCount(0);
-        failureQuality.setImprovementSteps(List.of("워크플로우 실패: " + workflowState.getLastError()));
         failureQuality.setActionType(failureActionType);
 
         // 프론트엔드 호환성을 위한 특별 처리
@@ -196,7 +202,6 @@ public class CaseDetectionService {
         errorQuality.setPreservedTopScore(0.0f);
         errorQuality.setSearchAttempts(1);
         errorQuality.setResultCount(0);
-        errorQuality.setImprovementSteps(List.of("시스템 오류: " + errorMessage));
         errorQuality.setActionType(actionType);
 
         // @TODO 오류 정의 확인 필요
@@ -209,4 +214,33 @@ public class CaseDetectionService {
         
         return new DetectionResponse(errorResult, errorQuality);
     }
+    
+    /**
+     * 워크플로우 상태 저장
+     * @TODO 워크플로우 히스토리 관리 추가
+     */
+//    private void saveWorkflowState(DetectionWorkflowState workflowState, Long detectionHistoryId, Long userId) {
+//        try {
+//            // 사용자 ID와 DetectionHistory ID 설정
+//            workflowState.setUserId(userId);
+//            workflowState.setDetectionHistoryId(detectionHistoryId);
+//
+//            // 워크플로우 상태 저장
+//            DetectionWorkflowState savedWorkflowState = detectionWorkflowStateRepository.save(workflowState);
+//
+//            // 품질 평가가 있다면 저장
+//            if (workflowState.getQualityAssessment() != null) {
+//                QualityAssessment qualityAssessment = workflowState.getQualityAssessment();
+//                qualityAssessment.setDetectionWorkflowStateId(savedWorkflowState.getId());
+//                qualityAssessmentRepository.save(qualityAssessment);
+//            }
+//
+//            log.info("워크플로우 상태 저장 완료: workflowStateId={}, detectionHistoryId={}",
+//                savedWorkflowState.getId(), detectionHistoryId);
+//
+//        } catch (Exception e) {
+//            log.error("워크플로우 상태 저장 중 오류 발생", e);
+//            // 워크플로우 상태 저장 실패는 전체 프로세스를 중단하지 않음
+//        }
+//    }
 }

@@ -33,7 +33,6 @@ public class LangGraphStyleWorkflow {
     public DetectionWorkflowState executeWorkflow(String userInput) {
         // 1. 초기 상태 생성
         DetectionWorkflowState state = DetectionWorkflowState.initialize(userInput, config.getMaxSearchAttempts());
-        state.addLog("워크플로우 시작: " + userInput);
         
         try {
             // 2. 단계별 실행
@@ -42,14 +41,13 @@ public class LangGraphStyleWorkflow {
             // 3. 최종 상태 설정
             if (state.getStatus() != DetectionWorkflowState.WorkflowStatus.FAILED) {
                 state.updateStatus(DetectionWorkflowState.WorkflowStatus.COMPLETED);
-                state.addLog("워크플로우 성공적으로 완료");
             }
             
         } catch (Exception e) {
             log.error("워크플로우 실행 중 오류 발생", e);
             state.updateStatus(DetectionWorkflowState.WorkflowStatus.FAILED);
             state.setLastError(e.getMessage());
-            state.addLog("워크플로우 실패: " + e.getMessage());
+
         }
         
         return state;
@@ -74,7 +72,7 @@ public class LangGraphStyleWorkflow {
         } else if (state.getPreservedTopScore() < 0.7f && state.getPreservedTopScore() >= 0.5f) {
             state.updateStep(DetectionWorkflowState.WorkflowStep.QUALITY_EVALUATION);
             state.updateStatus(DetectionWorkflowState.WorkflowStatus.QUALITY_ASSESSING);
-            state.addLog("3단계 OpenAI 검증 생략: 유사도 0.5 이상으로 4단계로 진행");
+
         }
         
         // 4단계: 품질 평가
@@ -88,20 +86,31 @@ public class LangGraphStyleWorkflow {
     }
     
     /**
-     * 1단계: 기본 입력 검증 (입력 개선만 수행)
+     * 1단계: 기본 입력 검증 (입력 개선 + 의미 없는 입력 검사)
      */
     private DetectionWorkflowState executeBasicValidation(DetectionWorkflowState state) {
         state.updateStep(DetectionWorkflowState.WorkflowStep.BASIC_VALIDATION)
              .updateStatus(DetectionWorkflowState.WorkflowStatus.INPUT_VALIDATING);
         
         try {
+            // 의미 없는 입력 검사 (새로 추가)
+            if (qualityAssessmentService.isMeaninglessInput(state.getCurrentInput())) {
+                state.updateStatus(DetectionWorkflowState.WorkflowStatus.FAILED);
+                state.setLastError("의미 없는 입력으로 판정됨");
+                state.setActionType(ActionType.INVALID_INPUT_CASE);
+                state.setDetectionStatus(DetectionStatus.UNKNOWN);
+
+                return state;
+            }
+            
+            // 기존 입력 개선 로직
             String improvedInput = improveInputByRules(state.getCurrentInput());
             
             if (!improvedInput.equals(state.getCurrentInput())) {
                 state.setCurrentInput(improvedInput);
-                state.addLog("입력 텍스트 개선 완료: " + improvedInput);
+
             } else {
-                state.addLog("입력 텍스트 개선 불필요 (이미 최적화됨)");
+
             }
             
             state.updateStatus(DetectionWorkflowState.WorkflowStatus.SEARCHING);
@@ -144,7 +153,7 @@ public class LangGraphStyleWorkflow {
         try {
             // 임베딩 생성
             List<Float> embedding = vectorDbClient.embed(state.getCurrentInput());
-            state.addLog("임베딩 생성 완료");
+
             
             // 벡터 검색
             List<VectorDbClient.SearchResult> results = vectorDbClient.searchSimilarCases(embedding, 5);
@@ -153,21 +162,27 @@ public class LangGraphStyleWorkflow {
             
             if (!results.isEmpty()) {
                 float topScore = results.get(0).score();
-                state.setPreservedTopScore(topScore); // 백터 검색 점수 보존
-                state.addLog("백터 검색 완료: " + results.size() + "개 결과, 최고 점수: " + topScore);
+    
                 
                 if (topScore >= 0.7f) {
-                    state.addLog("높은 유사도(0.7 이상)로 4단계 품질 평가로 진행");
-                    // 높은 유사도일 때 상태 업데이트
+                    // 높은 유사도: 기존 값 유지
+                    state.setPreservedTopScore(topScore);
+
                     state.updateStatus(DetectionWorkflowState.WorkflowStatus.QUALITY_ASSESSING);
                 } else {
-                    state.addLog("낮은 유사도(0.7 미만)로 3단계 OpenAI 검증으로 진행");
-                    // 낮은 유사도일 때 상태 업데이트
+                    // 낮은 유사도: top3 평균값 계산
+                    float secondScore = results.size() > 1 ? results.get(1).score() : 0.0f;
+                    float thirdScore = results.size() > 2 ? results.get(2).score() : 0.0f;
+
+                    float averageScore = (topScore + secondScore + thirdScore) / 3.0f;
+                    state.setPreservedTopScore(averageScore);
+
+
                     state.updateStatus(DetectionWorkflowState.WorkflowStatus.SEARCHING);
                 }
             } else {
                 state.setPreservedTopScore(0.0f); // 검색 결과 없음
-                state.addLog("백터 검색 결과 없음");
+
             }
             
         } catch (Exception e) {
@@ -194,14 +209,14 @@ public class LangGraphStyleWorkflow {
             costTracker.addCost(estimatedCost);
 
             ValidationResult validation = openAIValidationService.validateInput(state.getCurrentInput());
-            state.setInputValidation(validation);
+            
             state.setOpenAIUsed(true);
             state.setOpenAICallCount(state.getOpenAICallCount() + 1);
             state.setEstimatedCost(state.getEstimatedCost() + estimatedCost);
             state.setOpenaiConfidence(validation.getConfidence()); // OpenAI 신뢰도 저장
 
             if (!validation.isValid()) {
-                state.addLog("OpenAI 검증 실패: " + validation.getReason());
+    
                 if (validation.getValidationType() == ValidationType.INVALID_CASE) {
                     // 피싱 사례와 무관한 입력 (인사말, 수학 문제 등)
                     state.updateStatus(DetectionWorkflowState.WorkflowStatus.FAILED);
@@ -209,7 +224,7 @@ public class LangGraphStyleWorkflow {
                     state.setActionType(ActionType.INVALID_INPUT_CASE);
                     // 프론트엔드 호환성을 위해 status를 UNKNOWN으로 설정
                     state.setDetectionStatus(DetectionStatus.UNKNOWN);
-                    state.addLog("피싱 사례와 무관한 입력으로 판정: " + validation.getReason());
+
                 } else if (validation.getValidationType() == ValidationType.NEEDS_CLARIFICATION) {
                     // 맥락이 불분명한 입력
                     state.updateStatus(DetectionWorkflowState.WorkflowStatus.FAILED);
@@ -217,23 +232,23 @@ public class LangGraphStyleWorkflow {
                     state.setActionType(ActionType.AMBIGUOUS_INPUT);
                     // 프론트엔드 호환성을 위해 status를 UNKNOWN으로 설정
                     state.setDetectionStatus(DetectionStatus.UNKNOWN);
-                    state.addLog("입력 맥락이 불분명하여 추가 설명 필요: " + validation.getReason());
+
                 } else {
                     // 기타 검증 실패
                     state.updateStatus(DetectionWorkflowState.WorkflowStatus.FAILED);
                     state.setDecisionReason(DetectionWorkflowState.DecisionReason.INPUT_TOO_VAGUE);
                     state.setActionType(ActionType.INPUT_VALIDATION_FAILURE);
-                    state.addLog("OpenAI 검증 실패로 워크플로우 중단: " + validation.getReason());
+
                 }
             } else {
-                state.addLog("OpenAI 검증 통과");
+
                 // OpenAI 검증 완료 후 4단계로 진행할 상태 업데이트
                 state.updateStatus(DetectionWorkflowState.WorkflowStatus.QUALITY_ASSESSING);
             }
 
         } catch (Exception e) {
             log.warn("OpenAI 검증 중 오류 발생", e);
-            state.addLog("OpenAI 검증 오류: " + e.getMessage());
+
             state.setActionType(ActionType.OPENAI_FAILURE);
         }
 
@@ -254,9 +269,9 @@ public class LangGraphStyleWorkflow {
             if (preservedTopScore >= 0.7f) {
                 QualityAssessment quality = createDangerAssessment(preservedTopScore, state.getSearchResults().size());
                 state.setQualityAssessment(quality);
-                state.addLog("1순위: 높은 유사도로 DANGER 판정 - 점수: " + preservedTopScore);
+
                 // 1순위 완료 후 5단계로 진행할 상태 업데이트
-                state.updateStatus(DetectionWorkflowState.WorkflowStatus.DECISION_MAKING);
+                state.updateStatus(DetectionWorkflowState.WorkflowStatus.COMPLETED);
                 return state;
             }
             
@@ -269,8 +284,8 @@ public class LangGraphStyleWorkflow {
                 if (finalInputQualityScore >= 6.0) {
                     QualityAssessment quality = assessByInputQuality(preservedTopScore, state.getSearchResults().size(), finalInputQualityScore);
                     state.setQualityAssessment(quality);
-                    state.addLog("2순위: OpenAI Confidence 반영 입력 품질 고득점(" + finalInputQualityScore + ")으로 판정 완료");
-                    state.updateStatus(DetectionWorkflowState.WorkflowStatus.DECISION_MAKING);
+    
+                    state.updateStatus(DetectionWorkflowState.WorkflowStatus.COMPLETED);
                     return state;
                 }
             }
@@ -281,11 +296,11 @@ public class LangGraphStyleWorkflow {
             state.setQualityAssessment(quality);
             
             // 품질 평가 완료 후 5단계로 진행할 상태 업데이트
-            state.updateStatus(DetectionWorkflowState.WorkflowStatus.DECISION_MAKING);
+            state.updateStatus(DetectionWorkflowState.WorkflowStatus.COMPLETED);
             
         } catch (Exception e) {
             log.error("품질 평가 중 오류 발생", e);
-            state.addLog("품질 평가 실패: " + e.getMessage());
+
             state.setActionType(ActionType.QUALITY_ASSESSMENT_FAILURE);
         }
         
@@ -301,7 +316,6 @@ public class LangGraphStyleWorkflow {
             .searchAttempts(1)
             .preservedTopScore(topScore)
             .resultCount(resultCount)
-            .improvementSteps(List.of("Vector DB 검색 완료"))
             .isAcceptable(true)
             .assessmentTime(LocalDateTime.now())
             .actionType(ActionType.IMMEDIATE_ACTION)
@@ -319,7 +333,6 @@ public class LangGraphStyleWorkflow {
                 .searchAttempts(1)
                 .preservedTopScore(topScore)
                 .resultCount(resultCount)
-                .improvementSteps(List.of("2순위: 입력 품질 고득점 + 유사도 낮음"))
                 .isAcceptable(true)
                 .assessmentTime(LocalDateTime.now())
                 .actionType(ActionType.COMMUNITY_SHARE)
@@ -332,7 +345,6 @@ public class LangGraphStyleWorkflow {
                 .searchAttempts(1)
                 .preservedTopScore(topScore)
                 .resultCount(resultCount)
-                .improvementSteps(List.of("2순위: 입력 품질 고득점 + 유사도 중간"))
                 .isAcceptable(true)
                 .assessmentTime(LocalDateTime.now())
                 .actionType(ActionType.MANUAL_REVIEW)
@@ -354,7 +366,6 @@ public class LangGraphStyleWorkflow {
                 .searchAttempts(1)
                 .preservedTopScore(topScore)
                 .resultCount(resultCount)
-                .improvementSteps(List.of("3순위: 입력 품질 저득점 + 유사도 낮음"))
                 .isAcceptable(false) // 신뢰할 수 없음
                 .assessmentTime(LocalDateTime.now())
                 .actionType(ActionType.NO_ACTION) // 조치 불필요
@@ -369,7 +380,6 @@ public class LangGraphStyleWorkflow {
                 .searchAttempts(1)
                 .preservedTopScore(topScore)
                 .resultCount(resultCount)
-                .improvementSteps(List.of("3순위: 입력 품질 저득점 + 유사도 중간"))
                 .isAcceptable(true) // 부분적 신뢰 가능
                 .assessmentTime(LocalDateTime.now())
                 .actionType(ActionType.MANUAL_REVIEW) // 수동 검토 필요
@@ -388,7 +398,7 @@ public class LangGraphStyleWorkflow {
      */
     private DetectionWorkflowState executeResultAnalysis(DetectionWorkflowState state) {
         state.updateStep(DetectionWorkflowState.WorkflowStep.RESULT_ANALYSIS)
-             .updateStatus(DetectionWorkflowState.WorkflowStatus.DECISION_MAKING);
+             .updateStatus(DetectionWorkflowState.WorkflowStatus.COMPLETED);
         
         QualityAssessment quality = state.getQualityAssessment();
         float preservedTopScore = state.getPreservedTopScore();
@@ -401,9 +411,9 @@ public class LangGraphStyleWorkflow {
         // 최종 상태 설정
         state.setDetectionStatus(finalStatus);
         state.setDecisionReason(decisionReason);
-        state.setNextAction(nextAction);
 
-        state.addLog(String.format("최종 판정 완료: %s", finalStatus));
+
+
         return state;
     }
     
@@ -442,13 +452,13 @@ public class LangGraphStyleWorkflow {
             case IMMEDIATE_ACTION:
                 return DetectionWorkflowState.DecisionReason.HIGH_SIMILARITY;
             case COMMUNITY_SHARE:
-                return DetectionWorkflowState.DecisionReason.COMMUNITY_SHARE_SUGGESTED;
+                return DetectionWorkflowState.DecisionReason.MANUAL_INTERVENTION_NEEDED;
             case MANUAL_REVIEW:
-                return DetectionWorkflowState.DecisionReason.MIXED_SIGNALS;
+                return DetectionWorkflowState.DecisionReason.MANUAL_INTERVENTION_NEEDED;
             case MONITORING:
-                return DetectionWorkflowState.DecisionReason.LOW_RISK_PATTERN;
+                return DetectionWorkflowState.DecisionReason.LOW_QUALITY_RESULTS;
             case NO_ACTION:
-                return DetectionWorkflowState.DecisionReason.LOW_RISK_PATTERN;
+                return DetectionWorkflowState.DecisionReason.LOW_QUALITY_RESULTS;
             default:
                 // fallback: 기존 로직
                 if (preservedTopScore >= 0.7f) {
@@ -466,7 +476,7 @@ public class LangGraphStyleWorkflow {
      */
     private boolean shouldStopWorkflow(DetectionWorkflowState state) {
         return state.getStatus() == DetectionWorkflowState.WorkflowStatus.FAILED ||
-               state.getStatus() == DetectionWorkflowState.WorkflowStatus.NEEDS_HUMAN_INTERVENTION;
+               state.getStatus() == DetectionWorkflowState.WorkflowStatus.FAILED;
     }
     
     /**
@@ -477,13 +487,6 @@ public class LangGraphStyleWorkflow {
                costTracker.canMakeCall(costTracker.getInputValidationCost());
     }
 
-    /**
-     * 입력 품질 점수 계산 (10점 만점)
-     */
-    private double getInputQualityScore(String input) {
-        return qualityAssessmentService.calculateInputQualityScore(input);
-    }
-    
     /**
      * OpenAI Confidence를 반영한 최종 입력 품질 점수 계산
      * 70:30 가중치 적용 (우리 정책 70%, OpenAI Confidence 30%)

@@ -58,29 +58,139 @@ public class QualityAssessmentService {
         return 0.0;
     }
     
-    private boolean isMeaninglessInput(String input) {
-        // 무의미한 반복 패턴
-        if (input.length() >= 3) {
-            for (int i = 0; i < input.length() - 2; i++) {
-                if (input.charAt(i) == input.charAt(i + 1) && 
-                    input.charAt(i + 1) == input.charAt(i + 2)) {
+    /**
+     * 의미 없는 입력 검사 (1단계에서 호출)
+     */
+    public boolean isMeaninglessInput(String input) {
+        // 1. 길이 기반 차단 (너무 짧거나 긴 입력)
+        if (input.length() < 2 || input.length() > 200) return true;
+        
+        // 2. 피싱 관련 키워드가 있으면 길이와 무관하게 허용
+        if (isPhishingRelated(input)) {
+            return false;  // 피싱 관련 키워드가 있으면 의미 있는 입력
+        }
+        
+        // 3. 피싱 관련 키워드가 없는 경우 더 엄격한 길이 제한
+        if (input.length() < 5) return true;  // 5자 미만은 의미 없음
+        
+        // 4. 무의미한 반복 패턴
+        if (hasRepetitivePattern(input)) return true;
+        
+        // 5. 일반적인 인사말
+        if (isGreeting(input)) return true;
+        
+        // 6. 특수문자만 있는 경우
+        if (isOnlySpecialCharacters(input)) return true;
+        
+        // 7. 한글 자음/모음만 있는 경우
+        if (isOnlyKoreanJamo(input)) return true;
+        
+        // 8. 의미 없는 단일 문자/이모지
+        if (isMeaninglessSingleInput(input)) return true;
+        
+        return false;
+    }
+    
+    /**
+     * 무의미한 반복 패턴 체크
+     */
+    private boolean hasRepetitivePattern(String input) {
+        if (input.length() < 3) return false;
+        
+        // 3글자 연속 반복 체크 (예: "똥똥똥", "ㅋㅋㅋ")
+        for (int i = 0; i < input.length() - 2; i++) {
+            if (input.charAt(i) == input.charAt(i + 1) && 
+                input.charAt(i + 1) == input.charAt(i + 2)) {
+                return true;
+            }
+        }
+        
+        // 단어 단위 반복 체크
+        String[] words = input.split("\\s+");
+        if (words.length >= 2) {
+            for (int i = 0; i < words.length - 1; i++) {
+                if (words[i].equals(words[i + 1])) {
                     return true;
                 }
             }
         }
         
-        // 일반적인 인사말
-        String[] greetings = {"안녕하세요", "안녕", "반갑습니다", "하이", "hi", "hello"};
-        String lowerInput = input.toLowerCase();
+        return false;
+    }
+    
+    /**
+     * 일반적인 인사말 체크 (확장)
+     */
+    private boolean isGreeting(String input) {
+        String[] greetings = {
+            // 기존
+            "안녕하세요", "안녕", "반갑습니다", "하이", "hi", "hello",
+            // 추가
+            "안녕하십니까", "만나서 반갑습니다", "좋은 하루", "좋은 아침",
+            "좋은 점심", "좋은 저녁", "수고하세요", "수고하십니다", "고생하세요",
+            "고생하십니다", "잘 가", "잘 가요", "안녕히 가세요", "안녕히 계세요",
+            "bye", "goodbye", "see you", "take care"
+        };
+        
+        String lowerInput = input.toLowerCase().trim();
         for (String greeting : greetings) {
-            if (lowerInput.contains(greeting.toLowerCase())) {
+            if (lowerInput.equals(greeting.toLowerCase()) || 
+                lowerInput.startsWith(greeting.toLowerCase() + " ") ||
+                lowerInput.endsWith(" " + greeting.toLowerCase())) {
                 return true;
             }
         }
         
-        // 특수문자만 있는 경우
-        if (input.replaceAll("[^!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?]", "").length() > input.length() * 0.7) {
-            return true;
+        return false;
+    }
+    
+    /**
+     * 특수문자만 있는 경우 체크 (개선)
+     */
+    private boolean isOnlySpecialCharacters(String input) {
+        // 특수문자 비율이 70% 이상인 경우
+        String specialCharPattern = "[^\\p{L}\\p{N}\\s]";
+        long specialCharCount = input.chars()
+            .mapToObj(ch -> String.valueOf((char) ch))
+            .filter(ch -> ch.matches(specialCharPattern))
+            .count();
+        
+        return (double) specialCharCount / input.length() >= 0.7;
+    }
+    
+    /**
+     * 한글 자음/모음만 있는 경우 체크
+     */
+    private boolean isOnlyKoreanJamo(String input) {
+        // 한글 자음/모음만 있는지 확인
+        String jamoPattern = "[ㄱ-ㅎㅏ-ㅣ]+";
+        if (input.matches(jamoPattern)) return true;
+        
+        // 자음/모음 비율이 80% 이상인 경우
+        long jamoCount = input.chars()
+            .mapToObj(ch -> String.valueOf((char) ch))
+            .filter(ch -> ch.matches("[ㄱ-ㅎㅏ-ㅣ]"))
+            .count();
+        
+        return (double) jamoCount / input.length() >= 0.8;
+    }
+    
+    /**
+     * 의미 없는 단일 입력 체크
+     */
+    private boolean isMeaninglessSingleInput(String input) {
+        // 단일 문자 차단
+        if (input.length() == 1) {
+            String[] meaninglessSingle = {
+                "똥", "ㅋ", "ㅎ", "ㅠ", "ㅜ", "ㅡ", "ㅣ", "ㅏ", "ㅑ", "ㅓ", "ㅕ",
+                "ㅁ", "ㄴ", "ㄷ", "ㄹ", "ㅂ", "ㅅ", "ㅇ", "ㅈ", "ㅊ", "ㅌ", "ㅍ",
+                "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
+                "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"
+            };
+            
+            for (String pattern : meaninglessSingle) {
+                if (input.equalsIgnoreCase(pattern)) return true;
+            }
         }
         
         return false;

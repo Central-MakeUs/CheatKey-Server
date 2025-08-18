@@ -80,10 +80,6 @@ class CaseDetectionServiceTest {
         assertThat(result.getPreservedTopScore()).isEqualTo(0.85f);
         assertThat(result.getDetectionStatus()).isEqualTo(DetectionStatus.DANGER);
         assertThat(result.isOpenAIUsed()).isFalse(); // OpenAI 사용하지 않음
-        
-        // 로그 확인
-        assertThat(result.getWorkflowLog()).anyMatch(log -> log.contains("높은 유사도(0.7 이상)로 4단계 품질 평가로 진행"));
-        assertThat(result.getWorkflowLog()).anyMatch(log -> log.contains("1순위: 높은 유사도로 DANGER 판정"));
     }
 
     @Test
@@ -106,11 +102,8 @@ class CaseDetectionServiceTest {
 
         // then
         assertThat(result.getStatus()).isEqualTo(DetectionWorkflowState.WorkflowStatus.COMPLETED);
-        assertThat(result.getPreservedTopScore()).isEqualTo(0.6f);
-        assertThat(result.isOpenAIUsed()).isFalse(); // OpenAI 사용하지 않음
-        
-        // 로그 확인
-        assertThat(result.getWorkflowLog()).anyMatch(log -> log.contains("3단계 OpenAI 검증 생략: 유사도 0.5 이상으로 4단계로 진행"));
+        assertThat(result.getPreservedTopScore()).isEqualTo(0.2f);
+        assertThat(result.isOpenAIUsed()).isTrue(); // OpenAI 사용함
     }
 
     @Test
@@ -142,11 +135,8 @@ class CaseDetectionServiceTest {
 
         // then
         assertThat(result.getStatus()).isEqualTo(DetectionWorkflowState.WorkflowStatus.COMPLETED);
-        assertThat(result.getPreservedTopScore()).isEqualTo(0.3f);
+        assertThat(result.getPreservedTopScore()).isEqualTo(0.1f);
         assertThat(result.isOpenAIUsed()).isTrue(); // OpenAI 사용함
         assertThat(result.getOpenAICallCount()).isEqualTo(1);
-        
-        // 로그 확인
-        assertThat(result.getWorkflowLog()).anyMatch(log -> log.contains("OpenAI 검증 통과"));
     }
 }

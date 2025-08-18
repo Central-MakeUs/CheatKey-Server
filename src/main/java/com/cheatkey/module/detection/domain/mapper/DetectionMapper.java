@@ -16,16 +16,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DetectionMapper {
 
-    public DetectionStatus mapToStatus(List<VectorDbClient.SearchResult> results) {
-        if (results.isEmpty()) return DetectionStatus.SAFE;
-
-        float score = results.get(0).score();
-
-        if (score >= 0.75f) return DetectionStatus.DANGER;  // 7.5점 기준으로 수정
-        if (score >= 0.5f) return DetectionStatus.WARNING;
-        return DetectionStatus.SAFE;
-    }
-
     public DetectionCategory mapToCategory(List<VectorDbClient.SearchResult> results) {
         if(results.isEmpty()) return DetectionCategory.PHISHING;
 
