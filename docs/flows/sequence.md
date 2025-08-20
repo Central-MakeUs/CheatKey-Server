@@ -2,7 +2,7 @@
 
 ## 1. 사기 탐지 시퀀스
 
-### 1.1 텍스트 기반 사기 탐지
+### 1.1 텍스트 기반 사기 탐지 (Graph-based State Machine)
 
 ```mermaid
 sequenceDiagram
@@ -11,30 +11,40 @@ sequenceDiagram
     participant Server as CheatKey Server
     participant Embedding as Embedding Server
     participant Qdrant as Qdrant Vector DB
+    participant OpenAI as OpenAI API
     participant DB as MySQL DB
     
     U->>App: 텍스트 입력
     App->>Server: POST /v1/api/detection/case
     Note over App,Server: {text: "사기 텍스트", type: "CASE"}
     
-    Server->>Server: 텍스트 전처리
+    Server->>Server: 1단계: 기본 입력 검증 및 전처리
     Server->>Embedding: POST /v1/embed
     Note over Server,Embedding: {text: "전처리된 텍스트"}
     
-    Embedding->>Embedding: 벡터 임베딩 생성
+    Embedding->>Embedding: KoSimCSE 벡터 임베딩 생성
     Embedding->>Server: 벡터 반환
     Note over Embedding,Server: {vector: [0.1, 0.2, ...]}
     
-    Server->>Qdrant: 벡터 유사도 검색
+    Server->>Qdrant: 2단계: 벡터 유사도 검색
     Qdrant->>Server: 유사 사례 목록 반환
     Note over Qdrant,Server: {results: [{id: "case1", score: 0.95}, ...]}
     
-    Server->>Server: 결과 분석 및 점수 계산
+    Server->>Server: 유사도 점수 분석
+    alt 유사도 점수 < 0.5
+        Server->>OpenAI: 3단계: OpenAI 검증 API 호출
+        Note over Server,OpenAI: 조건부 OpenAI 사용
+        OpenAI->>Server: AI 검증 결과 반환
+    end
+    
+    Server->>Server: 4단계: 품질 평가
+    Server->>Server: 5단계: 결과 분석 및 의사결정
+    
     Server->>DB: 탐지 기록 저장
     DB->>Server: 저장 완료
     
     Server->>App: 탐지 결과 반환
-    Note over Server,App: {status: "SUSPICIOUS", score: 0.95, matchedCase: {...}}
+    Note over Server,App: {status: "DANGER/WARNING/SAFE", score: 0.95}
     App->>U: 결과 표시
 ```
 
@@ -53,12 +63,15 @@ sequenceDiagram
     Note over App,Server: {url: "https://suspicious-site.com"}
     
     Server->>Server: URL 검증 및 정규화
+    Note over Server: 정규식 패턴 매칭으로 URL 형식 검증
+    
     Server->>Google: Safe Browsing API 호출
     Note over Server,Google: {url: "https://suspicious-site.com"}
     
     Google->>Server: 위험도 정보 반환
     Note over Google,Server: {threatType: "MALWARE", threatLevel: "HIGH"}
     
+    Server->>Server: 결과 판정 (DANGER/SAFE)
     Server->>DB: 탐지 기록 저장
     DB->>Server: 저장 완료
     
@@ -84,7 +97,10 @@ sequenceDiagram
     Note over App,Server: {title: "...", content: "...", files: [...]}
     
     Server->>Server: JWT 토큰 검증
-    Server->>Server: 내용 검증 (XSS 방지)
+    Server->>Server: 사용자 상태 검증 (UserStatusCheckAspect)
+    Note over Server: ACTIVE 상태만 허용, WITHDRAWN/BANNED 등 차단
+    Server->>Server: Jsoup.clean() XSS 방지 처리
+    Note over Server: title: Safelist.none(), content: Safelist.basic()
     
     alt 파일 첨부 있음
         Server->>S3: 파일 업로드
@@ -115,13 +131,16 @@ sequenceDiagram
     participant U as 사용자
     participant App as Mobile App
     participant Server as CheatKey Server
+    participant Cache as Caffeine Cache
     participant DB as MySQL DB
     
     U->>App: 댓글 작성
-    App->>Server: POST /v1/api/community/posts/{postId}/comments
-    Note over App,Server: {content: "댓글 내용", parentId: null}
+    App->>Server: POST /v1/api/community/comments
+    Note over App,Server: {content: "댓글 내용", parentId: null, postId: "postId"}
     
     Server->>Server: JWT 토큰 검증
+    Server->>Server: 사용자 상태 검증 (UserStatusCheckAspect)
+    Note over Server: ACTIVE 상태만 허용, WITHDRAWN/BANNED 등 차단
     Server->>DB: 댓글 저장
     DB->>Server: 저장 완료
     
@@ -129,14 +148,30 @@ sequenceDiagram
     App->>U: 댓글 표시
     
     U->>App: 대댓글 작성
-    App->>Server: POST /v1/api/community/posts/{postId}/comments
-    Note over App,Server: {content: "대댓글", parentId: "commentId"}
+    App->>Server: POST /v1/api/community/comments
+    Note over App,Server: {content: "대댓글", parentId: "commentId", postId: "postId"}
     
     Server->>DB: 대댓글 저장 (parent_id 설정)
     DB->>Server: 저장 완료
     
     Server->>App: 대댓글 정보 반환
     App->>U: 계층형 댓글 표시
+    
+    U->>App: 댓글 목록 조회
+    App->>Server: GET /v1/api/community/posts/{postId}/comments
+    
+    Server->>Server: JWT 토큰 검증
+    Server->>DB: 댓글/대댓글 조회
+    DB->>Server: 댓글 목록 반환
+    
+    Server->>Cache: 탈퇴한 사용자 ID 목록 조회
+    Cache->>Server: 캐시된 탈퇴 사용자 목록 반환
+    
+    Server->>Server: 탈퇴한 사용자 표기 처리
+    Note over Server: nickname = "탈퇴한 사용자", profileImage = null
+    
+    Server->>App: 댓글 목록 반환 (탈퇴 사용자 표기 포함)
+    App->>U: 댓글 목록 표시
 ```
 
 ### 2.3 게시글 신고 처리
@@ -185,6 +220,8 @@ sequenceDiagram
     Note over App,Server: {file: MultipartFile, folder: "COMMUNITY"}
     
     Server->>Server: JWT 토큰 검증
+    Server->>Server: 사용자 상태 검증 (UserStatusCheckAspect)
+    Note over Server: ACTIVE 상태만 허용, WITHDRAWN/BANNED 등 차단
     Server->>Server: 파일 검증 (크기, 확장자)
     
     alt 파일 검증 실패
@@ -246,10 +283,13 @@ sequenceDiagram
     Note over App,Server: Authorization: Bearer {token}
     
     Server->>Server: JWT 토큰 검증
+    Server->>Server: 사용자 상태 검증 (UserStatusCheckAspect)
+    Note over Server: ACTIVE 상태만 허용, WITHDRAWN/BANNED 등 차단
     Server->>DB: 사용자 정보 조회
     DB->>Server: 사용자 정보 반환
     
     Server->>DB: 방문 기록 저장
+    Note over Server,DB: HOME_VISIT 활동 타입으로 기록
     DB->>Server: 저장 완료
     
     Server->>DB: 통계 정보 조회
@@ -274,17 +314,17 @@ sequenceDiagram
     Note over App,Server: Authorization: Bearer {token}
     
     Server->>Server: JWT 토큰 검증
+    Server->>Server: 사용자 상태 검증 (UserStatusCheckAspect)
+    Note over Server: ACTIVE 상태만 허용, WITHDRAWN/BANNED 등 차단
     Server->>DB: 사용자 상세 정보 조회
     DB->>Server: 사용자 정보 반환
     
     Server->>DB: 활동 기록 조회
+    Note over Server,DB: MYPAGE_VISIT 활동 타입으로 기록
     DB->>Server: 활동 기록 반환
     
-    Server->>DB: 탐지 기록 조회
-    DB->>Server: 탐지 기록 반환
-    
     Server->>App: 마이페이지 정보 반환
-    Note over Server,App: {profile: {...}, activities: [...], detections: [...]}
+    Note over Server,App: {profile: {...}, activities: [...], profileImages: [...]}
     App->>U: 마이페이지 표시
 ```
 
@@ -323,50 +363,4 @@ sequenceDiagram
     App->>U: 결과 표시
 ```
 
-## 6. 성능 최적화 시퀀스
-
-### 6.1 페이징을 활용한 게시글 조회
-
-```mermaid
-sequenceDiagram
-    participant U as 사용자
-    participant App as Mobile App
-    participant Server as CheatKey Server
-    participant DB as MySQL DB
-    
-    U->>App: 게시글 목록 조회
-    App->>Server: GET /v1/api/community/posts?page=1&size=10&category=GENERAL
-    
-    Server->>Server: JWT 토큰 검증
-    Server->>DB: 게시글 목록 조회 (페이징)
-    Note over Server,DB: LIMIT 10 OFFSET 0
-    
-    DB->>Server: 게시글 목록 반환
-    Server->>DB: 전체 게시글 수 조회
-    DB->>Server: 전체 개수 반환
-    
-    Server->>App: 페이징 정보와 함께 게시글 목록 반환
-    Note over Server,App: {content: [...], totalElements: 150, totalPages: 15, currentPage: 1}
-    App->>U: 게시글 목록 표시
-```
-
-### 6.2 인덱스를 활용한 검색 최적화
-
-```mermaid
-sequenceDiagram
-    participant U as 사용자
-    participant App as Mobile App
-    participant Server as CheatKey Server
-    participant DB as MySQL DB
-    
-    U->>App: 사용자 활동 기록 조회
-    App->>Server: GET /v1/api/mypage/activities?page=1&size=20
-    
-    Server->>Server: JWT 토큰 검증
-    Server->>DB: 사용자 활동 기록 조회 (인덱스 활용)
-    Note over Server,DB: WHERE auth_id = ? ORDER BY created_at DESC
-    
-    DB->>Server: 활동 기록 반환
-    Server->>App: 활동 기록 목록 반환
-    App->>U: 활동 기록 표시
-``` 
+ 

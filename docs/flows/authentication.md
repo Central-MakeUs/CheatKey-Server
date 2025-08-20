@@ -92,9 +92,9 @@ sequenceDiagram
     U->>App: 앱 실행
     App->>Apple: Apple SDK 초기화
     U->>App: 로그인 버튼 클릭
-    App->>Apple: 로그인 요청
+    App->>Apple: Apple 로그인 화면
     Apple->>U: Apple 로그인 화면
-    U->>Apple: 로그인 정보 입력
+    U->>Apple: Apple 로그인 정보 입력
     Apple->>App: ID Token 반환
     App->>Server: POST /v1/api/auth/login
     Note over App,Server: {provider: "apple", idToken: "..."}
@@ -142,6 +142,7 @@ sequenceDiagram
   },
   "payload": {
     "sub": "123",           // 사용자 ID
+    "role": "ROLE_USER",    // 사용자 권한 (provider 포함 안됨)
     "iat": 1640995200,      // 발급 시간
     "exp": 1641600000       // 만료 시간 (14일)
   },
@@ -245,10 +246,14 @@ flowchart TD
 | 에러 코드 | 설명 | HTTP 상태 |
 |-----------|------|-----------|
 | `INVALID_TOKEN` | 유효하지 않은 토큰 | 401 |
-| `EXPIRED_TOKEN` | 만료된 토큰 | 401 |
+| `TOKEN_EXPIRED` | 토큰이 만료 되었습니다 | 401 |
 | `INVALID_PROVIDER` | 잘못된 소셜 제공자 | 400 |
 | `AUTH_UNAUTHORIZED` | 인증 실패 | 401 |
-| `DUPLICATE_NICKNAME` | 중복된 닉네임 | 409 |
+| `AUTH_DUPLICATE_NICKNAME` | 중복된 닉네임 | 409 |
+| `REFRESH_TOKEN_NOT_FOUND` | Refresh Token을 찾을 수 없습니다 | 404 |
+| `AUTH_ALREADY_REGISTERED` | 이미 가입된 사용자입니다 | 409 |
+| `AUTH_REQUIRED_TERMS_NOT_AGREED` | 필수 약관에 모두 동의해야 가입할 수 있습니다 | 400 |
+| `AUTH_WITHDRAWN_RECENTLY` | 탈퇴 후 30일이 지나야 재가입이 가능합니다 | 403 |
 
 ### 5.2 예외 처리 흐름
 
@@ -276,10 +281,22 @@ CREATE TABLE t_auth (
     provider_id VARCHAR(255) NOT NULL,       -- 소셜 제공자 ID
     email VARCHAR(255),                      -- 이메일
     nickname VARCHAR(50),                    -- 닉네임
+    age_code VARCHAR(200),                    -- 연령대 코드
+    gender_code VARCHAR(200),                 -- 성별 코드
+    trade_method_code VARCHAR(200),           -- 거래 방식 코드
+    trade_item_code VARCHAR(200),             -- 거래 품목 코드
+    profile_image_id BIGINT,                 -- 프로필 이미지 ID
+    login_count INT,                         -- 로그인 횟수
+    level INT,                               -- 사용자 레벨
+    last_login_at DATETIME,                  -- 마지막 로그인 시간
+    total_visit_count INT,                   -- 총 방문 횟수
+    last_visit_date DATETIME,                -- 마지막 방문 날짜
     status VARCHAR(20) DEFAULT 'PENDING',    -- PENDING, ACTIVE, WITHDRAWN
-    role VARCHAR(20) DEFAULT 'USER',         -- USER, ADMIN
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    role VARCHAR(20) DEFAULT 'USER',         -- USER, ADMIN, MANAGER
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    withdrawn_at DATETIME,                   -- 탈퇴 시점
+    withdrawal_reason VARCHAR(500)           -- 탈퇴 사유
 );
 ```
 
@@ -288,11 +305,20 @@ CREATE TABLE t_auth (
 CREATE TABLE t_auth_activity (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     auth_id BIGINT NOT NULL,
-    activity_type VARCHAR(50) NOT NULL,      -- SOCIAL_LOGIN, LOGOUT, WITHDRAW
+    activity_type VARCHAR(50) NOT NULL,      -- SOCIAL_LOGIN, TOKEN_REFRESH, HOME_VISIT, MYPAGE_VISIT, REACTIVATION_ATTEMPT, USER_WITHDRAWAL
     ip_address VARCHAR(45),                  -- IP 주소
     user_agent TEXT,                         -- User Agent
     success BOOLEAN DEFAULT TRUE,            -- 성공 여부
     fail_reason TEXT,                        -- 실패 사유
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+#### RefreshToken 테이블
+```sql
+CREATE TABLE t_auth_refresh_token (
+    user_id BIGINT PRIMARY KEY,
+    token VARCHAR(255) NOT NULL UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ```
@@ -314,35 +340,30 @@ logging:
 - 토큰 갱신 시도/성공/실패
 - 인증 실패 (401, 403)
 - 사용자 활동 기록
+- 방문 기록 (HOME_VISIT, MYPAGE_VISIT)
 
 ## 8. 성능 최적화
 
 ### 8.1 토큰 검증 최적화
 - JWT 토큰 검증을 필터 레벨에서 처리
 - MySQL을 통한 Refresh Token 관리
-- 토큰 블랙리스트 관리
-
-### 8.2 캐싱 전략
-- 사용자 정보 캐싱
-- 소셜 제공자 토큰 검증 결과 캐싱
-- 권한 정보 캐싱
+- 토큰 순환 패턴으로 보안성 향상
 
 ## 9. 보안 고려사항
 
 ### 9.1 토큰 보안
 - JWT Secret Key 안전한 관리
-- 토큰 만료 시간 적절히 설정
-- Refresh Token Rotation 구현
-- 토큰 탈취 시 무효화 메커니즘
+- 토큰 만료 시간 적절히 설정 (Access Token: 1시간, Refresh Token: 14일)
+- Refresh Token Rotation 구현 (토큰 갱신 시 새로운 토큰 발급)
+- 로그아웃/탈퇴 시 Refresh Token 무효화
 
 ### 9.2 입력 검증
 - 소셜 토큰 검증
 - 사용자 입력 데이터 검증
-- XSS 방지
-- SQL Injection 방지
+- XSS 방지 (Jsoup.clean() 사용)
+- SQL Injection 방지 (JPA 사용)
 
 ### 9.3 네트워크 보안
 - HTTPS 사용
 - CORS 설정
-- Rate Limiting
-- IP 기반 접근 제한 
+- Spring Security 기반 인증/인가 
