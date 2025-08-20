@@ -8,6 +8,7 @@ import com.cheatkey.module.detection.domain.entity.DetectionStatus;
 import com.cheatkey.module.detection.domain.entity.DetectionType;
 import com.cheatkey.module.detection.domain.entity.DetectionGroup;
 import com.cheatkey.module.detection.domain.repository.DetectionHistoryRepository;
+import com.cheatkey.module.detection.domain.service.core.UrlDetectionService;
 import com.cheatkey.module.detection.infra.client.UrlDetectionClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

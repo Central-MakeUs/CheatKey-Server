@@ -1,5 +1,6 @@
 package com.cheatkey.module.detection.domain.service;
 
+import com.cheatkey.module.detection.domain.service.validation.QualityAssessmentService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

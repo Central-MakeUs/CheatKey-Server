@@ -1,8 +1,8 @@
-package com.cheatkey.module.detection.domain.service;
+package com.cheatkey.module.detection.domain.service.validation;
 
-import com.cheatkey.module.detection.domain.entity.QualityAssessment;
 import com.cheatkey.module.detection.domain.entity.ValidationResult;
 import com.cheatkey.module.detection.domain.entity.ValidationType;
+import com.cheatkey.module.detection.domain.service.openai.DetectionOpenAiService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
