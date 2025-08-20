@@ -9,7 +9,7 @@ import com.cheatkey.module.auth.domain.entity.AuthActivity;
 import com.cheatkey.module.community.domain.entity.CommunityPost;
 import com.cheatkey.module.community.domain.service.CommunityService;
 import com.cheatkey.module.detection.domain.entity.DetectionPeriod;
-import com.cheatkey.module.detection.domain.service.DetectionService;
+import com.cheatkey.module.detection.domain.service.core.DetectionService;
 import com.cheatkey.module.mypage.domain.mapper.MyPageMapper;
 import com.cheatkey.module.mypage.interfaces.dto.*;
 import com.cheatkey.module.terms.domain.entity.Terms;

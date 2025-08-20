@@ -1,4 +1,4 @@
-package com.cheatkey.module.detection.domain.config;
+package com.cheatkey.module.detection.infra.config;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;

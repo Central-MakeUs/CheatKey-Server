@@ -1,8 +1,9 @@
-package com.cheatkey.module.detection.domain.service;
+package com.cheatkey.module.detection.domain.service.core;
 
 import com.cheatkey.module.detection.domain.entity.*;
 import com.cheatkey.module.detection.domain.mapper.DetectionMapper;
 import com.cheatkey.module.detection.domain.repository.DetectionHistoryRepository;
+import com.cheatkey.module.detection.domain.service.workflow.LangGraphStyleWorkflow;
 import com.cheatkey.module.detection.interfaces.dto.DetectionResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,7 +11,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Slf4j
 @Service

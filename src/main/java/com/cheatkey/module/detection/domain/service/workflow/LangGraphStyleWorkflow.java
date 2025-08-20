@@ -1,8 +1,10 @@
-package com.cheatkey.module.detection.domain.service;
+package com.cheatkey.module.detection.domain.service.workflow;
 
-import com.cheatkey.module.detection.domain.config.QualityAssessmentConfig;
 import com.cheatkey.module.detection.domain.entity.*;
+import com.cheatkey.module.detection.domain.service.validation.OpenAIValidationService;
+import com.cheatkey.module.detection.domain.service.validation.QualityAssessmentService;
 import com.cheatkey.module.detection.infra.client.VectorDbClient;
+import com.cheatkey.module.detection.infra.config.QualityAssessmentConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

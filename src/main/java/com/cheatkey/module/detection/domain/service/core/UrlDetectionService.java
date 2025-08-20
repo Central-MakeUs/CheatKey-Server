@@ -1,4 +1,4 @@
-package com.cheatkey.module.detection.domain.service;
+package com.cheatkey.module.detection.domain.service.core;
 
 import com.cheatkey.common.exception.CustomException;
 import com.cheatkey.common.exception.ErrorCode;

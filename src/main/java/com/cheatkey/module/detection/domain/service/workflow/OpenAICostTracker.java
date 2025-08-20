@@ -1,4 +1,4 @@
-package com.cheatkey.module.detection.domain.service;
+package com.cheatkey.module.detection.domain.service.workflow;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

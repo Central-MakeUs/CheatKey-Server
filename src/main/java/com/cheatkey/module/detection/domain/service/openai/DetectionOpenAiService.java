@@ -1,13 +1,12 @@
-package com.cheatkey.module.detection.domain.service;
+package com.cheatkey.module.detection.domain.service.openai;
 
 import com.cheatkey.common.config.openai.dto.OpenAIResponsesRequest;
 import com.cheatkey.common.config.openai.dto.OpenAIResponsesResponse;
-import com.cheatkey.module.detection.domain.config.OpenAIConfig;
+import com.cheatkey.module.detection.infra.config.DetectionOpenAIConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 
 import java.util.List;
 
@@ -16,7 +15,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DetectionOpenAiService {
     
-    private final OpenAIConfig openAIConfig;
+    private final DetectionOpenAIConfig detectionOpenAIConfig;
     private final WebClient openAiWebClient;
     
     public String generateResponse(String prompt) {
@@ -47,10 +46,10 @@ public class DetectionOpenAiService {
                 .build();
             
             OpenAIResponsesRequest request = OpenAIResponsesRequest.builder()
-                .model(openAIConfig.getModel())
+                .model(detectionOpenAIConfig.getModel())
                 .messages(List.of(message))
-                .maxTokens(openAIConfig.getMaxCompletionTokens())
-                .temperature(openAIConfig.getTemperature())
+                .maxTokens(detectionOpenAIConfig.getMaxCompletionTokens())
+                .temperature(detectionOpenAIConfig.getTemperature())
                 .build();
 
             log.debug("OpenAI API 요청 상세: {}", request);

@@ -1,8 +1,7 @@
 package com.cheatkey.module.detection.infra.openai;
 
-import com.cheatkey.module.detection.domain.config.OpenAIConfig;
-import com.cheatkey.module.detection.domain.service.DetectionOpenAiService;
-import org.junit.jupiter.api.BeforeEach;
+import com.cheatkey.module.detection.infra.config.DetectionOpenAIConfig;
+import com.cheatkey.module.detection.domain.service.openai.DetectionOpenAiService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +19,7 @@ class DetectionOpenAiServiceIntegrationTest {
     private DetectionOpenAiService detectionOpenAiService;
 
     @Autowired
-    private OpenAIConfig openAIConfig;
+    private DetectionOpenAIConfig detectionOpenAIConfig;
 
     @Test
     @DisplayName("OpenAI API 호출 성공 테스트")
