@@ -116,7 +116,7 @@ erDiagram
         bigint id PK
         bigint post_id FK
         bigint reporter_id FK
-        varchar reason_code FK → CODE.code
+        varchar reason_code
         datetime created_at
     }
 
