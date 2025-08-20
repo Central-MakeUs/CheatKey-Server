@@ -27,6 +27,7 @@ import com.cheatkey.module.file.domain.repository.FileUploadRepository;
 import com.cheatkey.module.file.domain.service.FileService;
 import org.springframework.data.domain.PageImpl;
 import com.cheatkey.module.community.domain.entity.mapper.CommunityPostMapper;
+import com.cheatkey.module.auth.domain.entity.AuthStatus;
 
 import java.util.List;
 import java.util.Objects;
@@ -34,6 +35,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.Map;
 import com.cheatkey.module.community.domain.repository.CommunityCommentRepository;
+import com.cheatkey.module.community.domain.service.WithdrawnUserCacheService;
 
 @Service
 @RequiredArgsConstructor
@@ -48,6 +50,7 @@ public class CommunityService {
 
     private final FileService fileService;
     private final CommentService commentService;
+    private final WithdrawnUserCacheService withdrawnUserCacheService;
 
     private final CommunityPostMapper communityPostMapper;
 
@@ -102,8 +105,20 @@ public class CommunityService {
                     .toList();
         }
 
-        // 5. DTO 변환
-        List<CommunityPostListResponse> responseList = filteredPosts.stream()
+        // 5. 탈퇴한 사용자 처리
+        List<Long> withdrawnUserIds = withdrawnUserCacheService.getWithdrawnUserIds();
+        List<CommunityPost> processedPosts = filteredPosts.stream()
+                .map(post -> {
+                    if (withdrawnUserIds.contains(post.getAuthorId())) {
+                        // 탈퇴한 사용자의 게시글은 '(알수없음)'로 표기
+                        return markAsWithdrawnUser(post);
+                    }
+                    return post;
+                })
+                .toList();
+
+        // 6. DTO 변환 (processedPosts 사용)
+        List<CommunityPostListResponse> responseList = processedPosts.stream()
                 .map(post -> {
                     int commentCount = commentCountMap.getOrDefault(post.getId(), 0);
                     List<String> thumbnailUrls = getPostImageUrlsMap(List.of(post.getId())).getOrDefault(post.getId(), List.of());
@@ -121,8 +136,9 @@ public class CommunityService {
     public CommunityPostDetailResponse getPostDetail(Long userId, Long postId) {
         CommunityPost post = communityPostRepository.findById(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+        Long postAuthorId = post.getAuthorId();
         boolean blocked = communityPostBlockRepository.findByBlockerIdAndIsActive(userId, true).stream()
-                .anyMatch(b -> b.getBlockedId().equals(post.getAuthorId()));
+                .anyMatch(b -> b.getBlockedId().equals(postAuthorId));
 
         // 본인 글이 삭제(DELETED) 상태면 상세 조회 불가
         if (post.getAuthorId().equals(userId) && post.getStatus() == PostStatus.DELETED) {
@@ -151,15 +167,24 @@ public class CommunityService {
             communityPostRepository.save(post);
         }
 
+        // 탈퇴한 사용자 처리
+        List<Long> withdrawnUserIds = withdrawnUserCacheService.getWithdrawnUserIds();
+        if (withdrawnUserIds.contains(post.getAuthorId())) {
+            // 탈퇴한 사용자의 게시글은 '(알수없음)'로 표기
+            post = markAsWithdrawnUser(post);
+        }
+
         List<String> presignedUrls = getPostImageUrls(post.getId());
 
         List<CommunityComment> comments = commentService.getCommentsForPost(postId);
-        List<CommunityCommentResponse> commentResponses = communityPostMapper.toCommentDtoList(comments);
+        List<CommunityCommentResponse> commentResponses = communityPostMapper.toCommentDtoList(comments, userId);
+        int totalCommentCount = communityCommentRepository.countCommentsByPostId(postId).intValue();
+        
         boolean canDelete = post.getAuthorId().equals(userId);
 
         return communityPostMapper.toDetailDto(
                 post,
-                commentResponses.size(),
+                totalCommentCount,  // commentResponses.size() 대신 전체 댓글 수 사용
                 presignedUrls,
                 commentResponses,
                 canDelete,
@@ -173,7 +198,21 @@ public class CommunityService {
      */
     @Transactional(readOnly = true)
     public Page<CommunityPost> getUserPosts(Long userId, Pageable pageable) {
-        return communityPostRepository.findByAuthorIdAndStatusOrderByCreatedAtDesc(userId, PostStatus.ACTIVE, pageable);
+        Page<CommunityPost> postPage = communityPostRepository.findByAuthorIdAndStatusOrderByCreatedAtDesc(userId, PostStatus.ACTIVE, pageable);
+        
+        // 탈퇴한 사용자 처리
+        List<Long> withdrawnUserIds = withdrawnUserCacheService.getWithdrawnUserIds();
+        List<CommunityPost> posts = postPage.getContent().stream()
+                .map(post -> {
+                    if (withdrawnUserIds.contains(post.getAuthorId())) {
+                        // 탈퇴한 사용자의 게시글은 '(알수없음)'로 표기
+                        return markAsWithdrawnUser(post);
+                    }
+                    return post;
+                })
+                .toList();
+        
+        return new PageImpl<>(posts, pageable, postPage.getTotalElements());
     }
 
     /**
@@ -381,7 +420,19 @@ public class CommunityService {
                         arr -> ((Long) arr[1]).intValue()
                 ));
 
-        // 3. 다중 정렬 기준으로 정렬 후 limit
+        // 3. 탈퇴한 사용자 처리
+        List<Long> withdrawnUserIds = withdrawnUserCacheService.getWithdrawnUserIds();
+        allPosts = allPosts.stream()
+                .map(post -> {
+                    if (post.getAuthorId() != null && withdrawnUserIds.contains(post.getAuthorId())) {
+                        // 탈퇴한 사용자의 게시글은 '(알수없음)'로 표기
+                        return markAsWithdrawnUser(post);
+                    }
+                    return post;
+                })
+                .toList();
+
+        // 4. 다중 정렬 기준으로 정렬 후 limit
         // 1차: 댓글 수 (내림차순), 2차: 조회수 (내림차순), 3차: 작성일시 (내림차순)
         return allPosts.stream()
                 .sorted((a, b) -> {
@@ -430,7 +481,19 @@ public class CommunityService {
         Map<Long, Auth> authorMap = authRepository.findAllById(authorIds).stream()
                 .collect(Collectors.toMap(Auth::getId, auth -> auth));
 
-        // 4. 다중 정렬 기준으로 정렬 후 limit
+        // 4. 탈퇴한 사용자 처리
+        List<Long> withdrawnUserIds = withdrawnUserCacheService.getWithdrawnUserIds();
+        allPosts = allPosts.stream()
+                .map(post -> {
+                    if (withdrawnUserIds.contains(post.getAuthorId())) {
+                        // 탈퇴한 사용자의 게시글은 '(알수없음)'로 표기
+                        return markAsWithdrawnUser(post);
+                    }
+                    return post;
+                })
+                .toList();
+
+        // 5. 다중 정렬 기준으로 정렬 후 limit
         // 1차: 댓글 수 (내림차순), 2차: 조회수 (내림차순), 3차: 작성일시 (내림차순)
         return allPosts.stream()
                 .sorted((a, b) -> {
@@ -457,6 +520,24 @@ public class CommunityService {
                     return new CommunityPostWithAuthorInfo(post, author);
                 })
                 .toList();
+    }
+
+    /**
+     * 탈퇴한 사용자의 게시글을 '(알수없음)'로 표기하는 공통 메서드
+     */
+    public CommunityPost markAsWithdrawnUser(CommunityPost post) {
+        return CommunityPost.builder()
+                .id(post.getId())
+                .title(post.getTitle())
+                .content(post.getContent())
+                .category(post.getCategory())
+                .authorId(post.getAuthorId())
+                .authorNickname("(알수없음)")
+                .viewCount(post.getViewCount())
+                .createdAt(post.getCreatedAt())
+                .updatedAt(post.getUpdatedAt())
+                .status(post.getStatus())
+                .build();
     }
 
     /**

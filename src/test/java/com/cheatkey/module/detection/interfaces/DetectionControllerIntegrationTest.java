@@ -3,15 +3,11 @@ package com.cheatkey.module.detection.interfaces;
 import com.cheatkey.common.jwt.JwtProvider;
 import com.cheatkey.module.auth.domain.entity.AuthRole;
 import com.cheatkey.module.auth.domain.entity.Provider;
-import com.cheatkey.module.detection.domain.entity.DetectionCategory;
-import com.cheatkey.module.detection.domain.entity.DetectionGroup;
-import com.cheatkey.module.detection.domain.entity.DetectionHistory;
-import com.cheatkey.module.detection.domain.entity.DetectionStatus;
-import com.cheatkey.module.detection.domain.entity.DetectionType;
-import com.cheatkey.module.detection.domain.repository.DetectionHistoryRepository;
+import com.cheatkey.module.detection.interfaces.dto.CaseDetectionRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -21,18 +17,21 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.Map;
-
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.is;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@Transactional
 @ActiveProfiles("test")
-@Disabled("Vector DB 실 API 호출용 테스트 - Vector DB 로컬 세팅 후 수동 실행 전용")
+@Transactional
+@DisplayName("DetectionController 통합 테스트")
+@Disabled("외부 API 호출용 테스트 - Vector DB, OpenAI 로컬 세팅 후 수동 실행 전용")
 class DetectionControllerIntegrationTest {
+
+    @Autowired
+    private JwtProvider jwtProvider;
 
     @Autowired
     private MockMvc mockMvc;
@@ -40,84 +39,79 @@ class DetectionControllerIntegrationTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @Autowired
-    private JwtProvider jwtProvider;
-
-    @Autowired
-    private DetectionHistoryRepository detectionHistoryRepository;
-
-    private Long testHistoryId;
     private String jwt;
 
     @BeforeEach
     void setUp() {
         jwt = jwtProvider.createAccessToken(1L, Provider.KAKAO, AuthRole.USER);
-        
-        // 테스트용 히스토리 데이터 생성
-        DetectionHistory history = DetectionHistory.builder()
-                .inputText("테스트 입력 텍스트")
-                .status(DetectionStatus.SAFE)
-                .group(DetectionGroup.PHISHING)
-                .detectionType(DetectionType.CASE.name())
-                .userId(1L)
-                .topScore(0.5f)
-                .matchedCaseId("test_case_123")
-                .detectedAt(LocalDateTime.now())
-                .build();
-        
-        DetectionHistory savedHistory = detectionHistoryRepository.save(history);
-        testHistoryId = savedHistory.getId();
     }
 
     @Test
-    void 검색시_유사_사례_내용이_포함된다() throws Exception {
+    void 정상적인_AI_분석_사례_검색_통합_테스트() throws Exception {
         // given
-        String inputText = "오픈채팅에서 '돈 버는 부업'이라며 소개받은 사이트에 가입했어요.";
-        String requestJson = objectMapper.writeValueAsString(Map.of("text", inputText));
+        CaseDetectionRequest request = new CaseDetectionRequest(
+                "오픈채팅에서 '돈 버는 부업'이라며 소개받은 사이트에 가입했어요. 계좌 정보를 요구합니다."
+        );
 
         // when & then
         mockMvc.perform(post("/v1/api/detection/case")
                         .header("Authorization", "Bearer " + jwt)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestJson))
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.status").exists())
-                .andExpect(jsonPath("$.group").value(DetectionGroup.PHISHING.name()))
-                .andExpect(jsonPath("$.detectionId").isNumber());
+                .andExpect(jsonPath("$.group").exists())
+                .andExpect(jsonPath("$.detectionId").exists())
+                .andExpect(jsonPath("$.qualityScore").exists())
+                .andExpect(jsonPath("$.qualityScore").isNumber())
+                .andExpect(jsonPath("$.actionType").exists())
+                // 1순위 판정 결과 검증 (높은 유사도로 DANGER)
+                .andExpect(jsonPath("$.status").value("DANGER"))
+                .andExpect(jsonPath("$.actionType").value("IMMEDIATE_ACTION"))
+                .andExpect(jsonPath("$.qualityScore").value(8.5));
     }
 
     @Test
-    void 분석_결과_상세_조회_성공() throws Exception {
+    void 의심스러운_피싱_사례_통합_테스트() throws Exception {
+        // given
+        CaseDetectionRequest request = new CaseDetectionRequest(
+                "[국외발신] 16.7/75 D 누군가 이 외로움을 함께 이겨냈으면 좋겠어요 +T e1efram: https://t.me.hkjp3"
+        );
+
         // when & then
-        mockMvc.perform(get("/v1/api/detection/history/" + testHistoryId)
-                        .header("Authorization", "Bearer " + jwt))
+        mockMvc.perform(post("/v1/api/detection/case")
+                        .header("Authorization", "Bearer " + jwt)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(testHistoryId))
-                .andExpect(jsonPath("$.status").value(DetectionStatus.SAFE.name()))
-                .andExpect(jsonPath("$.detectionType").value(DetectionType.CASE.name()))
-                .andExpect(jsonPath("$.inputText").value("테스트 입력 텍스트"))
-                .andExpect(jsonPath("$.topScore").value(0.5))
-                .andExpect(jsonPath("$.matchedCaseId").value("test_case_123"))
-                .andExpect(jsonPath("$.detectedAt").exists())
-                .andExpect(jsonPath("$.group").value(DetectionGroup.PHISHING.name()));
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.status").exists())
+                .andExpect(jsonPath("$.group").exists())
+                .andExpect(jsonPath("$.detectionId").exists())
+                .andExpect(jsonPath("$.qualityScore").exists())
+                .andExpect(jsonPath("$.actionType").exists())
+                // 2순위 판정 결과 검증 (입력 품질 고득점으로 WARNING)
+                .andExpect(jsonPath("$.status").value("WARNING"))
+                .andExpect(jsonPath("$.actionType").value(anyOf(is("COMMUNITY_SHARE"), is("MANUAL_REVIEW"))));
     }
 
     @Test
-    void 분석_결과_상세_조회_실패_존재하지_않는_ID() throws Exception {
-        // when & then
-        mockMvc.perform(get("/v1/api/detection/history/99999")
-                        .header("Authorization", "Bearer " + jwt))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void 분석_결과_상세_조회_실패_다른_사용자_데이터() throws Exception {
-        // given: 다른 사용자의 JWT
-        String otherUserJwt = jwtProvider.createAccessToken(2L, Provider.KAKAO, AuthRole.USER);
+    void 의심스럽지_않은_피싱_사례_통합_테스트() throws Exception {
+        // given
+        CaseDetectionRequest request = new CaseDetectionRequest(
+                "친구들아 우리 함께 이야기 해볼래?"
+        );
 
         // when & then
-        mockMvc.perform(get("/v1/api/detection/history/" + testHistoryId)
-                        .header("Authorization", "Bearer " + otherUserJwt))
-                .andExpect(status().isBadRequest());
+        mockMvc.perform(post("/v1/api/detection/case")
+                        .header("Authorization", "Bearer " + jwt)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.status").exists())
+                .andExpect(jsonPath("$.group").exists())
+                .andExpect(jsonPath("$.actionType").exists());
     }
-} 
+}

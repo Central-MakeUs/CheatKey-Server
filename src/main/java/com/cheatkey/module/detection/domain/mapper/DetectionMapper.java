@@ -1,7 +1,6 @@
 package com.cheatkey.module.detection.domain.mapper;
 
 import com.cheatkey.module.detection.domain.entity.DetectionCategory;
-import com.cheatkey.module.detection.domain.entity.DetectionGroup;
 import com.cheatkey.module.detection.domain.entity.DetectionHistory;
 import com.cheatkey.module.detection.domain.entity.DetectionStatus;
 import com.cheatkey.module.detection.domain.entity.DetectionType;
@@ -12,26 +11,18 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
 public class DetectionMapper {
 
-    private final VectorDbClient vectorDbClient;
-
-    public DetectionStatus mapToStatus(List<VectorDbClient.SearchResult> results) {
-        if (results.isEmpty()) return DetectionStatus.SAFE;
-
-        float score = results.get(0).score();
-
-        if (score >= 0.5f) return DetectionStatus.DANGER;
-        if (score >= 0.3f) return DetectionStatus.WARNING;
-        return DetectionStatus.SAFE;
-    }
-
     public DetectionCategory mapToCategory(List<VectorDbClient.SearchResult> results) {
         if(results.isEmpty()) return DetectionCategory.PHISHING;
+
+        // payload가 null이거나 CONTENT가 없는 경우 기본값 반환
+        if(results.get(0).payload() == null || !results.get(0).payload().containsKey("CONTENT")) {
+            return DetectionCategory.PHISHING;
+        }
 
         String category = results.get(0).payload().get("CONTENT").toString();
 
@@ -57,12 +48,6 @@ public class DetectionMapper {
                 .matchedCaseId(history.getMatchedCaseId())
                 .group(history.getGroup())
                 .build();
-    }
-
-    public List<DetectionHistoryResponse> toDetectionHistoryResponseList(List<DetectionHistory> histories) {
-        return histories.stream()
-                .map(this::toDetectionHistoryResponse)
-                .collect(Collectors.toList());
     }
 
     public DetectionDetailResponse toDetectionDetailResponse(DetectionHistory history) {

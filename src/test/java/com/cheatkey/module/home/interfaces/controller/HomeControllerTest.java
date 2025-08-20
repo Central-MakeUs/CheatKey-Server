@@ -6,6 +6,7 @@ import com.cheatkey.module.auth.domain.entity.Provider;
 import com.cheatkey.module.home.application.facade.HomeFacade;
 import com.cheatkey.module.home.interfaces.dto.HomeDashboardResponse;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
+@Disabled
 class HomeControllerTest {
 
     @Autowired

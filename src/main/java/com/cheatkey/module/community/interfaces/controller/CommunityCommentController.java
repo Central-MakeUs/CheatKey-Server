@@ -59,13 +59,14 @@ public class CommunityCommentController {
 
     @Operation(summary = "(★) 댓글/대댓글 조회", description = "게시글의 댓글 및 대댓글(트리 구조)을 조회합니다.")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "댓글/대댓글 조회 성공", content = @Content(schema = @Schema(implementation = List.class))),
+        @ApiResponse(responseCode = "200", description = "댓글/대댓글 조회 성공", content = @Content(schema = @Schema(implementation = CommunityCommentResponse.class))),
         @ApiResponse(responseCode = "404", description = "게시글을 찾을 수 없음", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @GetMapping("/posts/{postId}/comments")
     public ResponseEntity<List<CommunityCommentResponse>> getCommentsForPost(@PathVariable Long postId) {
+        Long userId = Long.valueOf(SecurityUtil.getCurrentUserId());
         List<CommunityComment> comments = commentService.getCommentsForPost(postId);
-        List<CommunityCommentResponse> commentResponses = communityPostMapper.toCommentDtoList(comments);
+        List<CommunityCommentResponse> commentResponses = communityPostMapper.toCommentDtoList(comments, userId);
         return ResponseEntity.ok(commentResponses);
     }
 } 

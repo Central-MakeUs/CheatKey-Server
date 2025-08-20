@@ -33,12 +33,16 @@ class CommentServiceTest {
     private CommunityPostRepository postRepository;
     @Mock
     private CommunityPostBlockRepository communityPostBlockRepository;
+    @Mock
+    private WithdrawnUserCacheService withdrawnUserCacheService;
     @InjectMocks
     private CommentService commentService;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+        // WithdrawnUserCacheService Mock 기본 설정
+        when(withdrawnUserCacheService.getWithdrawnUserIds()).thenReturn(List.of());
     }
 
     @Test
@@ -183,8 +187,7 @@ class CommentServiceTest {
                 .status(CommentStatus.ACTIVE)
                 .build();
         
-        when(commentRepository.findByPostIdAndStatus(1L, CommentStatus.ACTIVE))
-                .thenReturn(List.of(comment1, comment2));
+        when(commentRepository.findByPostId(1L)).thenReturn(List.of(comment1, comment2));
 
         // when
         List<CommunityComment> result = commentService.getCommentsForPost(1L);

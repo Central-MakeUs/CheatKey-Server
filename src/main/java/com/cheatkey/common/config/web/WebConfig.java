@@ -14,8 +14,9 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addMapping("/**")
                 .allowedOrigins(
                         "https://cheatskey.com",
-                        "http://localhost:3000",    // Front-End
-                        "https://cheatcut.kro.kr"   // Front-End
+                        "http://localhost:3000",        // Front-End
+                        "http://192.168.0.96:3000",     // Front-End
+                        "https://cheatcut.kro.kr"       // Front-End
                 )
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")

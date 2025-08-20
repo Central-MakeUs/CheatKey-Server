@@ -11,9 +11,11 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class VectorDbAdapter implements VectorDbClient {
 
     private final RestTemplate restTemplate = new RestTemplate();
@@ -101,10 +103,12 @@ public class VectorDbAdapter implements VectorDbClient {
             );
 
             if (!response.getStatusCode().is2xxSuccessful()) {
-                throw new IllegalStateException("Qdrant 저장 실패: " + response.getStatusCode());
+                log.error("Qdrant 저장 실패: status={}, body={}", response.getStatusCode(), response.getBody());
+                throw new IllegalStateException("Qdrant 저장 실패: " + response.getStatusCode() + " - " + response.getBody());
             }
 
         } catch (Exception e) {
+            log.error("Qdrant 저장 중 오류: id={}, error={}", id, e.getMessage(), e);
             throw new RuntimeException("Qdrant 저장 중 오류", e);
         }
     }

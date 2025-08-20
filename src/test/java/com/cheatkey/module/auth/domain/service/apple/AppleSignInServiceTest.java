@@ -45,7 +45,7 @@ class AppleSignInServiceTest {
                 .build();
 
         when(appleIdTokenService.validateToken(idToken)).thenReturn(providerId);
-        when(authRepository.findByProviderAndProviderId(Provider.APPLE, providerId)).thenReturn(Optional.empty());
+        when(authRepository.findActiveByProviderAndProviderId(Provider.APPLE, providerId)).thenReturn(Optional.empty());
         when(authRepository.save(any(Auth.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // when
@@ -79,7 +79,7 @@ class AppleSignInServiceTest {
                 .build();
 
         when(appleIdTokenService.validateToken(idToken)).thenReturn(providerId);
-        when(authRepository.findByProviderAndProviderId(Provider.APPLE, providerId)).thenReturn(Optional.of(existingAuth));
+        when(authRepository.findActiveByProviderAndProviderId(Provider.APPLE, providerId)).thenReturn(Optional.of(existingAuth));
         when(authRepository.save(any(Auth.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // when
@@ -120,7 +120,7 @@ class AppleSignInServiceTest {
                 .build();
 
         when(appleIdTokenService.validateToken(idToken)).thenReturn(providerId);
-        when(authRepository.findByProviderAndProviderId(Provider.APPLE, providerId)).thenReturn(Optional.empty());
+        when(authRepository.findActiveByProviderAndProviderId(Provider.APPLE, providerId)).thenReturn(Optional.empty());
         when(authRepository.save(any(Auth.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // when

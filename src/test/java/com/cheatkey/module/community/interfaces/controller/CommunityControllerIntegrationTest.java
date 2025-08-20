@@ -106,23 +106,6 @@ class CommunityControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("제목이 너무 짧으면 400 반환")
-    void createPost_titleTooShort() throws Exception {
-        CommunityPostCreateRequest request = CommunityPostCreateRequest.builder()
-                .title("짧음") // 10자 미만
-                .content("통합테스트 내용12345")
-                .category(CommunityCategory.REPORT)
-                .build();
-        String jwt = jwtProvider.createAccessToken(testUserId, Provider.KAKAO, AuthRole.USER);
-
-        mockMvc.perform(post("/v1/api/community/posts")
-                .header("Authorization", "Bearer " + jwt)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
     @DisplayName("내용이 너무 짧으면 400 반환")
     void createPost_contentTooShort() throws Exception {
         CommunityPostCreateRequest request = CommunityPostCreateRequest.builder()

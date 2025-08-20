@@ -49,7 +49,7 @@ class KakaoSignInServiceTest {
 
         when(kakaoIdTokenService.validateToken(idToken)).thenReturn(providerId);
         when(kakaoUserInfoService.fetchEmail(accessToken)).thenReturn(email);
-        when(authRepository.findByProviderAndProviderId(Provider.KAKAO, providerId)).thenReturn(Optional.empty());
+        when(authRepository.findActiveByProviderAndProviderId(Provider.KAKAO, providerId)).thenReturn(Optional.empty());
         when(authRepository.save(any(Auth.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // when
@@ -87,7 +87,7 @@ class KakaoSignInServiceTest {
 
         when(kakaoIdTokenService.validateToken(idToken)).thenReturn(providerId);
         when(kakaoUserInfoService.fetchEmail(accessToken)).thenReturn(email);
-        when(authRepository.findByProviderAndProviderId(Provider.KAKAO, providerId)).thenReturn(Optional.of(existingAuth));
+        when(authRepository.findActiveByProviderAndProviderId(Provider.KAKAO, providerId)).thenReturn(Optional.of(existingAuth));
         when(authRepository.save(any(Auth.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // when

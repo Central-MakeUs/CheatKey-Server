@@ -38,6 +38,8 @@ public class AuthActivity {
         SOCIAL_LOGIN,      // 실제 소셜 로그인
         TOKEN_REFRESH,     // 토큰 갱신 (자동 로그인)
         HOME_VISIT,        // 메인 대시보드 방문
-        MYPAGE_VISIT       // 마이페이지 방문
+        MYPAGE_VISIT,      // 마이페이지 방문
+        REACTIVATION_ATTEMPT,  // 재가입 시도
+        USER_WITHDRAWAL    // 회원 탈퇴
     }
 } 

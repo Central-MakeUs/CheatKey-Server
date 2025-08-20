@@ -13,12 +13,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class CommentService {
     private final CommunityCommentRepository commentRepository;
     private final CommunityPostRepository postRepository;
+    private final WithdrawnUserCacheService withdrawnUserCacheService;
 
     @Transactional
     public Long createComment(CommunityCommentRequest request, Long authorId, String authorNickname) {
@@ -37,7 +39,7 @@ public class CommentService {
                 throw new CustomException(ErrorCode.COMMUNITY_COMMENT_CANNOT_REPLY_TO_REPLY);
             }
 
-            if (parent.getStatus() != CommentStatus.ACTIVE) {
+            if (parent.getStatus() != null && !parent.getStatus().name().equals("ACTIVE")) {
                 throw new CustomException(ErrorCode.COMMUNITY_COMMENT_DELETED_CANNOT_REPLY);
             }
         }
@@ -73,6 +75,29 @@ public class CommentService {
             throw new CustomException(ErrorCode.COMMUNITY_POST_DELETED_OR_REPORTED);
         }
         
-        return commentRepository.findByPostIdAndStatus(postId, CommentStatus.ACTIVE);
+        // 모든 상태의 댓글과 대댓글 조회 (ACTIVE, DELETED 모두 포함)
+        List<CommunityComment> allComments = commentRepository.findByPostId(postId);
+        
+        // 탈퇴한 사용자 처리 - 닉네임만 "(알수없음)"로 변경
+        List<Long> withdrawnUserIds = withdrawnUserCacheService.getWithdrawnUserIds();
+        return allComments.stream()
+                .map(comment -> {
+                    if (withdrawnUserIds.contains(comment.getAuthorId())) {
+                        // 탈퇴한 사용자의 댓글은 닉네임만 "(알수없음)"로 표기
+                        return CommunityComment.builder()
+                                .id(comment.getId())
+                                .post(comment.getPost())
+                                .parent(comment.getParent())
+                                .authorId(comment.getAuthorId())
+                                .authorNickname("(알수없음)")
+                                .content(comment.getContent())
+                                .status(comment.getStatus())
+                                .createdAt(comment.getCreatedAt())
+                                .deletedAt(comment.getDeletedAt())
+                                .build();
+                    }
+                    return comment;
+                })
+                .collect(Collectors.toList());
     }
 }

@@ -42,12 +42,16 @@ class CommunityPostDetailServiceTest {
     private CommunityPostMapper communityPostMapper;
     @Mock
     private CommentService commentService;
+    @Mock
+    private WithdrawnUserCacheService withdrawnUserCacheService;
     @InjectMocks
     private CommunityService communityService;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+        // WithdrawnUserCacheService Mock 기본 설정
+        when(withdrawnUserCacheService.getWithdrawnUserIds()).thenReturn(List.of());
     }
 
 
@@ -60,7 +64,7 @@ class CommunityPostDetailServiceTest {
         when(communityPostFileRepository.findByPostIdIn(anyList())).thenReturn(Collections.emptyList());
         when(fileUploadRepository.findAllById(anyList())).thenReturn(Collections.emptyList());
         when(commentService.getCommentsForPost(1L)).thenReturn(Collections.emptyList());
-        when(communityPostMapper.toCommentDtoList(anyList())).thenReturn(Collections.emptyList());
+        when(communityPostMapper.toCommentDtoList(anyList(), eq(3L))).thenReturn(Collections.emptyList());
         when(communityPostMapper.toDetailDto(any(), anyInt(), anyList(), anyList(), anyBoolean(), anyBoolean(), any())).thenReturn(
             CommunityPostDetailResponse.builder().id(1L).authorNickname("닉네임").commentCount(0).presignedUrls(List.of()).build()
         );
@@ -98,7 +102,7 @@ class CommunityPostDetailServiceTest {
         when(communityPostFileRepository.findByPostIdIn(anyList())).thenReturn(Collections.emptyList());
         when(fileUploadRepository.findAllById(anyList())).thenReturn(Collections.emptyList());
         when(commentService.getCommentsForPost(1L)).thenReturn(Collections.emptyList());
-        when(communityPostMapper.toCommentDtoList(anyList())).thenReturn(Collections.emptyList());
+        when(communityPostMapper.toCommentDtoList(anyList(), eq(2L))).thenReturn(Collections.emptyList());
         when(communityPostMapper.toDetailDto(any(), anyInt(), anyList(), anyList(), anyBoolean(), anyBoolean(), any())).thenReturn(
             CommunityPostDetailResponse.builder().id(1L).authorNickname("닉네임").commentCount(0).presignedUrls(List.of()).blockMessage("신고된 게시글에 대한 접근 권한이 없습니다.").build()
         );
@@ -120,7 +124,7 @@ class CommunityPostDetailServiceTest {
         when(communityPostFileRepository.findByPostIdIn(anyList())).thenReturn(Collections.emptyList());
         when(fileUploadRepository.findAllById(anyList())).thenReturn(Collections.emptyList());
         when(commentService.getCommentsForPost(1L)).thenReturn(Collections.emptyList());
-        when(communityPostMapper.toCommentDtoList(anyList())).thenReturn(Collections.emptyList());
+        when(communityPostMapper.toCommentDtoList(anyList(), eq(3L))).thenReturn(Collections.emptyList());
         when(communityPostMapper.toDetailDto(any(), anyInt(), anyList(), anyList(), anyBoolean(), anyBoolean(), any())).thenReturn(
             CommunityPostDetailResponse.builder().id(1L).authorNickname("닉네임").commentCount(0).presignedUrls(List.of()).blockMessage("신고된 게시글에 대한 접근 권한이 없습니다.").build()
         );
@@ -144,7 +148,7 @@ class CommunityPostDetailServiceTest {
         when(communityPostFileRepository.findByPostIdIn(anyList())).thenReturn(Collections.emptyList());
         when(fileUploadRepository.findAllById(anyList())).thenReturn(Collections.emptyList());
         when(commentService.getCommentsForPost(1L)).thenReturn(Collections.emptyList());
-        when(communityPostMapper.toCommentDtoList(anyList())).thenReturn(Collections.emptyList());
+        when(communityPostMapper.toCommentDtoList(anyList(), eq(3L))).thenReturn(Collections.emptyList());
         when(communityPostMapper.toDetailDto(any(), anyInt(), anyList(), anyList(), anyBoolean(), anyBoolean(), any())).thenReturn(
             CommunityPostDetailResponse.builder().id(1L).authorNickname("닉네임").commentCount(0).presignedUrls(List.of()).blockMessage("차단된 글입니다.").build()
         );

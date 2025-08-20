@@ -1,0 +1,288 @@
+package com.cheatkey.module.detection.domain.service;
+
+import com.cheatkey.module.detection.domain.config.QualityAssessmentConfig;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class QualityAssessmentService {
+    
+    private final QualityAssessmentConfig config;
+
+    /**
+     * 입력 품질 점수 계산 (10점 만점)
+     */
+    public double calculateInputQualityScore(String input) {
+        // 무의미한 입력 감지 (즉시 0점)
+        if (isMeaninglessInput(input)) {
+            return 0.0;
+        }
+        
+        // 피싱 관련성 없는 입력 감지 (낮은 점수)
+        if (!isPhishingRelated(input)) {
+            return 2.5; // 0.5 * 5.0
+        }
+        
+        double score = 0.0;
+        
+        // 길이 점수 (0-2점) - 설정 기반
+        score += calculateLengthScore(input) * 5.0; // 0-0.4점 → 0-2점
+        
+        // 피싱 관련성 점수 (0-3점) - 핵심 가치
+        score += calculatePhishingRelevanceScore(input) * 5.0; // 0-0.6점 → 0-3점
+        
+        // 구체성 점수 (0-2점) - 설정 기반
+        score += calculateSpecificityScore(input) * 5.0; // 0-0.4점 → 0-2점
+        
+        // 플랫폼/서비스 점수 (0-2점) - 설정 기반
+        score += calculatePlatformScore(input) * 5.0; // 0-0.4점 → 0-2점
+        
+        // 성적 유혹/유출 키워드 점수 (0-1점) - 최신 트렌드
+        score += calculateTemptationScore(input) * 5.0; // 0-0.2점 → 0-1점
+        
+        return Math.min(score, 10.0); // 최대 10점으로 제한
+    }
+    
+    /**
+     * 길이 점수 계산 (0-0.4점)
+     */
+    private double calculateLengthScore(String input) {
+        // 설정 기반 길이 점수
+        int length = input.length();
+        if (length >= config.getMinGoodLength()) return 0.5;
+        if (length >= config.getMinAcceptableLength()) return 0.3;
+        if (length >= config.getMinLength()) return 0.1;
+        return 0.0;
+    }
+    
+    /**
+     * 의미 없는 입력 검사 (1단계에서 호출)
+     */
+    public boolean isMeaninglessInput(String input) {
+        // 1. 길이 기반 차단 (너무 짧거나 긴 입력)
+        if (input.length() < 2 || input.length() > 200) return true;
+        
+        // 2. 피싱 관련 키워드가 있으면 길이와 무관하게 허용
+        if (isPhishingRelated(input)) {
+            return false;  // 피싱 관련 키워드가 있으면 의미 있는 입력
+        }
+        
+        // 3. 피싱 관련 키워드가 없는 경우 더 엄격한 길이 제한
+        if (input.length() < 5) return true;  // 5자 미만은 의미 없음
+        
+        // 4. 무의미한 반복 패턴
+        if (hasRepetitivePattern(input)) return true;
+        
+        // 5. 일반적인 인사말
+        if (isGreeting(input)) return true;
+        
+        // 6. 특수문자만 있는 경우
+        if (isOnlySpecialCharacters(input)) return true;
+        
+        // 7. 한글 자음/모음만 있는 경우
+        if (isOnlyKoreanJamo(input)) return true;
+        
+        // 8. 의미 없는 단일 문자/이모지
+        if (isMeaninglessSingleInput(input)) return true;
+        
+        return false;
+    }
+    
+    /**
+     * 무의미한 반복 패턴 체크
+     */
+    private boolean hasRepetitivePattern(String input) {
+        if (input.length() < 3) return false;
+        
+        // 3글자 연속 반복 체크 (예: "똥똥똥", "ㅋㅋㅋ")
+        for (int i = 0; i < input.length() - 2; i++) {
+            if (input.charAt(i) == input.charAt(i + 1) && 
+                input.charAt(i + 1) == input.charAt(i + 2)) {
+                return true;
+            }
+        }
+        
+        // 단어 단위 반복 체크
+        String[] words = input.split("\\s+");
+        if (words.length >= 2) {
+            for (int i = 0; i < words.length - 1; i++) {
+                if (words[i].equals(words[i + 1])) {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * 일반적인 인사말 체크 (확장)
+     */
+    private boolean isGreeting(String input) {
+        String[] greetings = {
+            // 기존
+            "안녕하세요", "안녕", "반갑습니다", "하이", "hi", "hello",
+            // 추가
+            "안녕하십니까", "만나서 반갑습니다", "좋은 하루", "좋은 아침",
+            "좋은 점심", "좋은 저녁", "수고하세요", "수고하십니다", "고생하세요",
+            "고생하십니다", "잘 가", "잘 가요", "안녕히 가세요", "안녕히 계세요",
+            "bye", "goodbye", "see you", "take care"
+        };
+        
+        String lowerInput = input.toLowerCase().trim();
+        for (String greeting : greetings) {
+            if (lowerInput.equals(greeting.toLowerCase()) || 
+                lowerInput.startsWith(greeting.toLowerCase() + " ") ||
+                lowerInput.endsWith(" " + greeting.toLowerCase())) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * 특수문자만 있는 경우 체크 (개선)
+     */
+    private boolean isOnlySpecialCharacters(String input) {
+        // 특수문자 비율이 70% 이상인 경우
+        String specialCharPattern = "[^\\p{L}\\p{N}\\s]";
+        long specialCharCount = input.chars()
+            .mapToObj(ch -> String.valueOf((char) ch))
+            .filter(ch -> ch.matches(specialCharPattern))
+            .count();
+        
+        return (double) specialCharCount / input.length() >= 0.7;
+    }
+    
+    /**
+     * 한글 자음/모음만 있는 경우 체크
+     */
+    private boolean isOnlyKoreanJamo(String input) {
+        // 한글 자음/모음만 있는지 확인
+        String jamoPattern = "[ㄱ-ㅎㅏ-ㅣ]+";
+        if (input.matches(jamoPattern)) return true;
+        
+        // 자음/모음 비율이 80% 이상인 경우
+        long jamoCount = input.chars()
+            .mapToObj(ch -> String.valueOf((char) ch))
+            .filter(ch -> ch.matches("[ㄱ-ㅎㅏ-ㅣ]"))
+            .count();
+        
+        return (double) jamoCount / input.length() >= 0.8;
+    }
+    
+    /**
+     * 의미 없는 단일 입력 체크
+     */
+    private boolean isMeaninglessSingleInput(String input) {
+        // 단일 문자 차단
+        if (input.length() == 1) {
+            String[] meaninglessSingle = {
+                "똥", "ㅋ", "ㅎ", "ㅠ", "ㅜ", "ㅡ", "ㅣ", "ㅏ", "ㅑ", "ㅓ", "ㅕ",
+                "ㅁ", "ㄴ", "ㄷ", "ㄹ", "ㅂ", "ㅅ", "ㅇ", "ㅈ", "ㅊ", "ㅌ", "ㅍ",
+                "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
+                "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"
+            };
+            
+            for (String pattern : meaninglessSingle) {
+                if (input.equalsIgnoreCase(pattern)) return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    private boolean isPhishingRelated(String input) {
+        // 피싱 관련 키워드가 하나라도 있는지 확인
+        String[] phishingKeywords = {
+            "피싱", "사기", "사칭", "의심", "이상", "수상", "메시지", "링크", "클릭",
+            "계좌", "비밀번호", "카드", "결제", "은행", "금액", "송금", "이체",
+            "이메일", "문자", "전화", "알림", "경고", "주의", "확인", "검증"
+        };
+        
+        String lowerInput = input.toLowerCase();
+        for (String keyword : phishingKeywords) {
+            if (lowerInput.contains(keyword)) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    private double calculateSpecificityScore(String input) {
+        double score = 0.0;
+        
+        // 구체적 상황 묘사
+        if (input.contains("받았는데") || input.contains("보냈는데")) score += 0.2;
+        if (input.contains("클릭했는데") || input.contains("입력했는데")) score += 0.2;
+        
+        // 최신 피싱 상황 패턴
+        if (input.contains("가입했어요") || input.contains("등록했어요")) score += 0.2;
+        if (input.contains("요구합니다") || input.contains("달라고")) score += 0.2;
+        if (input.contains("소개받은") || input.contains("추천받은")) score += 0.1;
+        
+        return Math.min(score, 0.4);
+    }
+    
+    private double calculatePlatformScore(String input) {
+        double score = 0.0;
+        
+        // 기존 플랫폼/서비스
+        if (input.contains("이메일") || input.contains("문자") || input.contains("전화")) score += 0.2;
+        if (input.contains("은행") || input.contains("카드") || input.contains("결제")) score += 0.1;
+        
+        // 최신 플랫폼 확장
+        if (input.contains("텔레그램") || input.contains("라인") || input.contains("카카오톡")) score += 0.2;
+        if (input.contains("오픈채팅") || input.contains("사이트") || input.contains("앱")) score += 0.2;
+        if (input.contains("인스타그램") || input.contains("페이스북") || input.contains("트위터")) score += 0.1;
+        
+        return Math.min(score, 0.4);
+    }
+    
+    /**
+     * 피싱 관련성 점수 계산 (핵심 가치)
+     */
+    private double calculatePhishingRelevanceScore(String input) {
+        double score = 0.0;
+        String lowerInput = input.toLowerCase();
+        
+        // 기본 피싱 키워드
+        if (lowerInput.contains("피싱") || lowerInput.contains("사기") || lowerInput.contains("사칭")) score += 0.3;
+        if (lowerInput.contains("의심") || lowerInput.contains("이상") || lowerInput.contains("수상")) score += 0.2;
+        
+        // 금전적 위험 요소
+        if (lowerInput.contains("계좌") || lowerInput.contains("비밀번호") || lowerInput.contains("카드")) score += 0.2;
+        if (lowerInput.contains("송금") || lowerInput.contains("이체") || lowerInput.contains("결제")) score += 0.2;
+        if (lowerInput.contains("부업") || lowerInput.contains("돈") || lowerInput.contains("수익")) score += 0.2;
+        
+        // 개인정보 유출 위험
+        if (lowerInput.contains("개인정보") || lowerInput.contains("신분증") || lowerInput.contains("주민번호")) score += 0.2;
+        if (lowerInput.contains("연락처") || lowerInput.contains("주소") || lowerInput.contains("생년월일")) score += 0.1;
+        
+        return Math.min(score, 0.6);
+    }
+    
+    /**
+     * 성적 유혹/유출 키워드 점수 계산 (최신 트렌드)
+     */
+    private double calculateTemptationScore(String input) {
+        double score = 0.0;
+        String lowerInput = input.toLowerCase();
+        
+        // 성적 유혹 키워드
+        if (lowerInput.contains("섹파") || lowerInput.contains("섹시") || lowerInput.contains("외로움")) score += 0.1;
+        if (lowerInput.contains("연애") || lowerInput.contains("소개팅") || lowerInput.contains("만남")) score += 0.1;
+        if (lowerInput.contains("친구") || lowerInput.contains("대화") || lowerInput.contains("상담")) score += 0.1;
+        
+        // 유출/추천 키워드
+        if (lowerInput.contains("추천") || lowerInput.contains("소개") || lowerInput.contains("알려줘")) score += 0.1;
+        if (lowerInput.contains("가입") || lowerInput.contains("등록") || lowerInput.contains("신청")) score += 0.1;
+        
+        return Math.min(score, 0.2);
+    }
+}

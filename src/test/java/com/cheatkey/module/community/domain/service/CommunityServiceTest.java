@@ -27,6 +27,8 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import java.time.LocalDateTime;
+import com.cheatkey.module.community.domain.service.WithdrawnUserCacheService;
+import com.cheatkey.module.auth.domain.repository.AuthRepository;
 
 class CommunityServiceTest {
     @Mock
@@ -47,12 +49,33 @@ class CommunityServiceTest {
     private CommentService commentService;
     @Mock
     private CommunityPostMapper communityPostMapper;
-    @InjectMocks
+    @Mock
+    private WithdrawnUserCacheService withdrawnUserCacheService;
+    @Mock
+    private AuthRepository authRepository;
     private CommunityService communityService;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+        
+        // CommunityService를 수동으로 생성하여 Mock 객체들을 주입
+        communityService = new CommunityService(
+            communityPostRepository,
+            communityReportedPostRepository,
+            communityPostBlockRepository,
+            communityPostFileRepository,
+            fileUploadRepository,
+            communityCommentRepository,
+            authRepository,
+            fileService,
+            commentService,
+            withdrawnUserCacheService,
+            communityPostMapper
+        );
+        
+        // WithdrawnUserCacheService Mock 기본 설정
+        when(withdrawnUserCacheService.getWithdrawnUserIds()).thenReturn(List.of());
     }
 
     @Test
@@ -242,8 +265,8 @@ class CommunityServiceTest {
         );
         
         List<CommunityCommentResponse> commentResponses = List.of(
-            CommunityCommentResponse.builder().id(1L).content("댓글1").build(),
-            CommunityCommentResponse.builder().id(2L).content("댓글2").build()
+            CommunityCommentResponse.builder().id(1L).content("댓글1").canDelete(false).build(),
+            CommunityCommentResponse.builder().id(2L).content("댓글2").canDelete(false).build()
         );
         
         CommunityPostDetailResponse expectedResponse = CommunityPostDetailResponse.builder()
@@ -258,7 +281,7 @@ class CommunityServiceTest {
         when(communityPostFileRepository.findByPostIdIn(anyList())).thenReturn(List.of());
         when(fileUploadRepository.findAllById(anyList())).thenReturn(List.of());
         when(commentService.getCommentsForPost(postId)).thenReturn(comments);
-        when(communityPostMapper.toCommentDtoList(comments)).thenReturn(commentResponses);
+        when(communityPostMapper.toCommentDtoList(comments, userId)).thenReturn(commentResponses);
         when(communityPostMapper.toDetailDto(any(), anyInt(), anyList(), anyList(), anyBoolean(), anyBoolean(), any()))
                 .thenReturn(expectedResponse);
 
@@ -269,7 +292,7 @@ class CommunityServiceTest {
         assertNotNull(result);
         assertEquals(expectedResponse, result);
         verify(commentService).getCommentsForPost(postId);
-        verify(communityPostMapper).toCommentDtoList(comments);
+        verify(communityPostMapper).toCommentDtoList(comments, userId);
         verify(communityPostMapper).toDetailDto(any(), anyInt(), anyList(), anyList(), anyBoolean(), anyBoolean(), any());
     }
 
@@ -278,19 +301,20 @@ class CommunityServiceTest {
         // given
         LocalDateTime now = LocalDateTime.now();
         List<CommunityPost> posts = List.of(
-            CommunityPost.builder().id(1L).title("글1").viewCount(10L).createdAt(now.minusDays(1)).status(PostStatus.ACTIVE).build(),
-            CommunityPost.builder().id(2L).title("글2").viewCount(20L).createdAt(now).status(PostStatus.ACTIVE).build(),
-            CommunityPost.builder().id(3L).title("글3").viewCount(5L).createdAt(now.minusHours(1)).status(PostStatus.ACTIVE).build()
+            CommunityPost.builder().id(1L).title("글1").viewCount(5L).createdAt(now.minusDays(1)).status(PostStatus.ACTIVE).build(),
+            CommunityPost.builder().id(2L).title("글2").viewCount(10L).createdAt(now).status(PostStatus.ACTIVE).build(),
+            CommunityPost.builder().id(3L).title("글3").viewCount(3L).createdAt(now.minusHours(1)).status(PostStatus.ACTIVE).build()
         );
         
-        // 댓글 수: 글2(5개) > 글1(3개) > 글3(0개)
         List<Object[]> commentCounts = List.of(
             new Object[]{1L, 3L},
-            new Object[]{2L, 5L}
+            new Object[]{2L, 5L},
+            new Object[]{3L, 0L}
         );
         
         when(communityPostRepository.findAll()).thenReturn(posts);
         when(communityCommentRepository.countCommentsByPostIds(List.of(1L, 2L, 3L))).thenReturn(commentCounts);
+        when(withdrawnUserCacheService.getWithdrawnUserIds()).thenReturn(List.of());
 
         // when
         List<CommunityPost> result = communityService.getPopularPosts(3);
@@ -322,6 +346,7 @@ class CommunityServiceTest {
         
         when(communityPostRepository.findAll()).thenReturn(posts);
         when(communityCommentRepository.countCommentsByPostIds(List.of(1L, 2L, 3L))).thenReturn(commentCounts);
+        when(withdrawnUserCacheService.getWithdrawnUserIds()).thenReturn(List.of());
 
         // when
         List<CommunityPost> result = communityService.getPopularPosts(3);
@@ -353,6 +378,7 @@ class CommunityServiceTest {
         
         when(communityPostRepository.findAll()).thenReturn(posts);
         when(communityCommentRepository.countCommentsByPostIds(List.of(1L, 2L, 3L))).thenReturn(commentCounts);
+        when(withdrawnUserCacheService.getWithdrawnUserIds()).thenReturn(List.of());
 
         // when
         List<CommunityPost> result = communityService.getPopularPosts(3);
@@ -380,6 +406,7 @@ class CommunityServiceTest {
         
         when(communityPostRepository.findAll()).thenReturn(posts);
         when(communityCommentRepository.countCommentsByPostIds(List.of(1L, 2L, 3L))).thenReturn(commentCounts);
+        when(withdrawnUserCacheService.getWithdrawnUserIds()).thenReturn(List.of());
 
         // when
         List<CommunityPost> result = communityService.getPopularPosts(3);
@@ -409,6 +436,7 @@ class CommunityServiceTest {
         
         when(communityPostRepository.findAll()).thenReturn(posts);
         when(communityCommentRepository.countCommentsByPostIds(List.of(1L, 3L))).thenReturn(commentCounts);
+        when(withdrawnUserCacheService.getWithdrawnUserIds()).thenReturn(List.of());
 
         // when
         List<CommunityPost> result = communityService.getPopularPosts(3);

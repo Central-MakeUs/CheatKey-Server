@@ -55,6 +55,10 @@ public class Auth {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
+    // 탈퇴 관련 필드 추가
+    private LocalDateTime withdrawnAt;        // 탈퇴 시점
+    private String withdrawalReason;          // 탈퇴 사유 (코드 또는 텍스트)
+
     public void increaseLoginCount() {
         this.loginCount = (this.loginCount == null) ? 1 : this.loginCount + 1;
     }
@@ -103,4 +107,21 @@ public class Auth {
     }
     public void setProfileImageId(Long profileImageId) {this.profileImageId = profileImageId;}
     public void setLevel(Integer level) {this.level = level;}
+    
+    // 탈퇴 관련 메서드
+    public void withdraw(String reason) {
+        this.status = AuthStatus.WITHDRAWN;
+        this.withdrawnAt = LocalDateTime.now();
+        this.withdrawalReason = reason;
+    }
+    
+    public boolean canRejoin() {
+        if (this.withdrawnAt == null) return false;
+        return LocalDateTime.now().isAfter(this.withdrawnAt.plusDays(30));
+    }
+    
+    // 테스트를 위한 메서드
+    public void setWithdrawnAt(LocalDateTime withdrawnAt) {
+        this.withdrawnAt = withdrawnAt;
+    }
 }

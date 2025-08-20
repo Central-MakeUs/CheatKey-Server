@@ -60,8 +60,8 @@ public class DetectionController {
         DetectionInput input = new DetectionInput(caseDetectionRequest.getText(), DetectionType.CASE);
         Long userId = Long.valueOf(SecurityUtil.getCurrentUserId());
 
-        DetectionResult result = caseDetectionService.detect(input, userId);
-        return ResponseEntity.ok(new DetectionResponse(result));
+        DetectionResponse result = caseDetectionService.detect(input, userId);
+        return ResponseEntity.ok(result);
     }
 
     @Operation(summary = "(★) 분석 결과 상세 조회", description = "AI 분석 결과의 상세 정보를 조회합니다. 본인의 분석 내역만 조회 가능합니다.")
