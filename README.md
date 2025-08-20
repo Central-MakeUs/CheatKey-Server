@@ -19,6 +19,7 @@ CheatKey는 **벡터 검색 기반 AI 모델**을 활용해 피싱 사기 문자
 
 - **Android**: [Google Play Store](https://play.google.com/store/apps/details?id=com.cheatkey.app&pcampaignid=web_share)
 - **iOS**: [App Store](https://apps.apple.com/kr/app/%EC%B9%98%ED%8A%B8%ED%82%A4-ai-%EC%82%AC%EA%B8%B0%ED%83%90%EC%A7%80-%ED%94%8C%EB%9E%AB%ED%8F%BC/id6749635626)
+- [디자인 상세](docs/design/app.png)
 
 ---
 
@@ -107,6 +108,15 @@ cheatkey/
 - **[비즈니스 플로우 차트](docs/flows/business.md)**: 비즈니스 로직 의사결정 플로우
 
 > 위 문서들은 `/docs` 디렉터리에 포함되어 있으며, 상세 기능별 이해를 돕기 위해 별도 작성되었습니다.
+
+---
+## Contributors
+
+### Backend Development
+- **Backend Developer**: [CheatKey Server Repository](https://github.com/Central-MakeUs/CheatKey-Server)
+
+### Frontend Development
+- **Frontend Developer**: [CheatKet Web Repository](https://github.com/Central-MakeUs/CheatKey-Front)
 
 ---
 
