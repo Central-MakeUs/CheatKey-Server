@@ -145,7 +145,7 @@ erDiagram
         datetime detected_at
         varchar matched_case_id
         varchar detection_type
-        bigint user_id FK (nullable)
+        bigint user_id FK
     }
 
     %% 고도화 진행 중인 탐지 워크플로우 테이블
