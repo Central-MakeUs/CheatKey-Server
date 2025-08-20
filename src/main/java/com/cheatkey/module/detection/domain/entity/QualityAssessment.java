@@ -1,6 +1,6 @@
 package com.cheatkey.module.detection.domain.entity;
 
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,22 +12,27 @@ import java.util.List;
 /**
  * AI 분석 결과의 품질 평가 정보
  */
+@Entity
 @Data
 @Table(name = "t_detection_quality_assessment")
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class QualityAssessment {
-    
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
     /**
      * AI 분석 결과의 전반적인 품질 점수 (0.0~10.0)
-     * 
+     *
      * 평가 기준:
      * - 검색 결과의 유사도 (40%)
      * - 사용자 입력의 명확성 (30%)
      * - AI 판정의 일관성 (20%)
      * - 시스템 신뢰도 (10%)
-     * 
+     *
      * 점수별 의미:
      * - 9.0~10.0: 우수한 품질, 즉시 적용 가능
      * - 7.0~8.9: 양호한 품질, 적용 가능
@@ -41,6 +46,8 @@ public class QualityAssessment {
     private int searchAttempts;                 // 검색 시도 횟수
     private float preservedTopScore;            // 백터 검색 점수 (0.0~1.0)
     private int resultCount;                    // 검색 결과 수
+
+    @Transient
     private List<String> improvementSteps;      // 개선 단계들
 
     // === 판정 결과 ===

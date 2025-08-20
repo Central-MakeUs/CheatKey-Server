@@ -79,7 +79,7 @@ class CaseDetectionServiceTest {
         DetectionWorkflowState result = workflow.executeWorkflow(userInput);
 
         // then
-        assertThat(result.getStatus()).isEqualTo(DetectionWorkflowState.WorkflowStatus.COMPLETED);
+        assertThat(result.getWorkflowStatus()).isEqualTo(DetectionWorkflowState.WorkflowStatus.COMPLETED);
         assertThat(result.getCurrentStep()).isEqualTo(DetectionWorkflowState.WorkflowStep.RESULT_ANALYSIS);
         assertThat(result.getPreservedTopScore()).isEqualTo(0.85f);
         assertThat(result.getDetectionStatus()).isEqualTo(DetectionStatus.DANGER);
@@ -105,7 +105,7 @@ class CaseDetectionServiceTest {
         DetectionWorkflowState result = workflow.executeWorkflow(userInput);
 
         // then
-        assertThat(result.getStatus()).isEqualTo(DetectionWorkflowState.WorkflowStatus.COMPLETED);
+        assertThat(result.getWorkflowStatus()).isEqualTo(DetectionWorkflowState.WorkflowStatus.COMPLETED);
         assertThat(result.getPreservedTopScore()).isEqualTo(0.2f);
         assertThat(result.isOpenAIUsed()).isTrue(); // OpenAI 사용함
     }
@@ -138,7 +138,7 @@ class CaseDetectionServiceTest {
         DetectionWorkflowState result = workflow.executeWorkflow(userInput);
 
         // then
-        assertThat(result.getStatus()).isEqualTo(DetectionWorkflowState.WorkflowStatus.COMPLETED);
+        assertThat(result.getWorkflowStatus()).isEqualTo(DetectionWorkflowState.WorkflowStatus.COMPLETED);
         assertThat(result.getPreservedTopScore()).isEqualTo(0.1f);
         assertThat(result.isOpenAIUsed()).isTrue(); // OpenAI 사용함
         assertThat(result.getOpenAICallCount()).isEqualTo(1);

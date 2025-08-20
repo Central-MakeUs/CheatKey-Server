@@ -41,7 +41,7 @@ public class LangGraphStyleWorkflow {
             state = executeStepByStep(state);
             
             // 3. 최종 상태 설정
-            if (state.getStatus() != DetectionWorkflowState.WorkflowStatus.FAILED) {
+            if (state.getWorkflowStatus() != DetectionWorkflowState.WorkflowStatus.FAILED) {
                 state.updateStatus(DetectionWorkflowState.WorkflowStatus.COMPLETED);
             }
             
@@ -477,8 +477,7 @@ public class LangGraphStyleWorkflow {
      * 워크플로우 중단 여부 확인
      */
     private boolean shouldStopWorkflow(DetectionWorkflowState state) {
-        return state.getStatus() == DetectionWorkflowState.WorkflowStatus.FAILED ||
-               state.getStatus() == DetectionWorkflowState.WorkflowStatus.FAILED;
+        return state.getWorkflowStatus() == DetectionWorkflowState.WorkflowStatus.FAILED;
     }
     
     /**

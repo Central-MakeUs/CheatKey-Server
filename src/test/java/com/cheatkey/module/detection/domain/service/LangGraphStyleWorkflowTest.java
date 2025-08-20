@@ -69,7 +69,7 @@ class LangGraphStyleWorkflowTest {
         DetectionWorkflowState result = workflow.executeWorkflow(userInput);
 
         // then
-        assertThat(result.getStatus()).isEqualTo(DetectionWorkflowState.WorkflowStatus.FAILED);
+        assertThat(result.getWorkflowStatus()).isEqualTo(DetectionWorkflowState.WorkflowStatus.FAILED);
         assertThat(result.getActionType()).isEqualTo(ActionType.INVALID_INPUT_CASE);
         assertThat(result.getDetectionStatus()).isEqualTo(DetectionStatus.UNKNOWN);
         assertThat(result.getLastError()).contains("의미 없는 입력으로 판정됨");
@@ -88,7 +88,7 @@ class LangGraphStyleWorkflowTest {
         DetectionWorkflowState result = workflow.executeWorkflow(userInput);
 
         // then
-        assertThat(result.getStatus()).isEqualTo(DetectionWorkflowState.WorkflowStatus.FAILED);
+        assertThat(result.getWorkflowStatus()).isEqualTo(DetectionWorkflowState.WorkflowStatus.FAILED);
         assertThat(result.getActionType()).isEqualTo(ActionType.INVALID_INPUT_CASE);
         assertThat(result.getDetectionStatus()).isEqualTo(DetectionStatus.UNKNOWN);
     }
@@ -106,7 +106,7 @@ class LangGraphStyleWorkflowTest {
         DetectionWorkflowState result = workflow.executeWorkflow(userInput);
 
         // then
-        assertThat(result.getStatus()).isEqualTo(DetectionWorkflowState.WorkflowStatus.FAILED);
+        assertThat(result.getWorkflowStatus()).isEqualTo(DetectionWorkflowState.WorkflowStatus.FAILED);
         assertThat(result.getActionType()).isEqualTo(ActionType.INVALID_INPUT_CASE);
         assertThat(result.getDetectionStatus()).isEqualTo(DetectionStatus.UNKNOWN);
     }
@@ -133,7 +133,7 @@ class LangGraphStyleWorkflowTest {
         DetectionWorkflowState result = workflow.executeWorkflow(userInput);
 
         // then
-        assertThat(result.getStatus()).isEqualTo(DetectionWorkflowState.WorkflowStatus.COMPLETED);
+        assertThat(result.getWorkflowStatus()).isEqualTo(DetectionWorkflowState.WorkflowStatus.COMPLETED);
         assertThat(result.getDetectionStatus()).isEqualTo(DetectionStatus.DANGER);
     }
 
@@ -159,7 +159,7 @@ class LangGraphStyleWorkflowTest {
         DetectionWorkflowState result = workflow.executeWorkflow(userInput);
 
         // then
-        assertThat(result.getStatus()).isEqualTo(DetectionWorkflowState.WorkflowStatus.COMPLETED);
+        assertThat(result.getWorkflowStatus()).isEqualTo(DetectionWorkflowState.WorkflowStatus.COMPLETED);
         assertThat(result.getDetectionStatus()).isEqualTo(DetectionStatus.DANGER);
     }
 
@@ -185,7 +185,7 @@ class LangGraphStyleWorkflowTest {
         DetectionWorkflowState result = workflow.executeWorkflow(userInput);
 
         // then
-        assertThat(result.getStatus()).isEqualTo(DetectionWorkflowState.WorkflowStatus.COMPLETED);
+        assertThat(result.getWorkflowStatus()).isEqualTo(DetectionWorkflowState.WorkflowStatus.COMPLETED);
         assertThat(result.getDetectionStatus()).isEqualTo(DetectionStatus.DANGER);
     }
 }

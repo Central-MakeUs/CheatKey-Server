@@ -4,6 +4,7 @@ import com.cheatkey.module.detection.domain.entity.*;
 import com.cheatkey.module.detection.domain.mapper.DetectionMapper;
 import com.cheatkey.module.detection.domain.repository.DetectionHistoryRepository;
 import com.cheatkey.module.detection.domain.service.workflow.LangGraphStyleWorkflow;
+import com.cheatkey.module.detection.infra.client.VectorDbClient;
 import com.cheatkey.module.detection.interfaces.dto.DetectionResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,6 +12,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -32,7 +35,7 @@ public class CaseDetectionService {
             DetectionWorkflowState workflowState = langGraphWorkflow.executeWorkflow(input.content());
             
             // 2. 워크플로우 결과 분석
-            if (workflowState.getStatus() == DetectionWorkflowState.WorkflowStatus.FAILED) {
+            if (workflowState.getWorkflowStatus() == DetectionWorkflowState.WorkflowStatus.FAILED) {
                 return handleWorkflowFailure(workflowState, input, loginUserId);
             }
             
@@ -80,8 +83,13 @@ public class CaseDetectionService {
             workflowState.getResultCount());
 
         // 1. 검색 결과를 기반으로 위험도 및 카테고리 결정
+        List<VectorDbClient.SearchResult> searchResults = workflowState.getSearchResults();
+        if (searchResults == null) {
+            searchResults = new ArrayList<>();
+        }
+
         DetectionStatus status = workflowState.getDetectionStatus();
-        DetectionCategory category = detectionMapper.mapToCategory(workflowState.getSearchResults());
+        DetectionCategory category = detectionMapper.mapToCategory(searchResults);
         
         // @TODO 프론트엔드 호환성을 위한 특별 처리
         if (status == null && workflowState.getActionType() != null) {
@@ -109,8 +117,7 @@ public class CaseDetectionService {
                 .group(group)
                 .detectedAt(successHistory.getDetectedAt())
                 .detectionType(successHistory.getDetectionType())
-                .matchedCaseId(workflowState.getSearchResults().isEmpty() ? null :
-                    workflowState.getSearchResults().get(0).id())
+                .matchedCaseId(searchResults.isEmpty() ? null : searchResults.get(0).id())
                 .build();
         detectionHistoryRepository.save(successHistory);
         
