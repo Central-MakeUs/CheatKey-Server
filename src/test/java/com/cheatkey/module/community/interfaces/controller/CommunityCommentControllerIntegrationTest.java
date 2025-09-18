@@ -1,15 +1,19 @@
 package com.cheatkey.module.community.interfaces.controller;
 
 import com.cheatkey.common.jwt.JwtProvider;
+import com.cheatkey.module.auth.domain.entity.Auth;
 import com.cheatkey.module.auth.domain.entity.AuthRole;
 import com.cheatkey.module.auth.domain.entity.Provider;
+import com.cheatkey.module.auth.domain.repository.AuthRepository;
 import com.cheatkey.module.community.domain.entity.CommunityCategory;
 import com.cheatkey.module.community.domain.entity.CommunityPost;
+import com.cheatkey.module.community.domain.entity.CommunityReportedComment;
 import com.cheatkey.module.community.domain.entity.PostStatus;
 import com.cheatkey.module.community.domain.entity.comment.CommunityComment;
 import com.cheatkey.module.community.domain.entity.comment.CommentStatus;
 import com.cheatkey.module.community.domain.repository.CommunityCommentRepository;
 import com.cheatkey.module.community.domain.repository.CommunityPostRepository;
+import com.cheatkey.module.community.domain.repository.CommunityReportedCommentRepository;
 import com.cheatkey.module.community.interfaces.dto.comment.CommunityCommentRequest;
 import com.cheatkey.module.community.interfaces.dto.comment.CommunityCommentReportRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
@@ -47,6 +52,12 @@ class CommunityCommentControllerIntegrationTest {
 
     @Autowired
     private JwtProvider jwtProvider;
+
+    @Autowired
+    private CommunityReportedCommentRepository communityReportedCommentRepository;
+
+    @Autowired
+    private AuthRepository authRepository;
 
     @Test
     @DisplayName("댓글 작성/조회/삭제 end-to-end 성공")
@@ -169,9 +180,9 @@ class CommunityCommentControllerIntegrationTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
 
-        // then: 댓글 상태가 REPORTED로 변경되었는지 확인
+        // then: 1회 신고 후 상태 확인 (아직 ACTIVE)
         CommunityComment updatedComment = commentRepository.findById(comment.getId()).orElseThrow();
-        assertThat(updatedComment.getStatus()).isEqualTo(CommentStatus.REPORTED);
+        assertThat(updatedComment.getStatus()).isEqualTo(CommentStatus.ACTIVE);
 
         // when: 같은 댓글을 다시 신고 시도
         mockMvc.perform(post("/v1/api/community/comments/" + comment.getId() + "/report")
@@ -288,4 +299,183 @@ class CommunityCommentControllerIntegrationTest {
                 .andExpect(jsonPath("$[0].status").value("REPORTED"))
                 .andExpect(jsonPath("$[0].canDelete").value(false));
     }
-} 
+
+    @Test
+    @DisplayName("2회 신고 시 댓글 상태 변경 통합 테스트")
+    void reportComment_twoReportsChangeStatus() throws Exception {
+        // given: 게시글과 댓글 생성
+        CommunityPost post = CommunityPost.builder()
+                .title("2회 신고 테스트 제목")
+                .content("2회 신고 테스트 내용")
+                .category(CommunityCategory.REPORT)
+                .authorId(10L)
+                .authorNickname("테스트유저1")
+                .viewCount(0L)
+                .status(PostStatus.ACTIVE)
+                .build();
+        post = postRepository.save(post);
+
+        CommunityComment comment = CommunityComment.builder()
+                .post(post)
+                .parent(null)
+                .authorId(20L)
+                .authorNickname("댓글작성자")
+                .content("2회 신고당할 댓글")
+                .status(CommentStatus.ACTIVE)
+                .build();
+        comment = commentRepository.save(comment);
+
+        // 이미 1회 신고된 데이터를 미리 생성
+        CommunityReportedComment firstReport = CommunityReportedComment.builder()
+                .commentId(comment.getId())
+                .reporterId(2L)
+                .reasonCode("FAKE")
+                .build();
+        communityReportedCommentRepository.save(firstReport);
+
+        // JWT 하나만 생성
+        String jwt = jwtProvider.createAccessToken(1L, Provider.KAKAO, AuthRole.USER);
+        CommunityCommentReportRequest request = new CommunityCommentReportRequest();
+        request.setReasonCode("HATE");
+
+        // when: 두 번째 신고 (2회째)
+        mockMvc.perform(post("/v1/api/community/comments/" + comment.getId() + "/report")
+                        .header("Authorization", "Bearer " + jwt)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+
+        // then: 2회 신고 후 상태 확인 (REPORTED로 변경됨)
+        CommunityComment afterSecondReport = commentRepository.findById(comment.getId()).orElseThrow();
+        assertThat(afterSecondReport.getStatus()).isEqualTo(CommentStatus.REPORTED);
+
+        // when: 댓글 조회 시 신고된 댓글 표시 확인
+        mockMvc.perform(get("/v1/api/community/posts/" + post.getId() + "/comments")
+                        .header("Authorization", "Bearer " + jwt))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].authorNickname").value("(신고된 유저)"))
+                .andExpect(jsonPath("$[0].content").value("관리자 규제된 댓글입니다."))
+                .andExpect(jsonPath("$[0].status").value("REPORTED"))
+                .andExpect(jsonPath("$[0].canDelete").value(false));
+    }
+
+    @Test
+    @DisplayName("1회 신고 시 댓글 상태 변경 안됨 통합 테스트")
+    void reportComment_oneReportNoStatusChange() throws Exception {
+        // given: 게시글과 댓글 생성
+        CommunityPost post = CommunityPost.builder()
+                .title("1회 신고 테스트 제목")
+                .content("1회 신고 테스트 내용")
+                .category(CommunityCategory.REPORT)
+                .authorId(10L)
+                .authorNickname("테스트유저1")
+                .viewCount(0L)
+                .status(PostStatus.ACTIVE)
+                .build();
+        post = postRepository.save(post);
+
+        CommunityComment comment = CommunityComment.builder()
+                .post(post)
+                .parent(null)
+                .authorId(20L)
+                .authorNickname("댓글작성자")
+                .content("1회 신고당할 댓글")
+                .status(CommentStatus.ACTIVE)
+                .build();
+        comment = commentRepository.save(comment);
+
+        String jwt = jwtProvider.createAccessToken(1L, Provider.KAKAO, AuthRole.USER);
+        CommunityCommentReportRequest request = new CommunityCommentReportRequest();
+        request.setReasonCode("FAKE");
+
+        // when: 1회 신고
+        mockMvc.perform(post("/v1/api/community/comments/" + comment.getId() + "/report")
+                        .header("Authorization", "Bearer " + jwt)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+
+        // then: 1회 신고 후 상태 확인 (여전히 ACTIVE)
+        CommunityComment afterReport = commentRepository.findById(comment.getId()).orElseThrow();
+        assertThat(afterReport.getStatus()).isEqualTo(CommentStatus.ACTIVE);
+
+        // when: 댓글 조회 시 정상 댓글 표시 확인
+        mockMvc.perform(get("/v1/api/community/posts/" + post.getId() + "/comments")
+                        .header("Authorization", "Bearer " + jwt))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].authorNickname").value("댓글작성자"))
+                .andExpect(jsonPath("$[0].content").value("1회 신고당할 댓글"))
+                .andExpect(jsonPath("$[0].status").value("ACTIVE"));
+    }
+
+
+    @Test
+    @DisplayName("3회 신고 시 상태 변경 안됨 통합 테스트")
+    void reportComment_threeReportsNoStatusChange() throws Exception {
+        // given: 게시글과 댓글 생성
+        CommunityPost post = CommunityPost.builder()
+                .title("3회 신고 테스트 제목")
+                .content("3회 신고 테스트 내용")
+                .category(CommunityCategory.REPORT)
+                .authorId(10L)
+                .authorNickname("테스트유저1")
+                .viewCount(0L)
+                .status(PostStatus.ACTIVE)
+                .build();
+        post = postRepository.save(post);
+
+        CommunityComment comment = CommunityComment.builder()
+                .post(post)
+                .parent(null)
+                .authorId(20L)
+                .authorNickname("댓글작성자")
+                .content("3회 신고당할 댓글")
+                .status(CommentStatus.ACTIVE)
+                .build();
+        comment = commentRepository.save(comment);
+
+        // 이미 2회 신고된 데이터를 미리 생성 (이미 REPORTED 상태)
+        CommunityReportedComment firstReport = CommunityReportedComment.builder()
+                .commentId(comment.getId())
+                .reporterId(1L)
+                .reasonCode("FAKE")
+                .build();
+        communityReportedCommentRepository.save(firstReport);
+
+        CommunityReportedComment secondReport = CommunityReportedComment.builder()
+                .commentId(comment.getId())
+                .reporterId(2L)
+                .reasonCode("HATE")
+                .build();
+        communityReportedCommentRepository.save(secondReport);
+
+        // 댓글 상태를 REPORTED로 변경 (2회 신고로 인한 상태 변경)
+        comment.setStatus(CommentStatus.REPORTED);
+        commentRepository.save(comment);
+
+        // JWT 하나만 생성
+        String jwt = jwtProvider.createAccessToken(3L, Provider.KAKAO, AuthRole.USER);
+        CommunityCommentReportRequest request = new CommunityCommentReportRequest();
+        request.setReasonCode("SPAM");
+
+        // when: 세 번째 신고 (3회째)
+        mockMvc.perform(post("/v1/api/community/comments/" + comment.getId() + "/report")
+                        .header("Authorization", "Bearer " + jwt)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+
+        // then: 3회 신고 후 상태 확인 (여전히 REPORTED)
+        CommunityComment afterThirdReport = commentRepository.findById(comment.getId()).orElseThrow();
+        assertThat(afterThirdReport.getStatus()).isEqualTo(CommentStatus.REPORTED);
+
+        // when: 댓글 조회 시 신고된 댓글 표시 확인
+        mockMvc.perform(get("/v1/api/community/posts/" + post.getId() + "/comments")
+                        .header("Authorization", "Bearer " + jwt))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].authorNickname").value("(신고된 유저)"))
+                .andExpect(jsonPath("$[0].content").value("관리자 규제된 댓글입니다."))
+                .andExpect(jsonPath("$[0].status").value("REPORTED"))
+                .andExpect(jsonPath("$[0].canDelete").value(false));
+    }
+}

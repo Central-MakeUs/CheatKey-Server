@@ -305,4 +305,89 @@ class CommentServiceTest {
         // then
         assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.CANNOT_REPORT_OWN_COMMENT);
     }
+
+    @Test
+    @DisplayName("1회 신고 시 상태 변경 안됨")
+    void reportComment_oneReportNoStatusChange() {
+        // given
+        Long commentId = 1L;
+        Long reporterId = 2L;
+        String reasonCode = "FAKE";
+        CommunityComment comment = CommunityComment.builder()
+                .id(commentId)
+                .authorId(3L)
+                .authorNickname("테스트유저")
+                .status(CommentStatus.ACTIVE)
+                .build();
+        
+        when(communityReportedCommentRepository.existsByCommentIdAndReporterId(commentId, reporterId)).thenReturn(false);
+        when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
+        when(communityReportedCommentRepository.countByCommentId(commentId)).thenReturn(1L); // 1회 신고
+        when(communityReportedCommentRepository.save(any(CommunityReportedComment.class))).thenReturn(CommunityReportedComment.builder().build());
+
+        // when
+        assertDoesNotThrow(() -> commentService.reportComment(commentId, reporterId, reasonCode));
+
+        // then
+        assertThat(comment.getStatus()).isEqualTo(CommentStatus.ACTIVE); // 상태 변경 안됨
+        verify(communityReportedCommentRepository).save(any(CommunityReportedComment.class));
+        verify(commentRepository, never()).save(any(CommunityComment.class)); // 댓글 저장 안됨
+    }
+
+    @Test
+    @DisplayName("2회 신고 시 상태 변경됨")
+    void reportComment_twoReportsChangeStatus() {
+        // given
+        Long commentId = 1L;
+        Long reporterId = 2L;
+        String reasonCode = "FAKE";
+        CommunityComment comment = CommunityComment.builder()
+                .id(commentId)
+                .authorId(3L)
+                .authorNickname("테스트유저")
+                .status(CommentStatus.ACTIVE)
+                .build();
+        
+        when(communityReportedCommentRepository.existsByCommentIdAndReporterId(commentId, reporterId)).thenReturn(false);
+        when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
+        when(communityReportedCommentRepository.countByCommentId(commentId)).thenReturn(2L); // 2회 신고
+        when(communityReportedCommentRepository.save(any(CommunityReportedComment.class))).thenReturn(CommunityReportedComment.builder().build());
+        when(commentRepository.save(any(CommunityComment.class))).thenReturn(comment);
+
+        // when
+        assertDoesNotThrow(() -> commentService.reportComment(commentId, reporterId, reasonCode));
+
+        // then
+        assertThat(comment.getStatus()).isEqualTo(CommentStatus.REPORTED); // 상태 변경됨
+        verify(communityReportedCommentRepository).save(any(CommunityReportedComment.class));
+        verify(commentRepository).save(any(CommunityComment.class)); // 댓글 저장됨
+    }
+
+    @Test
+    @DisplayName("3회 이상 신고 시에는 상태 변경 안됨")
+    void reportComment_threeOrMoreReportsNoStatusChange() {
+        // given
+        Long commentId = 1L;
+        Long reporterId = 2L;
+        String reasonCode = "FAKE";
+        CommunityComment comment = CommunityComment.builder()
+                .id(commentId)
+                .authorId(3L)
+                .authorNickname("테스트유저")
+                .status(CommentStatus.ACTIVE)
+                .build();
+        
+        when(communityReportedCommentRepository.existsByCommentIdAndReporterId(commentId, reporterId)).thenReturn(false);
+        when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
+        when(communityReportedCommentRepository.countByCommentId(commentId)).thenReturn(3L); // 3회 신고
+        when(communityReportedCommentRepository.save(any(CommunityReportedComment.class))).thenReturn(CommunityReportedComment.builder().build());
+
+        // when
+        assertDoesNotThrow(() -> commentService.reportComment(commentId, reporterId, reasonCode));
+
+        // then
+        assertThat(comment.getStatus()).isEqualTo(CommentStatus.ACTIVE); // 상태 변경 안됨
+        verify(communityReportedCommentRepository).save(any(CommunityReportedComment.class));
+        verify(commentRepository, never()).save(any(CommunityComment.class)); // 댓글 저장 안됨
+    }
 } 
