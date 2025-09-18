@@ -58,7 +58,14 @@ public interface CommunityPostMapper {
                 .toList();
         List<CommunityCommentResponse> result = new ArrayList<>(activeParentComments);
         
-        // 2. 고아 대댓글들 추가 (삭제된 부모 댓글의 자식)
+        // 2. REPORTED 상태인 부모 댓글들 추가 (신고된 댓글의 대댓글은 그대로 노출)
+        List<CommunityCommentResponse> reportedParentComments = comments.stream()
+                .filter(c -> c.getParent() == null && c.getStatus() == CommentStatus.REPORTED)
+                .map(c -> toCommentDtoWithChildren(c, childrenMap, currentUserId))
+                .toList();
+        result.addAll(reportedParentComments);
+        
+        // 3. 고아 대댓글들 추가 (삭제된 부모 댓글의 자식)
         List<CommunityCommentResponse> deletedParentComments = comments.stream()
                 .filter(c -> c.getParent() == null && c.getStatus() == CommentStatus.DELETED)
                 .filter(c -> childrenMap.containsKey(c.getId()) && !childrenMap.get(c.getId()).isEmpty())
@@ -85,6 +92,21 @@ public interface CommunityPostMapper {
                     .authorNickname("(삭제)")
                     .content("삭제된 댓글입니다.")
                     .status(CommentStatus.DELETED.name())
+                    .createdAt(comment.getCreatedAt())
+                    .canDelete(false)
+                    .children(children)
+                    .build();
+        }
+
+        // 신고된 댓글/대댓글 처리
+        if (comment.getStatus() == CommentStatus.REPORTED) {
+            return CommunityCommentResponse.builder()
+                    .id(comment.getId())
+                    .postId(comment.getPost().getId())
+                    .parentId(comment.getParent() != null ? comment.getParent().getId() : null)
+                    .authorNickname("(삭제)")
+                    .content("관리자 규제된 댓글입니다.")
+                    .status(CommentStatus.REPORTED.name())
                     .createdAt(comment.getCreatedAt())
                     .canDelete(false)
                     .children(children)

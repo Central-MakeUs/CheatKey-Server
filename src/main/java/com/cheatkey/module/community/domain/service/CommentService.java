@@ -2,11 +2,13 @@ package com.cheatkey.module.community.domain.service;
 
 import com.cheatkey.common.exception.CustomException;
 import com.cheatkey.common.exception.ErrorCode;
+import com.cheatkey.module.community.domain.entity.CommunityReportedComment;
 import com.cheatkey.module.community.domain.entity.comment.CommunityComment;
 import com.cheatkey.module.community.domain.entity.CommunityPost;
 import com.cheatkey.module.community.domain.entity.comment.CommentStatus;
 import com.cheatkey.module.community.domain.repository.CommunityCommentRepository;
 import com.cheatkey.module.community.domain.repository.CommunityPostRepository;
+import com.cheatkey.module.community.domain.repository.CommunityReportedCommentRepository;
 import com.cheatkey.module.community.interfaces.dto.comment.CommunityCommentRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,6 +22,7 @@ import java.util.stream.Collectors;
 public class CommentService {
     private final CommunityCommentRepository commentRepository;
     private final CommunityPostRepository postRepository;
+    private final CommunityReportedCommentRepository communityReportedCommentRepository;
     private final WithdrawnUserCacheService withdrawnUserCacheService;
 
     @Transactional
@@ -99,5 +102,28 @@ public class CommentService {
                     return comment;
                 })
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void reportComment(Long commentId, Long reporterId, String reasonCode) {
+        if (communityReportedCommentRepository.existsByCommentIdAndReporterId(commentId, reporterId)) {
+            throw new CustomException(ErrorCode.COMMENT_ALREADY_REPORTED);
+        }
+        CommunityComment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new CustomException(ErrorCode.COMMUNITY_COMMENT_NOT_FOUND));
+        
+        // 본인이 작성한 댓글은 신고할 수 없음
+        if (comment.getAuthorId().equals(reporterId)) {
+            throw new CustomException(ErrorCode.CANNOT_REPORT_OWN_COMMENT);
+        }
+        
+        comment.setStatus(CommentStatus.REPORTED);
+        commentRepository.save(comment);
+        CommunityReportedComment report = CommunityReportedComment.builder()
+                .commentId(commentId)
+                .reporterId(reporterId)
+                .reasonCode(reasonCode)
+                .build();
+        communityReportedCommentRepository.save(report);
     }
 }

@@ -1,11 +1,15 @@
 package com.cheatkey.module.community.interfaces.controller;
 
+import com.cheatkey.common.code.domain.entity.CodeType;
+import com.cheatkey.common.code.domain.service.CodeService;
 import com.cheatkey.common.config.security.SecurityUtil;
 import com.cheatkey.common.exception.ErrorResponse;
 import com.cheatkey.module.auth.domain.service.AuthService;
 import com.cheatkey.module.community.domain.entity.comment.CommunityComment;
 import com.cheatkey.module.community.domain.service.CommentService;
+import com.cheatkey.module.community.interfaces.dto.CommunityReportInfoOptionsResponse;
 import com.cheatkey.module.community.interfaces.dto.comment.CommunityCommentRequest;
+import com.cheatkey.module.community.interfaces.dto.comment.CommunityCommentReportRequest;
 import com.cheatkey.module.community.interfaces.dto.comment.CommunityCommentResponse;
 import com.cheatkey.module.community.domain.entity.mapper.CommunityPostMapper;
 import io.swagger.v3.oas.annotations.Operation;
@@ -20,6 +24,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
+import static com.cheatkey.common.code.interfaces.dto.OptionsResponse.OptionInfo;
+
 @Tag(name = "(★) Community Comment", description = "커뮤니티 댓글/대댓글 관련 API")
 @RestController
 @RequestMapping("/v1/api/community")
@@ -28,6 +34,7 @@ public class CommunityCommentController {
     private final CommentService commentService;
     private final AuthService authService;
     private final CommunityPostMapper communityPostMapper;
+    private final CodeService codeService;
 
     @Operation(summary = "(★) 댓글/대댓글 작성", description = "커뮤니티 게시글에 댓글 또는 대댓글을 작성합니다. parentId가 있으면 대댓글입니다.")
     @ApiResponses({
@@ -68,5 +75,33 @@ public class CommunityCommentController {
         List<CommunityComment> comments = commentService.getCommentsForPost(postId);
         List<CommunityCommentResponse> commentResponses = communityPostMapper.toCommentDtoList(comments, userId);
         return ResponseEntity.ok(commentResponses);
+    }
+
+    @Operation(summary = "(★) 댓글 신고하기 목록", description = "댓글 신고하기 목록을 조회합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "댓글 신고하기 목록 조회 성공", content = @Content(schema = @Schema(implementation = CommunityReportInfoOptionsResponse.class))),
+            @ApiResponse(responseCode = "401", description = "인증 실패 (토큰 오류)", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @GetMapping("/comments/report-reasons")
+    public ResponseEntity<CommunityReportInfoOptionsResponse> getCommentReportReasons() {
+        List<OptionInfo> reportCodeList = codeService.getOptionsByType(CodeType.REPORT_COMMENT);
+        CommunityReportInfoOptionsResponse response = CommunityReportInfoOptionsResponse.builder()
+                .reportCodeList(reportCodeList)
+                .build();
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "(★) 댓글 신고하기", description = "댓글을 신고합니다. 신고 사유 코드는 t_code 테이블의 REPORT 그룹 코드 사용.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "신고 성공"),
+        @ApiResponse(responseCode = "400", description = "이미 신고한 댓글", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(responseCode = "401", description = "인증 실패 (토큰 오류)", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(responseCode = "404", description = "존재하지 않는 댓글", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @PostMapping("/comments/{commentId}/report")
+    public ResponseEntity<Void> reportComment(@PathVariable Long commentId, @RequestBody CommunityCommentReportRequest request) {
+        Long reporterId = Long.valueOf(SecurityUtil.getCurrentUserId());
+        commentService.reportComment(commentId, reporterId, request.getReasonCode());
+        return ResponseEntity.ok().build();
     }
 } 

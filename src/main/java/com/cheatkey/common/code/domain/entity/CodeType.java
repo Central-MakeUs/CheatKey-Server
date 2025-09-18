@@ -9,5 +9,6 @@ public enum CodeType {
     TRADE_METHOD,   // 거래 방식 옵션
     TRADE_ITEM,     // 거래 품목 옵션
     REPORT,         // 커뮤니티 신고하기 옵션
+    REPORT_COMMENT, // 커뮤니티 댓글/대댓글 신고하기 옵션
     WITHDRAWAL_REASON  // 탈퇴 사유 코드
 }
