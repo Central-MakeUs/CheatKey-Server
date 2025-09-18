@@ -283,7 +283,7 @@ class CommunityCommentControllerIntegrationTest {
         mockMvc.perform(get("/v1/api/community/posts/" + post.getId() + "/comments")
                         .header("Authorization", "Bearer " + jwt))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].authorNickname").value("(삭제)"))
+                .andExpect(jsonPath("$[0].authorNickname").value("(신고된 유저)"))
                 .andExpect(jsonPath("$[0].content").value("관리자 규제된 댓글입니다."))
                 .andExpect(jsonPath("$[0].status").value("REPORTED"))
                 .andExpect(jsonPath("$[0].canDelete").value(false));
