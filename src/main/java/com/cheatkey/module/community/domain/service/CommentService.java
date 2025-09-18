@@ -117,13 +117,19 @@ public class CommentService {
             throw new CustomException(ErrorCode.CANNOT_REPORT_OWN_COMMENT);
         }
         
-        comment.setStatus(CommentStatus.REPORTED);
-        commentRepository.save(comment);
+        // 신고 기록 저장
         CommunityReportedComment report = CommunityReportedComment.builder()
                 .commentId(commentId)
                 .reporterId(reporterId)
                 .reasonCode(reasonCode)
                 .build();
         communityReportedCommentRepository.save(report);
+        
+        // 신고 횟수 체크 후 상태 변경 (2회 신고 시에만 적용)
+        long reportCount = communityReportedCommentRepository.countByCommentId(commentId);
+        if (reportCount == 2) {
+            comment.setStatus(CommentStatus.REPORTED);
+            commentRepository.save(comment);
+        }
     }
 }
