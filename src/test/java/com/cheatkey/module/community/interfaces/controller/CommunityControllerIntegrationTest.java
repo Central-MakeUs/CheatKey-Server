@@ -8,6 +8,7 @@ import com.cheatkey.module.auth.domain.entity.Provider;
 import com.cheatkey.module.auth.domain.repository.AuthRepository;
 import com.cheatkey.module.community.domain.entity.CommunityCategory;
 import com.cheatkey.module.community.domain.entity.CommunityPost;
+import com.cheatkey.module.community.domain.entity.CommunityReportedPost;
 import com.cheatkey.module.community.domain.repository.CommunityPostRepository;
 import com.cheatkey.module.community.interfaces.dto.CommunityPostCreateRequest;
 import com.cheatkey.module.community.interfaces.dto.CommunityPostReportRequest;
@@ -28,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -158,8 +160,8 @@ class CommunityControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("게시글 신고 통합 테스트 - 성공 및 중복 신고 예외")
-    void reportPost_success_and_duplicate() throws Exception {
+    @DisplayName("게시글 신고 통합 테스트 - 1회 신고 시 상태 변경 안됨")
+    void reportPost_oneReportNoStatusChange() throws Exception {
         // given
         CommunityPost post = CommunityPost.builder()
                 .title("신고 테스트 제목")
@@ -176,20 +178,64 @@ class CommunityControllerIntegrationTest {
         request.setReasonCode("FAKE");
         String jwt = jwtProvider.createAccessToken(testUserId, Provider.KAKAO, AuthRole.USER);
 
-        // when & then (정상 신고)
+        // when: 1회 신고
         mockMvc.perform(post("/v1/api/community/posts/" + postId + "/report")
                         .header("Authorization", "Bearer " + jwt)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
 
-        // when & then (중복 신고)
+        // then: 1회 신고 후 상태 확인 (여전히 ACTIVE)
+        CommunityPost afterReport = communityPostRepository.findById(postId).orElseThrow();
+        assertThat(afterReport.getStatus()).isEqualTo(com.cheatkey.module.community.domain.entity.PostStatus.ACTIVE);
+
+        // when & then: 중복 신고 시도
         mockMvc.perform(post("/v1/api/community/posts/" + postId + "/report")
                         .header("Authorization", "Bearer " + jwt)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("POST_ALREADY_REPORTED"));
+    }
+
+    @Test
+    @DisplayName("게시글 2회 신고 시 상태 변경 통합 테스트")
+    void reportPost_twoReportsChangeStatus() throws Exception {
+        // given: 게시글 생성
+        CommunityPost post = CommunityPost.builder()
+                .title("2회 신고 테스트 제목")
+                .content("2회 신고 테스트 내용")
+                .category(CommunityCategory.REPORT)
+                .authorId(10L)
+                .authorNickname("테스트유저1")
+                .viewCount(0L)
+                .status(com.cheatkey.module.community.domain.entity.PostStatus.ACTIVE)
+                .build();
+        communityPostRepository.save(post);
+
+        // 이미 1회 신고된 데이터를 미리 생성
+        CommunityReportedPost firstReport = CommunityReportedPost.builder()
+                .postId(post.getId())
+                .reporterId(1L)
+                .reasonCode("FAKE")
+                .build();
+        communityReportedPostRepository.save(firstReport);
+
+        String jwt = jwtProvider.createAccessToken(2L, Provider.KAKAO, AuthRole.USER);
+        CommunityPostReportRequest request = new CommunityPostReportRequest();
+        request.setReasonCode("HATE");
+
+        // when: 두 번째 신고 (2회째)
+        mockMvc.perform(post("/v1/api/community/posts/" + post.getId() + "/report")
+                        .header("Authorization", "Bearer " + jwt)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print()) // 디버깅을 위한 응답 출력
+                .andExpect(status().isOk());
+
+        // then: 2회 신고 후 상태 확인 (REPORTED로 변경됨)
+        CommunityPost afterSecondReport = communityPostRepository.findById(post.getId()).orElseThrow();
+        assertThat(afterSecondReport.getStatus()).isEqualTo(com.cheatkey.module.community.domain.entity.PostStatus.REPORTED);
     }
 
     @Test
