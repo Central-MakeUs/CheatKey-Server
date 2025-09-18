@@ -3,12 +3,14 @@ package com.cheatkey.module.community.domain.service;
 import com.cheatkey.common.exception.CustomException;
 import com.cheatkey.common.exception.ErrorCode;
 import com.cheatkey.module.community.domain.entity.CommunityPost;
+import com.cheatkey.module.community.domain.entity.CommunityReportedComment;
 import com.cheatkey.module.community.domain.entity.PostStatus;
 import com.cheatkey.module.community.domain.entity.comment.CommentStatus;
 import com.cheatkey.module.community.domain.entity.comment.CommunityComment;
 import com.cheatkey.module.community.domain.repository.CommunityCommentRepository;
 import com.cheatkey.module.community.domain.repository.CommunityPostBlockRepository;
 import com.cheatkey.module.community.domain.repository.CommunityPostRepository;
+import com.cheatkey.module.community.domain.repository.CommunityReportedCommentRepository;
 import com.cheatkey.module.community.interfaces.dto.comment.CommunityCommentRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -22,6 +24,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -31,6 +34,8 @@ class CommentServiceTest {
     private CommunityCommentRepository commentRepository;
     @Mock
     private CommunityPostRepository postRepository;
+    @Mock
+    private CommunityReportedCommentRepository communityReportedCommentRepository;
     @Mock
     private CommunityPostBlockRepository communityPostBlockRepository;
     @Mock
@@ -217,5 +222,87 @@ class CommentServiceTest {
         assertThatThrownBy(() -> commentService.getCommentsForPost(1L))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.COMMUNITY_POST_DELETED_OR_REPORTED);
+    }
+
+    @Test
+    @DisplayName("댓글 신고 성공")
+    void reportComment_success() {
+        // given
+        Long commentId = 1L;
+        Long reporterId = 2L;
+        String reasonCode = "FAKE";
+        CommunityComment comment = CommunityComment.builder()
+                .id(commentId)
+                .authorId(3L)
+                .authorNickname("테스트유저")
+                .status(CommentStatus.ACTIVE)
+                .build();
+        
+        when(communityReportedCommentRepository.existsByCommentIdAndReporterId(commentId, reporterId)).thenReturn(false);
+        when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
+        when(commentRepository.save(any(CommunityComment.class))).thenReturn(comment);
+        when(communityReportedCommentRepository.save(any(CommunityReportedComment.class))).thenReturn(CommunityReportedComment.builder().build());
+
+        // when & then
+        assertDoesNotThrow(() -> commentService.reportComment(commentId, reporterId, reasonCode));
+
+        // then
+        verify(communityReportedCommentRepository).save(any(CommunityReportedComment.class));
+        verify(commentRepository).save(any(CommunityComment.class));
+        assertThat(comment.getStatus()).isEqualTo(CommentStatus.REPORTED);
+    }
+
+    @Test
+    @DisplayName("댓글 신고 실패 - 이미 신고한 댓글")
+    void reportComment_alreadyReported() {
+        // given
+        Long commentId = 1L;
+        Long reporterId = 2L;
+        when(communityReportedCommentRepository.existsByCommentIdAndReporterId(commentId, reporterId)).thenReturn(true);
+
+        // when & then
+        CustomException ex = assertThrows(CustomException.class, () -> commentService.reportComment(commentId, reporterId, "FAKE"));
+
+        // then
+        assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.COMMENT_ALREADY_REPORTED);
+    }
+
+    @Test
+    @DisplayName("댓글 신고 실패 - 댓글 없음")
+    void reportComment_commentNotFound() {
+        // given
+        Long commentId = 1L;
+        Long reporterId = 2L;
+        when(communityReportedCommentRepository.existsByCommentIdAndReporterId(commentId, reporterId)).thenReturn(false);
+        when(commentRepository.findById(commentId)).thenReturn(Optional.empty());
+
+        // when & then
+        CustomException ex = assertThrows(CustomException.class, () -> commentService.reportComment(commentId, reporterId, "FAKE"));
+
+        // then
+        assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.COMMUNITY_COMMENT_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("댓글 신고 실패 - 본인 댓글 신고")
+    void reportComment_cannotReportOwnComment() {
+        // given
+        Long commentId = 1L;
+        Long reporterId = 2L;
+        CommunityComment comment = CommunityComment.builder()
+                .id(commentId)
+                .authorId(reporterId) // 본인 댓글
+                .authorNickname("테스트유저")
+                .status(CommentStatus.ACTIVE)
+                .build();
+        
+        when(communityReportedCommentRepository.existsByCommentIdAndReporterId(commentId, reporterId)).thenReturn(false);
+        when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
+
+        // when & then
+        CustomException ex = assertThrows(CustomException.class, () -> commentService.reportComment(commentId, reporterId, "FAKE"));
+
+        // then
+        assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.CANNOT_REPORT_OWN_COMMENT);
     }
 } 

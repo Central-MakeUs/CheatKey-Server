@@ -6,8 +6,12 @@ import com.cheatkey.module.auth.domain.entity.Provider;
 import com.cheatkey.module.community.domain.entity.CommunityCategory;
 import com.cheatkey.module.community.domain.entity.CommunityPost;
 import com.cheatkey.module.community.domain.entity.PostStatus;
+import com.cheatkey.module.community.domain.entity.comment.CommunityComment;
+import com.cheatkey.module.community.domain.entity.comment.CommentStatus;
+import com.cheatkey.module.community.domain.repository.CommunityCommentRepository;
 import com.cheatkey.module.community.domain.repository.CommunityPostRepository;
 import com.cheatkey.module.community.interfaces.dto.comment.CommunityCommentRequest;
+import com.cheatkey.module.community.interfaces.dto.comment.CommunityCommentReportRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,6 +23,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -36,6 +41,9 @@ class CommunityCommentControllerIntegrationTest {
 
     @Autowired
     private CommunityPostRepository postRepository;
+
+    @Autowired
+    private CommunityCommentRepository commentRepository;
 
     @Autowired
     private JwtProvider jwtProvider;
@@ -123,5 +131,161 @@ class CommunityCommentControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("댓글 신고 통합 테스트 - 성공 및 중복 신고 예외")
+    void reportComment_success_and_duplicate() throws Exception {
+        // given: 게시글과 댓글 생성
+        CommunityPost post = CommunityPost.builder()
+                .title("신고 테스트 제목")
+                .content("신고 테스트 내용")
+                .category(CommunityCategory.REPORT)
+                .authorId(10L)
+                .authorNickname("테스트유저1")
+                .viewCount(0L)
+                .status(PostStatus.ACTIVE)
+                .build();
+        post = postRepository.save(post);
+
+        CommunityComment comment = CommunityComment.builder()
+                .post(post)
+                .parent(null)
+                .authorId(20L)
+                .authorNickname("댓글작성자")
+                .content("신고당할 댓글")
+                .status(CommentStatus.ACTIVE)
+                .build();
+        comment = commentRepository.save(comment);
+
+        String jwt = jwtProvider.createAccessToken(1L, Provider.KAKAO, AuthRole.USER);
+        CommunityCommentReportRequest request = new CommunityCommentReportRequest();
+        request.setReasonCode("FAKE");
+
+        // when: 댓글 신고
+        mockMvc.perform(post("/v1/api/community/comments/" + comment.getId() + "/report")
+                        .header("Authorization", "Bearer " + jwt)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+
+        // then: 댓글 상태가 REPORTED로 변경되었는지 확인
+        CommunityComment updatedComment = commentRepository.findById(comment.getId()).orElseThrow();
+        assertThat(updatedComment.getStatus()).isEqualTo(CommentStatus.REPORTED);
+
+        // when: 같은 댓글을 다시 신고 시도
+        mockMvc.perform(post("/v1/api/community/comments/" + comment.getId() + "/report")
+                        .header("Authorization", "Bearer " + jwt)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("COMMENT_ALREADY_REPORTED"));
+    }
+
+    @Test
+    @DisplayName("댓글 신고 실패 - 본인 댓글 신고")
+    void reportComment_fail_ownComment() throws Exception {
+        // given: 게시글과 댓글 생성
+        CommunityPost post = CommunityPost.builder()
+                .title("신고 테스트 제목")
+                .content("신고 테스트 내용")
+                .category(CommunityCategory.REPORT)
+                .authorId(10L)
+                .authorNickname("테스트유저1")
+                .viewCount(0L)
+                .status(PostStatus.ACTIVE)
+                .build();
+        post = postRepository.save(post);
+
+        CommunityComment comment = CommunityComment.builder()
+                .post(post)
+                .parent(null)
+                .authorId(1L) // 신고자와 동일한 작성자
+                .authorNickname("댓글작성자")
+                .content("본인 댓글")
+                .status(CommentStatus.ACTIVE)
+                .build();
+        comment = commentRepository.save(comment);
+
+        String jwt = jwtProvider.createAccessToken(1L, Provider.KAKAO, AuthRole.USER);
+        CommunityCommentReportRequest request = new CommunityCommentReportRequest();
+        request.setReasonCode("FAKE");
+
+        // when & then: 본인 댓글 신고 시도
+        mockMvc.perform(post("/v1/api/community/comments/" + comment.getId() + "/report")
+                        .header("Authorization", "Bearer " + jwt)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("CANNOT_REPORT_OWN_COMMENT"));
+    }
+
+    @Test
+    @DisplayName("댓글 신고 실패 - 존재하지 않는 댓글")
+    void reportComment_fail_commentNotFound() throws Exception {
+        // given
+        String jwt = jwtProvider.createAccessToken(1L, Provider.KAKAO, AuthRole.USER);
+        CommunityCommentReportRequest request = new CommunityCommentReportRequest();
+        request.setReasonCode("FAKE");
+
+        // when & then: 존재하지 않는 댓글 신고 시도
+        mockMvc.perform(post("/v1/api/community/comments/99999/report")
+                        .header("Authorization", "Bearer " + jwt)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("COMMUNITY_COMMENT_NOT_FOUND"));
+    }
+
+    @Test
+    @DisplayName("댓글 신고 사유 조회 성공")
+    void getCommentReportReasons_success() throws Exception {
+        // given
+        String jwt = jwtProvider.createAccessToken(1L, Provider.KAKAO, AuthRole.USER);
+
+        // when & then: 신고 사유 조회
+        mockMvc.perform(get("/v1/api/community/comments/report-reasons")
+                        .header("Authorization", "Bearer " + jwt))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.reportCodeList").isArray())
+                .andExpect(jsonPath("$.reportCodeList[0].code").exists())
+                .andExpect(jsonPath("$.reportCodeList[0].name").exists());
+    }
+
+    @Test
+    @DisplayName("신고된 댓글 조회 시 표시 확인")
+    void getCommentsWithReportedComment() throws Exception {
+        // given: 게시글과 댓글 생성
+        CommunityPost post = CommunityPost.builder()
+                .title("신고 테스트 제목")
+                .content("신고 테스트 내용")
+                .category(CommunityCategory.REPORT)
+                .authorId(10L)
+                .authorNickname("테스트유저1")
+                .viewCount(0L)
+                .status(PostStatus.ACTIVE)
+                .build();
+        post = postRepository.save(post);
+
+        CommunityComment comment = CommunityComment.builder()
+                .post(post)
+                .parent(null)
+                .authorId(20L)
+                .authorNickname("댓글작성자")
+                .content("신고당할 댓글")
+                .status(CommentStatus.REPORTED) // 신고된 상태로 생성
+                .build();
+        comment = commentRepository.save(comment);
+
+        String jwt = jwtProvider.createAccessToken(1L, Provider.KAKAO, AuthRole.USER);
+
+        // when & then: 댓글 조회 시 신고된 댓글 표시 확인
+        mockMvc.perform(get("/v1/api/community/posts/" + post.getId() + "/comments")
+                        .header("Authorization", "Bearer " + jwt))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].authorNickname").value("(삭제)"))
+                .andExpect(jsonPath("$[0].content").value("관리자 규제된 댓글입니다."))
+                .andExpect(jsonPath("$[0].status").value("REPORTED"))
+                .andExpect(jsonPath("$[0].canDelete").value(false));
     }
 } 
