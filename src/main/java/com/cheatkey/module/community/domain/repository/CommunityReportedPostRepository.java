@@ -5,4 +5,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CommunityReportedPostRepository extends JpaRepository<CommunityReportedPost, Long> {
     boolean existsByPostIdAndReporterId(Long postId, Long reporterId);
+    long countByPostId(Long postId);
 } 

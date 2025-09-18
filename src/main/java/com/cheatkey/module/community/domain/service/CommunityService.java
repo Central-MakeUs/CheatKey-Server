@@ -317,14 +317,20 @@ public class CommunityService {
             throw new CustomException(ErrorCode.CANNOT_REPORT_OWN_POST);
         }
         
-        post = setPostStatus(post, PostStatus.REPORTED);
-        communityPostRepository.save(post);
+        // 신고 기록 저장
         CommunityReportedPost report = CommunityReportedPost.builder()
                 .postId(postId)
                 .reporterId(reporterId)
                 .reasonCode(reasonCode)
                 .build();
         communityReportedPostRepository.save(report);
+        
+        // 신고 횟수 체크 후 상태 변경 (2회 이상 신고 시)
+        long reportCount = communityReportedPostRepository.countByPostId(postId);
+        if (reportCount >= 2) {
+            post.setStatus(PostStatus.REPORTED);
+            communityPostRepository.save(post);
+        }
     }
 
     @Transactional
