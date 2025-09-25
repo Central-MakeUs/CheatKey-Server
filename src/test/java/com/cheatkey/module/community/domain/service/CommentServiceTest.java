@@ -242,6 +242,7 @@ class CommentServiceTest {
         when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
         when(commentRepository.save(any(CommunityComment.class))).thenReturn(comment);
         when(communityReportedCommentRepository.save(any(CommunityReportedComment.class))).thenReturn(CommunityReportedComment.builder().build());
+        when(communityReportedCommentRepository.countByCommentId(commentId)).thenReturn(2L); // 2회 신고로 설정
 
         // when & then
         assertDoesNotThrow(() -> commentService.reportComment(commentId, reporterId, reasonCode));

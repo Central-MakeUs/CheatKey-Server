@@ -93,6 +93,7 @@ class CommunityServiceTest {
                 .build();
         when(communityReportedPostRepository.existsByPostIdAndReporterId(postId, reporterId)).thenReturn(false);
         when(communityPostRepository.findById(postId)).thenReturn(Optional.of(post));
+        when(communityReportedPostRepository.countByPostId(postId)).thenReturn(2L); // 2회 신고로 설정
 
         // when & then
         assertDoesNotThrow(() -> communityService.reportPost(postId, reporterId, reasonCode));
@@ -280,8 +281,7 @@ class CommunityServiceTest {
         when(communityPostBlockRepository.findByBlockerIdAndIsActive(anyLong(), anyBoolean())).thenReturn(List.of());
         when(communityPostFileRepository.findByPostIdIn(anyList())).thenReturn(List.of());
         when(fileUploadRepository.findAllById(anyList())).thenReturn(List.of());
-        when(commentService.getCommentsForPost(postId)).thenReturn(comments);
-        when(communityPostMapper.toCommentDtoList(comments, userId)).thenReturn(commentResponses);
+        when(commentService.getCommentsForPostWithBlocking(postId, userId)).thenReturn(commentResponses);
         when(communityPostMapper.toDetailDto(any(), anyInt(), anyList(), anyList(), anyBoolean(), anyBoolean(), any()))
                 .thenReturn(expectedResponse);
 
@@ -291,8 +291,7 @@ class CommunityServiceTest {
         // then
         assertNotNull(result);
         assertEquals(expectedResponse, result);
-        verify(commentService).getCommentsForPost(postId);
-        verify(communityPostMapper).toCommentDtoList(comments, userId);
+        verify(commentService).getCommentsForPostWithBlocking(postId, userId);
         verify(communityPostMapper).toDetailDto(any(), anyInt(), anyList(), anyList(), anyBoolean(), anyBoolean(), any());
     }
 
