@@ -18,13 +18,13 @@ public class CommunityCommentResponse {
     @Schema(description = "부모 댓글 ID (null이면 댓글)", example = "10")
     private Long parentId;
 
-    @Schema(description = "작성자 닉네임", example = "테스트유저")
+    @Schema(description = "작성자 닉네임 (정상: 실제 닉네임, 삭제: '(삭제)', 신고: '(신고된 유저)', 차단: '(차단된 사용자)')", example = "테스트유저")
     private String authorNickname;
 
-    @Schema(description = "댓글/대댓글 내용", example = "이 글 정말 유용하네요!")
+    @Schema(description = "댓글/대댓글 내용 (정상: 실제 내용, 삭제: '삭제된 댓글입니다.', 신고: '관리자 규제된 댓글입니다.', 차단: '차단한 사용자의 댓글입니다.')", example = "이 글 정말 유용하네요!")
     private String content;
 
-    @Schema(description = "상태 (ACTIVE, DELETED)", example = "ACTIVE")
+    @Schema(description = "상태 (ACTIVE, DELETED, REPORTED, BLOCKED_BY_USER)", example = "ACTIVE")
     private String status;
 
     @Schema(description = "작성일시", example = "2024-05-01T12:34:56")
