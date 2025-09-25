@@ -176,8 +176,7 @@ public class CommunityService {
 
         List<String> presignedUrls = getPostImageUrls(post.getId());
 
-        List<CommunityComment> comments = commentService.getCommentsForPost(postId);
-        List<CommunityCommentResponse> commentResponses = communityPostMapper.toCommentDtoList(comments, userId);
+        List<CommunityCommentResponse> commentResponses = commentService.getCommentsForPostWithBlocking(postId, userId);
         int totalCommentCount = communityCommentRepository.countCommentsByPostId(postId).intValue();
         
         boolean canDelete = post.getAuthorId().equals(userId);

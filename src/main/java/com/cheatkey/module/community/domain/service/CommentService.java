@@ -3,18 +3,24 @@ package com.cheatkey.module.community.domain.service;
 import com.cheatkey.common.exception.CustomException;
 import com.cheatkey.common.exception.ErrorCode;
 import com.cheatkey.module.community.domain.entity.CommunityReportedComment;
+import com.cheatkey.module.community.domain.entity.CommunityPostBlock;
 import com.cheatkey.module.community.domain.entity.comment.CommunityComment;
 import com.cheatkey.module.community.domain.entity.CommunityPost;
 import com.cheatkey.module.community.domain.entity.comment.CommentStatus;
 import com.cheatkey.module.community.domain.repository.CommunityCommentRepository;
 import com.cheatkey.module.community.domain.repository.CommunityPostRepository;
 import com.cheatkey.module.community.domain.repository.CommunityReportedCommentRepository;
+import com.cheatkey.module.community.domain.repository.CommunityPostBlockRepository;
+import com.cheatkey.module.community.domain.entity.mapper.CommunityPostMapper;
 import com.cheatkey.module.community.interfaces.dto.comment.CommunityCommentRequest;
+import com.cheatkey.module.community.interfaces.dto.comment.CommunityCommentResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 @Service
@@ -23,6 +29,8 @@ public class CommentService {
     private final CommunityCommentRepository commentRepository;
     private final CommunityPostRepository postRepository;
     private final CommunityReportedCommentRepository communityReportedCommentRepository;
+    private final CommunityPostBlockRepository communityPostBlockRepository;
+    private final CommunityPostMapper communityPostMapper;
     private final WithdrawnUserCacheService withdrawnUserCacheService;
 
     @Transactional
@@ -102,6 +110,89 @@ public class CommentService {
                     return comment;
                 })
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<CommunityCommentResponse> getCommentsForPostWithBlocking(Long postId, Long currentUserId) {
+        // 1. 댓글 조회
+        List<CommunityComment> comments = getCommentsForPost(postId);
+        
+        // 2. 차단된 사용자 ID 조회
+        List<Long> blockedUserIds = getBlockedUserIds(currentUserId);
+        
+        // 3. 댓글 트리 구성
+        Map<Long, List<CommunityComment>> childrenMap = buildCommentTree(comments);
+        
+        // 4. 댓글 처리 (기존 toCommentDtoList 로직)
+        return processComments(comments, childrenMap, currentUserId, blockedUserIds);
+    }
+
+    private List<Long> getBlockedUserIds(Long currentUserId) {
+        return communityPostBlockRepository
+            .findByBlockerIdAndIsActive(currentUserId, true)
+            .stream()
+            .map(CommunityPostBlock::getBlockedId)
+            .toList();
+    }
+
+    private Map<Long, List<CommunityComment>> buildCommentTree(List<CommunityComment> comments) {
+        return comments.stream()
+            .filter(c -> c.getParent() != null)
+            .collect(Collectors.groupingBy(c -> c.getParent().getId()));
+    }
+
+    private List<CommunityCommentResponse> processComments(List<CommunityComment> comments, Map<Long, List<CommunityComment>> childrenMap, Long currentUserId, List<Long> blockedUserIds) {
+        List<CommunityCommentResponse> result = new ArrayList<>();
+        
+        // ACTIVE 댓글들
+        List<CommunityCommentResponse> activeComments = comments.stream()
+            .filter(c -> c.getParent() == null && c.getStatus() == CommentStatus.ACTIVE)
+            .map(c -> processComment(c, childrenMap, currentUserId, blockedUserIds))
+            .toList();
+        result.addAll(activeComments);
+        
+        // REPORTED 댓글들
+        List<CommunityCommentResponse> reportedComments = comments.stream()
+            .filter(c -> c.getParent() == null && c.getStatus() == CommentStatus.REPORTED)
+            .map(c -> processComment(c, childrenMap, currentUserId, blockedUserIds))
+            .toList();
+        result.addAll(reportedComments);
+        
+        // DELETED 댓글들 (고아 대댓글)
+        List<CommunityCommentResponse> deletedComments = comments.stream()
+            .filter(c -> c.getParent() == null && c.getStatus() == CommentStatus.DELETED)
+            .filter(c -> childrenMap.containsKey(c.getId()) && !childrenMap.get(c.getId()).isEmpty())
+            .map(c -> processComment(c, childrenMap, currentUserId, blockedUserIds))
+            .toList();
+        result.addAll(deletedComments);
+        
+        return result;
+    }
+
+    private CommunityCommentResponse processComment(CommunityComment comment, Map<Long, List<CommunityComment>> childrenMap, Long currentUserId, List<Long> blockedUserIds) {
+        // 차단된 사용자 댓글 처리 (가장 우선순위)
+        if (blockedUserIds.contains(comment.getAuthorId())) {
+            // 부모 댓글이 차단되면 자식 댓글은 빈 배열로 처리 (미노출)
+            return communityPostMapper.toBlockedCommentDto(comment, List.of());
+        }
+
+        // 대댓글들 처리 (부모 댓글이 차단되지 않은 경우만)
+        List<CommunityCommentResponse> children = childrenMap.getOrDefault(comment.getId(), List.of()).stream()
+            .map(child -> processComment(child, childrenMap, currentUserId, blockedUserIds))
+            .collect(Collectors.toList());
+
+        // 삭제된 댓글 처리
+        if (comment.getStatus() == CommentStatus.DELETED) {
+            return communityPostMapper.toDeletedCommentDto(comment, children);
+        }
+
+        // 신고된 댓글 처리
+        if (comment.getStatus() == CommentStatus.REPORTED) {
+            return communityPostMapper.toReportedCommentDto(comment, children);
+        }
+
+        // 정상 댓글 처리
+        return communityPostMapper.toNormalCommentDto(comment, children, currentUserId);
     }
 
     @Transactional

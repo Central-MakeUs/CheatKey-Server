@@ -41,79 +41,53 @@ public interface CommunityPostMapper {
         String blockMessage
     );
 
-    default List<CommunityCommentResponse> toCommentDtoList(List<CommunityComment> comments, Long currentUserId) {
-        if (comments == null || comments.isEmpty()) {
-            return List.of();
-        }
-
-        // 댓글/대댓글 트리 구성
-        Map<Long, List<CommunityComment>> childrenMap = comments.stream()
-                .filter(c -> c.getParent() != null)
-                .collect(Collectors.groupingBy(c -> c.getParent().getId()));
-
-        // 1. ACTIVE 상태인 부모 댓글들 추가
-        List<CommunityCommentResponse> activeParentComments = comments.stream()
-                .filter(c -> c.getParent() == null && c.getStatus() == CommentStatus.ACTIVE)
-                .map(c -> toCommentDtoWithChildren(c, childrenMap, currentUserId))
-                .toList();
-        List<CommunityCommentResponse> result = new ArrayList<>(activeParentComments);
-        
-        // 2. REPORTED 상태인 부모 댓글들 추가 (신고된 댓글의 대댓글은 그대로 노출)
-        List<CommunityCommentResponse> reportedParentComments = comments.stream()
-                .filter(c -> c.getParent() == null && c.getStatus() == CommentStatus.REPORTED)
-                .map(c -> toCommentDtoWithChildren(c, childrenMap, currentUserId))
-                .toList();
-        result.addAll(reportedParentComments);
-        
-        // 3. 고아 대댓글들 추가 (삭제된 부모 댓글의 자식)
-        List<CommunityCommentResponse> deletedParentComments = comments.stream()
-                .filter(c -> c.getParent() == null && c.getStatus() == CommentStatus.DELETED)
-                .filter(c -> childrenMap.containsKey(c.getId()) && !childrenMap.get(c.getId()).isEmpty())
-                .map(c -> toDeletedParentCommentDto(c, childrenMap, currentUserId))
-                .toList();
-        result.addAll(deletedParentComments);
-        
-        return result;
+    // 차단된 댓글 DTO 변환
+    default CommunityCommentResponse toBlockedCommentDto(CommunityComment comment, List<CommunityCommentResponse> children) {
+        return CommunityCommentResponse.builder()
+                .id(comment.getId())
+                .postId(comment.getPost().getId())
+                .parentId(comment.getParent() != null ? comment.getParent().getId() : null)
+                .authorNickname("(차단된 사용자)")
+                .content("차단한 사용자의 댓글입니다.")
+                .status("BLOCKED_BY_USER")
+                .createdAt(comment.getCreatedAt())
+                .canDelete(false)
+                .children(children)
+                .build();
     }
 
-    default CommunityCommentResponse toCommentDtoWithChildren(CommunityComment comment, Map<Long, List<CommunityComment>> childrenMap, Long currentUserId) {
-        List<CommunityCommentResponse> children = childrenMap.getOrDefault(comment.getId(), List.of()).stream()
-                .map(child -> toCommentDtoWithChildren(child, childrenMap, currentUserId))
-                .collect(Collectors.toList());
+    // 삭제된 댓글 DTO 변환
+    default CommunityCommentResponse toDeletedCommentDto(CommunityComment comment, List<CommunityCommentResponse> children) {
+        return CommunityCommentResponse.builder()
+                .id(comment.getId())
+                .postId(comment.getPost().getId())
+                .parentId(comment.getParent() != null ? comment.getParent().getId() : null)
+                .authorNickname("(삭제)")
+                .content("삭제된 댓글입니다.")
+                .status(CommentStatus.DELETED.name())
+                .createdAt(comment.getCreatedAt())
+                .canDelete(false)
+                .children(children)
+                .build();
+    }
 
-        boolean canDelete = comment.getAuthorId().equals(currentUserId);
+    // 신고된 댓글 DTO 변환
+    default CommunityCommentResponse toReportedCommentDto(CommunityComment comment, List<CommunityCommentResponse> children) {
+        return CommunityCommentResponse.builder()
+                .id(comment.getId())
+                .postId(comment.getPost().getId())
+                .parentId(comment.getParent() != null ? comment.getParent().getId() : null)
+                .authorNickname("(신고된 유저)")
+                .content("관리자 규제된 댓글입니다.")
+                .status(CommentStatus.REPORTED.name())
+                .createdAt(comment.getCreatedAt())
+                .canDelete(false)
+                .children(children)
+                .build();
+    }
 
-        // 삭제된 댓글/대댓글 처리
-        if (comment.getStatus() == CommentStatus.DELETED) {
-            return CommunityCommentResponse.builder()
-                    .id(comment.getId())
-                    .postId(comment.getPost().getId())
-                    .parentId(comment.getParent() != null ? comment.getParent().getId() : null)
-                    .authorNickname("(신고된 유저)")
-                    .content("삭제된 댓글입니다.")
-                    .status(CommentStatus.DELETED.name())
-                    .createdAt(comment.getCreatedAt())
-                    .canDelete(false)
-                    .children(children)
-                    .build();
-        }
-
-        // 신고된 댓글/대댓글 처리
-        if (comment.getStatus() == CommentStatus.REPORTED) {
-            return CommunityCommentResponse.builder()
-                    .id(comment.getId())
-                    .postId(comment.getPost().getId())
-                    .parentId(comment.getParent() != null ? comment.getParent().getId() : null)
-                    .authorNickname("(신고된 유저)")
-                    .content("관리자 규제된 댓글입니다.")
-                    .status(CommentStatus.REPORTED.name())
-                    .createdAt(comment.getCreatedAt())
-                    .canDelete(false)
-                    .children(children)
-                    .build();
-        }
-
-        // 정상 댓글/대댓글 처리
+    // 정상 댓글 DTO 변환
+    default CommunityCommentResponse toNormalCommentDto(CommunityComment comment, List<CommunityCommentResponse> children, Long currentUserId) {
         return CommunityCommentResponse.builder()
                 .id(comment.getId())
                 .postId(comment.getPost().getId())
@@ -122,25 +96,7 @@ public interface CommunityPostMapper {
                 .content(comment.getContent())
                 .status(comment.getStatus().name())
                 .createdAt(comment.getCreatedAt())
-                .canDelete(canDelete)
-                .children(children)
-                .build();
-    }
-
-    default CommunityCommentResponse toDeletedParentCommentDto(CommunityComment comment, Map<Long, List<CommunityComment>> childrenMap, Long currentUserId) {
-        List<CommunityCommentResponse> children = childrenMap.getOrDefault(comment.getId(), List.of()).stream()
-                .map(child -> toCommentDtoWithChildren(child, childrenMap, currentUserId))
-                .collect(Collectors.toList());
-
-        return CommunityCommentResponse.builder()
-                .id(comment.getId())
-                .postId(comment.getPost().getId())
-                .parentId(null)
-                .authorNickname("(신고된 유저)")
-                .content("삭제된 댓글입니다.")
-                .status(CommentStatus.DELETED.name())
-                .createdAt(comment.getCreatedAt())
-                .canDelete(false)
+                .canDelete(comment.getAuthorId().equals(currentUserId))
                 .children(children)
                 .build();
     }

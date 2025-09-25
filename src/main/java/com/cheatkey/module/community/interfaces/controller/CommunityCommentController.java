@@ -72,8 +72,7 @@ public class CommunityCommentController {
     @GetMapping("/posts/{postId}/comments")
     public ResponseEntity<List<CommunityCommentResponse>> getCommentsForPost(@PathVariable Long postId) {
         Long userId = Long.valueOf(SecurityUtil.getCurrentUserId());
-        List<CommunityComment> comments = commentService.getCommentsForPost(postId);
-        List<CommunityCommentResponse> commentResponses = communityPostMapper.toCommentDtoList(comments, userId);
+        List<CommunityCommentResponse> commentResponses = commentService.getCommentsForPostWithBlocking(postId, userId);
         return ResponseEntity.ok(commentResponses);
     }
 
