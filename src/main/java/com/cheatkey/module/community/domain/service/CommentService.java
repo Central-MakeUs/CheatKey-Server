@@ -3,14 +3,12 @@ package com.cheatkey.module.community.domain.service;
 import com.cheatkey.common.exception.CustomException;
 import com.cheatkey.common.exception.ErrorCode;
 import com.cheatkey.module.community.domain.entity.CommunityReportedComment;
-import com.cheatkey.module.community.domain.entity.CommunityPostBlock;
 import com.cheatkey.module.community.domain.entity.comment.CommunityComment;
 import com.cheatkey.module.community.domain.entity.CommunityPost;
 import com.cheatkey.module.community.domain.entity.comment.CommentStatus;
 import com.cheatkey.module.community.domain.repository.CommunityCommentRepository;
 import com.cheatkey.module.community.domain.repository.CommunityPostRepository;
 import com.cheatkey.module.community.domain.repository.CommunityReportedCommentRepository;
-import com.cheatkey.module.community.domain.repository.CommunityPostBlockRepository;
 import com.cheatkey.module.community.domain.entity.mapper.CommunityPostMapper;
 import com.cheatkey.module.community.interfaces.dto.comment.CommunityCommentRequest;
 import com.cheatkey.module.community.interfaces.dto.comment.CommunityCommentResponse;
@@ -29,54 +27,9 @@ public class CommentService {
     private final CommunityCommentRepository commentRepository;
     private final CommunityPostRepository postRepository;
     private final CommunityReportedCommentRepository communityReportedCommentRepository;
-    private final CommunityPostBlockRepository communityPostBlockRepository;
     private final CommunityPostMapper communityPostMapper;
     private final WithdrawnUserCacheService withdrawnUserCacheService;
-
-    @Transactional
-    public Long createComment(CommunityCommentRequest request, Long authorId, String authorNickname) {
-        CommunityPost post = postRepository.findById(request.getPostId())
-                .orElseThrow(() -> new CustomException(ErrorCode.COMMUNITY_POST_NOT_FOUND));
-        if (post.getStatus() != null && !post.getStatus().name().equals("ACTIVE")) {
-            throw new CustomException(ErrorCode.COMMUNITY_POST_DELETED_OR_REPORTED);
-        }
-
-        CommunityComment parent = null;
-        if (request.getParentId() != null) {
-            parent = commentRepository.findById(request.getParentId())
-                    .orElseThrow(() -> new CustomException(ErrorCode.COMMUNITY_COMMENT_PARENT_NOT_FOUND));
-
-            if (parent.getParent() != null) {
-                throw new CustomException(ErrorCode.COMMUNITY_COMMENT_CANNOT_REPLY_TO_REPLY);
-            }
-
-            if (parent.getStatus() != null && !parent.getStatus().name().equals("ACTIVE")) {
-                throw new CustomException(ErrorCode.COMMUNITY_COMMENT_DELETED_CANNOT_REPLY);
-            }
-        }
-
-        CommunityComment comment = CommunityComment.builder()
-                .post(post)
-                .parent(parent)
-                .authorId(authorId)
-                .authorNickname(authorNickname)
-                .content(request.getContent())
-                .status(CommentStatus.ACTIVE)
-                .build();
-        return commentRepository.save(comment).getId();
-    }
-
-    @Transactional
-    public void deleteComment(Long commentId, Long authorId) {
-        CommunityComment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new CustomException(ErrorCode.COMMUNITY_COMMENT_NOT_FOUND));
-        if (!comment.getAuthorId().equals(authorId)) {
-            throw new CustomException(ErrorCode.COMMUNITY_COMMENT_ONLY_AUTHOR_CAN_DELETE);
-        }
-        comment.setStatus(CommentStatus.DELETED);
-        comment.setDeletedAt(java.time.LocalDateTime.now());
-        commentRepository.save(comment);
-    }
+    private final CommunityBlockService communityBlockService;
 
     @Transactional(readOnly = true)
     public List<CommunityComment> getCommentsForPost(Long postId) {
@@ -116,23 +69,19 @@ public class CommentService {
     public List<CommunityCommentResponse> getCommentsForPostWithBlocking(Long postId, Long currentUserId) {
         // 1. 댓글 조회
         List<CommunityComment> comments = getCommentsForPost(postId);
-        
+
         // 2. 차단된 사용자 ID 조회
         List<Long> blockedUserIds = getBlockedUserIds(currentUserId);
-        
+
         // 3. 댓글 트리 구성
         Map<Long, List<CommunityComment>> childrenMap = buildCommentTree(comments);
-        
+
         // 4. 댓글 처리 (기존 toCommentDtoList 로직)
         return processComments(comments, childrenMap, currentUserId, blockedUserIds);
     }
 
     private List<Long> getBlockedUserIds(Long currentUserId) {
-        return communityPostBlockRepository
-            .findByBlockerIdAndIsActive(currentUserId, true)
-            .stream()
-            .map(CommunityPostBlock::getBlockedId)
-            .toList();
+        return communityBlockService.getBlockedUserIds(currentUserId);
     }
 
     private Map<Long, List<CommunityComment>> buildCommentTree(List<CommunityComment> comments) {
@@ -196,6 +145,51 @@ public class CommentService {
     }
 
     @Transactional
+    public Long createComment(CommunityCommentRequest request, Long authorId, String authorNickname) {
+        CommunityPost post = postRepository.findById(request.getPostId())
+                .orElseThrow(() -> new CustomException(ErrorCode.COMMUNITY_POST_NOT_FOUND));
+        if (post.getStatus() != null && !post.getStatus().name().equals("ACTIVE")) {
+            throw new CustomException(ErrorCode.COMMUNITY_POST_DELETED_OR_REPORTED);
+        }
+
+        CommunityComment parent = null;
+        if (request.getParentId() != null) {
+            parent = commentRepository.findById(request.getParentId())
+                    .orElseThrow(() -> new CustomException(ErrorCode.COMMUNITY_COMMENT_PARENT_NOT_FOUND));
+
+            if (parent.getParent() != null) {
+                throw new CustomException(ErrorCode.COMMUNITY_COMMENT_CANNOT_REPLY_TO_REPLY);
+            }
+
+            if (parent.getStatus() != null && !parent.getStatus().name().equals("ACTIVE")) {
+                throw new CustomException(ErrorCode.COMMUNITY_COMMENT_DELETED_CANNOT_REPLY);
+            }
+        }
+
+        CommunityComment comment = CommunityComment.builder()
+                .post(post)
+                .parent(parent)
+                .authorId(authorId)
+                .authorNickname(authorNickname)
+                .content(request.getContent())
+                .status(CommentStatus.ACTIVE)
+                .build();
+        return commentRepository.save(comment).getId();
+    }
+
+    @Transactional
+    public void deleteComment(Long commentId, Long authorId) {
+        CommunityComment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new CustomException(ErrorCode.COMMUNITY_COMMENT_NOT_FOUND));
+        if (!comment.getAuthorId().equals(authorId)) {
+            throw new CustomException(ErrorCode.COMMUNITY_COMMENT_ONLY_AUTHOR_CAN_DELETE);
+        }
+        comment.setStatus(CommentStatus.DELETED);
+        comment.setDeletedAt(java.time.LocalDateTime.now());
+        commentRepository.save(comment);
+    }
+
+    @Transactional
     public void reportComment(Long commentId, Long reporterId, String reasonCode) {
         if (communityReportedCommentRepository.existsByCommentIdAndReporterId(commentId, reporterId)) {
             throw new CustomException(ErrorCode.COMMENT_ALREADY_REPORTED);
@@ -222,5 +216,15 @@ public class CommentService {
             comment.setStatus(CommentStatus.REPORTED);
             commentRepository.save(comment);
         }
+    }
+
+    @Transactional
+    public void blockCommentAuthor(Long blockerId, Long commentId, String reason) {
+        // 1. 댓글 존재 여부 확인 및 작성자 ID 조회
+        CommunityComment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new CustomException(ErrorCode.COMMUNITY_COMMENT_NOT_FOUND));
+        
+        // 2. 작성자 차단 처리
+        communityBlockService.blockUser(blockerId, comment.getAuthorId(), reason);
     }
 }

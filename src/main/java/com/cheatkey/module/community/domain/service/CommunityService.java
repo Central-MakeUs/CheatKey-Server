@@ -4,7 +4,6 @@ import com.cheatkey.module.community.domain.entity.CommunityPost;
 import com.cheatkey.module.community.domain.entity.CommunityReportedPost;
 import com.cheatkey.module.community.domain.entity.CommunityPostBlock;
 import com.cheatkey.module.community.domain.entity.PostStatus;
-import com.cheatkey.module.community.domain.entity.comment.CommunityComment;
 import com.cheatkey.module.community.domain.repository.CommunityPostRepository;
 import com.cheatkey.module.community.domain.repository.CommunityReportedPostRepository;
 import com.cheatkey.module.community.domain.repository.CommunityPostBlockRepository;
@@ -27,15 +26,12 @@ import com.cheatkey.module.file.domain.repository.FileUploadRepository;
 import com.cheatkey.module.file.domain.service.FileService;
 import org.springframework.data.domain.PageImpl;
 import com.cheatkey.module.community.domain.entity.mapper.CommunityPostMapper;
-import com.cheatkey.module.auth.domain.entity.AuthStatus;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.Map;
 import com.cheatkey.module.community.domain.repository.CommunityCommentRepository;
-import com.cheatkey.module.community.domain.service.WithdrawnUserCacheService;
 
 @Service
 @RequiredArgsConstructor
@@ -51,6 +47,7 @@ public class CommunityService {
     private final FileService fileService;
     private final CommentService commentService;
     private final WithdrawnUserCacheService withdrawnUserCacheService;
+    private final CommunityBlockService communityBlockService;
 
     private final CommunityPostMapper communityPostMapper;
 
@@ -333,45 +330,13 @@ public class CommunityService {
     }
 
     @Transactional
-    public void blockUser(Long blockerId, Long blockedId, String reason) {
-        if (communityPostBlockRepository.existsByBlockerIdAndBlockedIdAndIsActiveTrue(blockerId, blockedId)) {
-            throw new CustomException(ErrorCode.USER_ALREADY_BLOCKED);
-        }
-        CommunityPostBlock block = CommunityPostBlock.builder()
-                .blockerId(blockerId)
-                .blockedId(blockedId)
-                .reason(reason)
-                .isActive(true)
-                .build();
-        communityPostBlockRepository.save(block);
-    }
-
-    @Transactional
     public void blockPostAuthor(Long blockerId, Long postId, String reason) {
         // 1. 게시글 존재 여부 확인 및 작성자 ID 조회
         CommunityPost post = communityPostRepository.findById(postId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
         
-        Long blockedId = post.getAuthorId();
-        
-        // 2. 자기 자신을 차단하려는 경우 방지
-        if (blockerId.equals(blockedId)) {
-            throw new CustomException(ErrorCode.CANNOT_BLOCK_SELF);
-        }
-        
-        // 3. 이미 차단한 유저인지 확인
-        if (communityPostBlockRepository.existsByBlockerIdAndBlockedIdAndIsActiveTrue(blockerId, blockedId)) {
-            throw new CustomException(ErrorCode.USER_ALREADY_BLOCKED);
-        }
-        
-        // 4. 차단 처리
-        CommunityPostBlock block = CommunityPostBlock.builder()
-                .blockerId(blockerId)
-                .blockedId(blockedId)
-                .reason(reason)
-                .isActive(true)
-                .build();
-        communityPostBlockRepository.save(block);
+        // 2. 작성자 차단 처리
+        communityBlockService.blockUser(blockerId, post.getAuthorId(), reason);
     }
 
     @Transactional

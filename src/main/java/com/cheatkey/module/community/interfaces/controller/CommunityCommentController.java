@@ -5,13 +5,12 @@ import com.cheatkey.common.code.domain.service.CodeService;
 import com.cheatkey.common.config.security.SecurityUtil;
 import com.cheatkey.common.exception.ErrorResponse;
 import com.cheatkey.module.auth.domain.service.AuthService;
-import com.cheatkey.module.community.domain.entity.comment.CommunityComment;
 import com.cheatkey.module.community.domain.service.CommentService;
+import com.cheatkey.module.community.interfaces.dto.CommunityPostBlockRequest;
 import com.cheatkey.module.community.interfaces.dto.CommunityReportInfoOptionsResponse;
 import com.cheatkey.module.community.interfaces.dto.comment.CommunityCommentRequest;
 import com.cheatkey.module.community.interfaces.dto.comment.CommunityCommentReportRequest;
 import com.cheatkey.module.community.interfaces.dto.comment.CommunityCommentResponse;
-import com.cheatkey.module.community.domain.entity.mapper.CommunityPostMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -33,7 +32,6 @@ import static com.cheatkey.common.code.interfaces.dto.OptionsResponse.OptionInfo
 public class CommunityCommentController {
     private final CommentService commentService;
     private final AuthService authService;
-    private final CommunityPostMapper communityPostMapper;
     private final CodeService codeService;
 
     @Operation(summary = "(★) 댓글/대댓글 작성", description = "커뮤니티 게시글에 댓글 또는 대댓글을 작성합니다. parentId가 있으면 대댓글입니다.")
@@ -101,6 +99,20 @@ public class CommunityCommentController {
     public ResponseEntity<Void> reportComment(@PathVariable Long commentId, @RequestBody CommunityCommentReportRequest request) {
         Long reporterId = Long.valueOf(SecurityUtil.getCurrentUserId());
         commentService.reportComment(commentId, reporterId, request.getReasonCode());
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "(★) 댓글/대댓글 작성자 차단", description = "특정 댓글/대댓글의 작성자를 차단합니다. 차단자는 해당 유저의 모든 게시글 및 댓글을 볼 수 없습니다.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "차단 성공"),
+        @ApiResponse(responseCode = "400", description = "이미 차단한 유저 또는 자기 자신 차단 시도", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(responseCode = "401", description = "인증 실패 (토큰 오류)", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(responseCode = "404", description = "존재하지 않는 댓글", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    @PostMapping("/comments/{commentId}/author/block")
+    public ResponseEntity<Void> blockCommentAuthor(@PathVariable Long commentId, @RequestBody CommunityPostBlockRequest request) {
+        Long blockerId = Long.valueOf(SecurityUtil.getCurrentUserId());
+        commentService.blockCommentAuthor(blockerId, commentId, request.getReason());
         return ResponseEntity.ok().build();
     }
 } 
