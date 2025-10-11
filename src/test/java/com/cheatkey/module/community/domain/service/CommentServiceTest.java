@@ -40,6 +40,8 @@ class CommentServiceTest {
     private CommunityPostBlockRepository communityPostBlockRepository;
     @Mock
     private WithdrawnUserCacheService withdrawnUserCacheService;
+    @Mock
+    private CommunityBlockService communityBlockService;
     @InjectMocks
     private CommentService commentService;
 
@@ -390,5 +392,97 @@ class CommentServiceTest {
         assertThat(comment.getStatus()).isEqualTo(CommentStatus.ACTIVE); // 상태 변경 안됨
         verify(communityReportedCommentRepository).save(any(CommunityReportedComment.class));
         verify(commentRepository, never()).save(any(CommunityComment.class)); // 댓글 저장 안됨
+    }
+
+    @Test
+    @DisplayName("댓글 작성자 차단 성공")
+    void blockCommentAuthor_success() {
+        // given
+        Long blockerId = 1L;
+        Long commentId = 10L;
+        Long blockedId = 2L;
+        String reason = "HATE";
+        
+        CommunityComment comment = CommunityComment.builder()
+                .id(commentId)
+                .authorId(blockedId)
+                .authorNickname("차단당할유저")
+                .build();
+        
+        when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
+
+        // when & then
+        assertDoesNotThrow(() -> commentService.blockCommentAuthor(blockerId, commentId, reason));
+
+        // then
+        verify(communityBlockService).blockUser(blockerId, blockedId, reason);
+    }
+
+    @Test
+    @DisplayName("댓글 작성자 차단 실패 - 댓글 없음")
+    void blockCommentAuthor_commentNotFound() {
+        // given
+        Long blockerId = 1L;
+        Long commentId = 999L;
+        String reason = "HATE";
+        
+        when(commentRepository.findById(commentId)).thenReturn(Optional.empty());
+
+        // when & then
+        CustomException ex = assertThrows(CustomException.class, () -> commentService.blockCommentAuthor(blockerId, commentId, reason));
+
+        // then
+        assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.COMMUNITY_COMMENT_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("댓글 작성자 차단 실패 - 자기 자신 차단 시도")
+    void blockCommentAuthor_cannotBlockSelf() {
+        // given
+        Long userId = 1L;
+        Long commentId = 10L;
+        String reason = "HATE";
+        
+        CommunityComment comment = CommunityComment.builder()
+                .id(commentId)
+                .authorId(userId)  // 자기 자신이 작성자
+                .authorNickname("테스트유저")
+                .build();
+        
+        when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
+        doThrow(new CustomException(ErrorCode.CANNOT_BLOCK_SELF))
+                .when(communityBlockService).blockUser(userId, userId, reason);
+
+        // when & then
+        CustomException ex = assertThrows(CustomException.class, () -> commentService.blockCommentAuthor(userId, commentId, reason));
+
+        // then
+        assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.CANNOT_BLOCK_SELF);
+    }
+
+    @Test
+    @DisplayName("댓글 작성자 차단 실패 - 이미 차단한 유저")
+    void blockCommentAuthor_alreadyBlocked() {
+        // given
+        Long blockerId = 1L;
+        Long commentId = 10L;
+        Long blockedId = 2L;
+        String reason = "HATE";
+        
+        CommunityComment comment = CommunityComment.builder()
+                .id(commentId)
+                .authorId(blockedId)
+                .authorNickname("차단당할유저")
+                .build();
+        
+        when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
+        doThrow(new CustomException(ErrorCode.USER_ALREADY_BLOCKED))
+                .when(communityBlockService).blockUser(blockerId, blockedId, reason);
+
+        // when & then
+        CustomException ex = assertThrows(CustomException.class, () -> commentService.blockCommentAuthor(blockerId, commentId, reason));
+
+        // then
+        assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.USER_ALREADY_BLOCKED);
     }
 } 

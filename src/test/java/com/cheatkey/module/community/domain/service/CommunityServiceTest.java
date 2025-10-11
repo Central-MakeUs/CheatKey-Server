@@ -4,7 +4,6 @@ import com.cheatkey.common.exception.CustomException;
 import com.cheatkey.common.exception.ErrorCode;
 import com.cheatkey.module.community.domain.entity.CommunityPost;
 import com.cheatkey.module.community.domain.entity.CommunityReportedPost;
-import com.cheatkey.module.community.domain.entity.CommunityPostBlock;
 import com.cheatkey.module.community.domain.entity.PostStatus;
 import com.cheatkey.module.community.domain.entity.comment.CommunityComment;
 import com.cheatkey.module.community.domain.repository.CommunityPostRepository;
@@ -17,18 +16,16 @@ import com.cheatkey.module.community.interfaces.dto.CommunityPostDetailResponse;
 import com.cheatkey.module.community.interfaces.dto.comment.CommunityCommentResponse;
 import com.cheatkey.module.file.domain.repository.FileUploadRepository;
 import com.cheatkey.module.file.domain.service.FileService;
+import com.cheatkey.module.auth.domain.repository.AuthRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import java.util.Optional;
 import java.util.List;
+import java.time.LocalDateTime;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
-import java.time.LocalDateTime;
-import com.cheatkey.module.community.domain.service.WithdrawnUserCacheService;
-import com.cheatkey.module.auth.domain.repository.AuthRepository;
 
 class CommunityServiceTest {
     @Mock
@@ -53,6 +50,8 @@ class CommunityServiceTest {
     private WithdrawnUserCacheService withdrawnUserCacheService;
     @Mock
     private AuthRepository authRepository;
+    @Mock
+    private CommunityBlockService communityBlockService;
     private CommunityService communityService;
 
     @BeforeEach
@@ -71,6 +70,7 @@ class CommunityServiceTest {
             fileService,
             commentService,
             withdrawnUserCacheService,
+            communityBlockService,
             communityPostMapper
         );
         
@@ -133,35 +133,6 @@ class CommunityServiceTest {
     }
 
     @Test
-    void blockUser_success() {
-        // given
-        Long blockerId = 1L;
-        Long blockedId = 2L;
-        String reason = "HATE";
-        when(communityPostBlockRepository.existsByBlockerIdAndBlockedIdAndIsActiveTrue(blockerId, blockedId)).thenReturn(false);
-
-        // when & then
-        assertDoesNotThrow(() -> communityService.blockUser(blockerId, blockedId, reason));
-
-        // then
-        verify(communityPostBlockRepository).save(any(CommunityPostBlock.class));
-    }
-
-    @Test
-    void blockUser_alreadyBlocked() {
-        // given
-        Long blockerId = 1L;
-        Long blockedId = 2L;
-        when(communityPostBlockRepository.existsByBlockerIdAndBlockedIdAndIsActiveTrue(blockerId, blockedId)).thenReturn(true);
-
-        // when & then
-        CustomException ex = assertThrows(CustomException.class, () -> communityService.blockUser(blockerId, blockedId, "HATE"));
-
-        // then
-        assertEquals(ErrorCode.USER_ALREADY_BLOCKED, ex.getErrorCode());
-    }
-
-    @Test
     void blockPostAuthor_success() {
         // given
         Long blockerId = 1L;
@@ -176,13 +147,12 @@ class CommunityServiceTest {
                 .build();
         
         when(communityPostRepository.findById(postId)).thenReturn(Optional.of(post));
-        when(communityPostBlockRepository.existsByBlockerIdAndBlockedIdAndIsActiveTrue(blockerId, blockedId)).thenReturn(false);
 
         // when & then
         assertDoesNotThrow(() -> communityService.blockPostAuthor(blockerId, postId, reason));
 
         // then
-        verify(communityPostBlockRepository).save(any(CommunityPostBlock.class));
+        verify(communityBlockService).blockUser(blockerId, blockedId, reason);
     }
 
     @Test
@@ -215,6 +185,8 @@ class CommunityServiceTest {
                 .build();
         
         when(communityPostRepository.findById(postId)).thenReturn(Optional.of(post));
+        doThrow(new CustomException(ErrorCode.CANNOT_BLOCK_SELF))
+                .when(communityBlockService).blockUser(userId, userId, reason);
 
         // when & then
         CustomException ex = assertThrows(CustomException.class, () -> communityService.blockPostAuthor(userId, postId, reason));
@@ -238,7 +210,8 @@ class CommunityServiceTest {
                 .build();
         
         when(communityPostRepository.findById(postId)).thenReturn(Optional.of(post));
-        when(communityPostBlockRepository.existsByBlockerIdAndBlockedIdAndIsActiveTrue(blockerId, blockedId)).thenReturn(true);
+        doThrow(new CustomException(ErrorCode.USER_ALREADY_BLOCKED))
+                .when(communityBlockService).blockUser(blockerId, blockedId, reason);
 
         // when & then
         CustomException ex = assertThrows(CustomException.class, () -> communityService.blockPostAuthor(blockerId, postId, reason));
