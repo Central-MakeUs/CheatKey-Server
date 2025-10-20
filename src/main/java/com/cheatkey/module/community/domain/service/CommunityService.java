@@ -430,15 +430,27 @@ public class CommunityService {
     /**
      * 인기글 조회 (작성자 프로필 이미지 정보 포함)
      * 정렬 기준: 1차-댓글수(내림차순), 2차-조회수(내림차순), 3차-작성일시(내림차순)
+     * @param userId 현재 사용자 ID (차단 필터링용)
+     * @param limit 조회할 게시글 개수
      */
     @Transactional(readOnly = true)
-    public List<CommunityPostWithAuthorInfo> getPopularPostsWithAuthorInfo(int limit) {
+    public List<CommunityPostWithAuthorInfo> getPopularPostsWithAuthorInfo(Long userId, int limit) {
         // 1. 모든 ACTIVE 게시글 조회
         List<CommunityPost> allPosts = communityPostRepository.findAll().stream()
                 .filter(post -> post.getStatus() == PostStatus.ACTIVE)
                 .toList();
         
-        // 2. 댓글 수 조회
+        // 2. 차단된 사용자 필터링
+        List<Long> blockedUserIds = communityPostBlockRepository.findByBlockerIdAndIsActive(userId, true)
+                .stream()
+                .map(CommunityPostBlock::getBlockedId)
+                .toList();
+        
+        allPosts = allPosts.stream()
+                .filter(post -> !blockedUserIds.contains(post.getAuthorId()))
+                .toList();
+        
+        // 3. 댓글 수 조회
         List<Long> postIds = allPosts.stream().map(CommunityPost::getId).toList();
         Map<Long, Integer> commentCountMap = communityCommentRepository.countCommentsByPostIds(postIds).stream()
                 .collect(Collectors.toMap(
@@ -446,12 +458,12 @@ public class CommunityService {
                         arr -> ((Long) arr[1]).intValue()
                 ));
 
-        // 3. 작성자 정보 조회
+        // 4. 작성자 정보 조회
         List<Long> authorIds = allPosts.stream().map(CommunityPost::getAuthorId).distinct().toList();
         Map<Long, Auth> authorMap = authRepository.findAllById(authorIds).stream()
                 .collect(Collectors.toMap(Auth::getId, auth -> auth));
 
-        // 4. 탈퇴한 사용자 처리
+        // 5. 탈퇴한 사용자 처리
         List<Long> withdrawnUserIds = withdrawnUserCacheService.getWithdrawnUserIds();
         allPosts = allPosts.stream()
                 .map(post -> {
@@ -463,7 +475,7 @@ public class CommunityService {
                 })
                 .toList();
 
-        // 5. 다중 정렬 기준으로 정렬 후 limit
+        // 6. 다중 정렬 기준으로 정렬 후 limit
         // 1차: 댓글 수 (내림차순), 2차: 조회수 (내림차순), 3차: 작성일시 (내림차순)
         return allPosts.stream()
                 .sorted((a, b) -> {

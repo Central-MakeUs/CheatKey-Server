@@ -35,7 +35,7 @@ public class HomeFacade {
             authActivityService.recordDashboardVisit(userId, AuthActivity.ActivityType.HOME_VISIT);
             
             Auth userInfo = authService.getUserInfo(userId);
-            List<CommunityService.CommunityPostWithAuthorInfo> popularPostsWithAuthorInfo = communityService.getPopularPostsWithAuthorInfo(10);
+            List<CommunityService.CommunityPostWithAuthorInfo> popularPostsWithAuthorInfo = communityService.getPopularPostsWithAuthorInfo(userId, 10);
             
             HomeDashboardResponse.UserInfo userInfoDto = homeMapper.toUserInfo(userInfo);
             List<HomeDashboardResponse.PopularPost> popularPostDtos = homeMapper.toPopularPostsWithAuthorInfo(popularPostsWithAuthorInfo);
